@@ -1,0 +1,8 @@
+CompilerFlags:
+  Add: [-Iinclude]
+---
+If:
+  PathMatch: [.*\.hpp, .*.cpp]
+CompilerFlags:
+  Add: [-std=c++23]
+
