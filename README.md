@@ -1,2 +1,2 @@
 # lopengl
-Follow learn openGL book
+Following learn openGL book examples and exercises 
