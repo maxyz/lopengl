@@ -1,0 +1,1 @@
+g++ -lglfw -lGL -lX11 -lpthread -lXrandr -lXi -ldl testlink.cpp -o testlink
