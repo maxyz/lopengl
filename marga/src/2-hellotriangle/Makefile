@@ -1,4 +1,4 @@
-default_target: hellotriangle hellorectangle
+default_target: hellotriangle hellorectangle twotriangles twotriangles-b twotriangles-c
 
 libGLAD.a: ../gl.c
 	gcc -I ../../include/ -c ../gl.c -o gl.o
@@ -7,12 +7,22 @@ libGLAD.a: ../gl.c
 
 LDFLAGS = -lglfw -lGL -lX11 -lpthread -lXrandr -lXi -ldl
 CPPFLAGS = -I ../../include/
+EXTRAS = /usr/lib/x86_64-linux-gnu/libglfw.so libGLAD.a
 
 hellotriangle: hellotriangle.cpp libGLAD.a
-	g++ $(LDFLAGS) $(CPPFLAGS) $^ /usr/lib/x86_64-linux-gnu/libglfw.so libGLAD.a -o $@
+	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
 
 hellorectangle: hellorectangle.cpp libGLAD.a
-	g++ $(LDFLAGS) $(CPPFLAGS) $^ /usr/lib/x86_64-linux-gnu/libglfw.so libGLAD.a -o $@
+	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
+
+twotriangles: twotriangles.cpp libGLAD.a
+	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
+
+twotriangles-b: twotriangles-b.cpp libGLAD.a
+	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
+
+twotriangles-c: twotriangles-c.cpp libGLAD.a
+	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
 
 clean:
-	rm hellotriangle hellorectangle libGLAD.a gl.o
+	rm -f hellotriangle hellorectangle twotriangles twotriangles-b twotriangles-c libGLAD.a gl.o
