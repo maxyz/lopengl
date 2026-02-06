@@ -6,5 +6,7 @@ libGLAD.a: ../gl.c
 	ranlib libGLAD.a
 
 hellotriangle: hellotriangle.cpp libGLAD.a
-	g++ -lglfw -lGL -lX11 -lpthread -lXrandr -lXi -ldl -I ../../include/ $^ /usr/lib/x86_64-linux-gnu/libglfw.so.3.4 libGLAD.a -o $@
+	g++ -lglfw -lGL -lX11 -lpthread -lXrandr -lXi -ldl -I ../../include/ $^ /usr/lib/x86_64-linux-gnu/libglfw.so libGLAD.a -o $@
 
+clean:
+	rm hellotriangle libGLAD.a gl.o
