@@ -44,3 +44,6 @@ target_link_libraries(query_attributes ${LIBS})
 
 add_executable(6_shader_share src/6/shader_share.cpp)
 target_link_libraries(6_shader_share ${LIBS})
+
+add_executable(6_uniforms src/6/uniforms.cpp)
+target_link_libraries(6_uniforms ${LIBS})
