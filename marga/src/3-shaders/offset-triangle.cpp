@@ -9,12 +9,16 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
     glViewport(0, 0, width, height);
 }
 
-void processInput(GLFWwindow *window)
+void processInput(GLFWwindow *window, float* offset)
 {
     if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
     if(glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
+    if(glfwGetKey(window, GLFW_KEY_K) == GLFW_PRESS)
+        *offset -= 0.1;
+    if(glfwGetKey(window, GLFW_KEY_L) == GLFW_PRESS)
+        *offset += 0.1;
 }
 
 int main()
@@ -75,16 +79,17 @@ int main()
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3* sizeof(float)));
     glEnableVertexAttribArray(1);
 
+    float offset = 0.4f;
     // Render loop
     while(!glfwWindowShouldClose(window))
     {
         // input
-        processInput(window);
+        processInput(window, &offset);
         // rendering commands here
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
         ourShader.use();
-        ourShader.setFloat("offset", 0.4f);
+        ourShader.setFloat("offset", offset);
 
         // Select the object to draw
         glBindVertexArray(VAO);
