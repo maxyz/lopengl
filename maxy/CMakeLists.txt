@@ -5,15 +5,21 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(OpenGL REQUIRED)
+set(LIBS ${LIBS} ${OPENGL_gl_LIBRARY})
+
 find_package(glfw3 REQUIRED)
+set(LIBS ${LIBS} glfw)
 
 include_directories(${OPENGL_INCLUDE_DIR})
 include_directories(${CMAKE_SOURCE_DIR}/include)
+include_directories(${CMAKE_SOURCE_DIR}/src)
 
 add_library(GLAD src/gl.c)
 set(LIBS ${LIBS} GLAD)
-set(LIBS ${LIBS} glfw)
-set(LIBS ${LIBS} ${OPENGL_gl_LIBRARY})
+
+file(GLOB common_sources src/common/*.cpp)
+add_library(COMMON ${common_sources})
+set(LIBS ${LIBS} COMMON)
 
 file(GLOB lo01_sources src/lo01/*.cpp)
 add_executable(lo01 ${lo01_sources})
@@ -47,3 +53,13 @@ target_link_libraries(6_shader_share ${LIBS})
 
 add_executable(6_uniforms src/6/uniforms.cpp)
 target_link_libraries(6_uniforms ${LIBS})
+
+add_executable(6_attributes src/6/attributes.cpp)
+target_link_libraries(6_attributes ${LIBS})
+
+add_executable(6_shaders_class src/6/shaders_class.cpp)
+target_link_libraries(6_shaders_class ${LIBS})
+add_custom_command(TARGET 6_shaders_class POST_BUILD
+  COMMAND ${CMAKE_COMMAND} -E copy_directory
+    ${CMAKE_SOURCE_DIR}/src/6/shaders
+    $<TARGET_FILE_DIR:6_shaders_class>/shaders)
