@@ -2,6 +2,7 @@
 #include <expected>
 #include <functional>
 #include <iostream>
+#include <print>
 #include <vector>
 
 #include <glad/gl.h>
@@ -13,9 +14,19 @@ const char *TITLE = "LOpenGL";
 const GLuint WIDTH = 800;
 const GLuint HEIGHT = 600;
 
+enum event_t {
+  NONE = 0,
+  ML,
+  MR,
+  MU,
+  MD,
+};
+
+using cb_t = std::function<void(event_t)>;
+
 std::expected<GLFWwindow *, std::string> init_window();
-std::expected<std::vector<std::function<void()>>, std::string> init_shaders();
-void event_loop(GLFWwindow *window, std::vector<std::function<void()>> cbs);
+std::expected<std::vector<cb_t>, std::string> init_shaders();
+void event_loop(GLFWwindow *window, std::vector<cb_t> cbs);
 
 int main() {
   // std::cerr << "init_window" << std::endl;
@@ -82,8 +93,8 @@ std::expected<unsigned int, std::string>
 link_shaders(std::vector<unsigned int> shaders);
 unsigned int buffers();
 
-std::expected<std::vector<std::function<void()>>, std::string> init_shaders() {
-  auto res = Shader::build("shaders/shader.vert", "shaders/shader.frag");
+std::expected<std::vector<cb_t>, std::string> init_shaders() {
+  auto res = Shader::build("shaders/2.vert", "shaders/2.frag");
   if (!res.has_value()) {
     return std::unexpected(res.error());
   }
@@ -91,13 +102,42 @@ std::expected<std::vector<std::function<void()>>, std::string> init_shaders() {
   auto p = shader.ID;
   auto vao = buffers();
 
-  auto f = [p, vao]() {
+  auto update_offset = [p](event_t e) {
+    GLfloat delta[2] = {0., 0.};
+    switch (e) {
+    case (event_t::ML):
+      std::cout << "l" << std::endl;
+      delta[0] = -0.01f;
+      break;
+    case (event_t::MR):
+      delta[0] = 0.01f;
+      break;
+    case (event_t::MU):
+      delta[1] = 0.01f;
+      break;
+    case (event_t::MD):
+      delta[1] = -0.01f;
+      break;
+    default:
+      return;
+    }
+    auto offsetLocation = glGetUniformLocation(p, "offset");
+    GLfloat values[2];
+    glGetUniformfv(p, offsetLocation, values);
+    values[0] += delta[0];
+    values[1] += delta[1];
+    std::println("V: {}", values);
+    glUseProgram(p);
+    glUniform2fv(offsetLocation, 1, values);
+  };
+
+  auto f = [p, vao](event_t) {
     glUseProgram(p);
     glBindVertexArray(vao);
     glDrawArrays(GL_TRIANGLES, 0, 3);
   };
 
-  std::vector<std::function<void()>> v{f};
+  std::vector<cb_t> v{update_offset, f};
   return v;
 }
 
@@ -124,16 +164,18 @@ unsigned int buffers() {
   return VAO;
 }
 
-void processInput(GLFWwindow *window);
+void processInput(GLFWwindow *window, event_t &e);
 
-void event_loop(GLFWwindow *window, std::vector<std::function<void()>> cbs) {
+void event_loop(GLFWwindow *window, std::vector<cb_t> cbs) {
+  event_t e = event_t::NONE;
   while (!glfwWindowShouldClose(window)) {
-    processInput(window);
+    e = event_t::NONE;
+    processInput(window, e);
     glClearColor(0.2, 0.3, 0.3, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
     for (auto cb : cbs) {
-      cb();
+      cb(e);
     }
 
     glfwSwapBuffers(window);
@@ -141,10 +183,18 @@ void event_loop(GLFWwindow *window, std::vector<std::function<void()>> cbs) {
   }
 }
 
-void processInput(GLFWwindow *window) {
+void processInput(GLFWwindow *window, event_t &e) {
   if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
     glfwSetWindowShouldClose(window, true);
   } else if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) {
     glfwSetWindowShouldClose(window, true);
+  } else if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) {
+    e = event_t::ML;
+  } else if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) {
+    e = event_t::MR;
+  } else if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
+    e = event_t::MU;
+  } else if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
+    e = event_t::MD;
   }
 }

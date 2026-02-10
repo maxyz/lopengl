@@ -63,3 +63,5 @@ add_custom_command(TARGET 6_shaders_class POST_BUILD
   COMMAND ${CMAKE_COMMAND} -E copy_directory
     ${CMAKE_SOURCE_DIR}/src/6/shaders
     $<TARGET_FILE_DIR:6_shaders_class>/shaders)
+
+add_subdirectory(src/ex_6.8)

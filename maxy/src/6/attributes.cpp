@@ -127,21 +127,13 @@ std::expected<std::vector<std::function<void()>>, std::string> init_shaders() {
   auto p = program.value();
   auto vao = buffers();
 
-  auto update_our_color = [p]() {
-    float timeValue = glfwGetTime();
-    float greenValue = (sin(timeValue) / 2.0f) + 0.5f;
-    int colorLocation = glGetUniformLocation(p, "ourColor");
-    glUseProgram(p);
-    glUniform4f(colorLocation, 0.0f, greenValue, 0.0f, 1.0f);
-  };
-
   auto f = [p, vao]() {
     glUseProgram(p);
     glBindVertexArray(vao);
     glDrawArrays(GL_TRIANGLES, 0, 3);
   };
 
-  std::vector<std::function<void()>> res{update_our_color, f};
+  std::vector<std::function<void()>> res{f};
   return res;
 }
 
