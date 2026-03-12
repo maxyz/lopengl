@@ -4,7 +4,7 @@
 
 typedef unsigned int uint;
 
-bool setupShaders(uint *shaderProgram, uint *VAO);
+bool setupShadersAndBuffers(uint *shaderProgram, uint *VAO);
 GLFWwindow* windowAndContext();
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow *window);
@@ -15,7 +15,7 @@ const char *vertexShaderSource = "#version 330 core\n"
     "{\n"
     "   gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
     "}\0";
-const char *fragmentShaderSource = "#version 330 core\n"
+const char *fragmentShaderSourceOrange = "#version 330 core\n"
     "out vec4 FragColor;\n"
     "void main()\n"
     "{\n"
@@ -30,7 +30,7 @@ int main()
     
     uint shaderProgram, VAO;
 
-    if (!setupShaders(&shaderProgram, &VAO)) return -1;
+    if (!setupShadersAndBuffers(&shaderProgram, &VAO)) return -1;
     
     while(!glfwWindowShouldClose(window))
     {
@@ -78,7 +78,7 @@ GLFWwindow* windowAndContext() {
     return window;
 }
 
-bool setupShaders(uint *shaderProgram, uint *VAO) {
+bool setupShadersAndBuffers(uint *shaderProgram, uint *VAO) {
 
     // Shaders:
     unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
@@ -99,7 +99,7 @@ bool setupShaders(uint *shaderProgram, uint *VAO) {
 
     // fragment shader
     unsigned int fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
+    glShaderSource(fragmentShader, 1, &fragmentShaderSourceOrange, NULL);
     glCompileShader(fragmentShader);
 
     // check for shader compile errors
