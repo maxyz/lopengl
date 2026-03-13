@@ -148,6 +148,7 @@ bool setupShadersAndVertex(uint *shaderProgram, uint *VAO1, uint *VAO2) {
 
     unsigned int VBO1, VBO2;
 
+    // ACA DEBERIA HABER HECHO glGenVertexArrays(2, VAO); con uint VAO[2] y uint VBO[2]
     glGenVertexArrays(1, VAO1);
     glGenVertexArrays(1, VAO2);
 

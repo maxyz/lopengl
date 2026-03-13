@@ -1,13 +1,17 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <iostream>
+#include <string>
 
 typedef unsigned int uint;
 
-bool setupShadersAndVertex(uint *shaderProgram, uint *VAO);
+enum color {BLACK, RED, GREEN, BLUE};
+
+bool setupShadersAndBuffers(uint *shaderProgram, uint *VAO);
 GLFWwindow* windowAndContext();
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
-void processInput(GLFWwindow *window);
+void processInput(GLFWwindow *window, color *current);
+void handleColor(float *r_p, float *g_p, float *b_p, color current_color);
 
 const char *vertexShaderSource = "#version 330 core\n"
     "layout (location = 0) in vec3 aPos;\n"
@@ -17,9 +21,10 @@ const char *vertexShaderSource = "#version 330 core\n"
     "}\0";
 const char *fragmentShaderSource = "#version 330 core\n"
     "out vec4 FragColor;\n"
+    "uniform vec4 ourColor;\n"
     "void main()\n"
     "{\n"
-    "   FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
+    "   FragColor = ourColor;\n"
     "}\n\0";
 
 
@@ -30,18 +35,28 @@ int main()
     
     uint shaderProgram, VAO;
 
-    if (!setupShadersAndVertex(&shaderProgram, &VAO)) return -1;
+    if (!setupShadersAndBuffers(&shaderProgram, &VAO)) return -1;
     
+    color current_color = BLACK;
+    float r = 0., g = 0., b = 0.;
+
     while(!glfwWindowShouldClose(window))
     {
-        processInput(window);
+        processInput(window, &current_color);
 
         // Render:
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
         glUseProgram(shaderProgram);
+
+        handleColor(&r, &g, &b, current_color);
+
+        uint location = glGetUniformLocation(shaderProgram, "ourColor");
+        glUniform4f(location, r, g, b, 1.0f);
+
         glBindVertexArray(VAO);
+        
         glDrawArrays(GL_TRIANGLES, 0, 3);
 
         glfwSwapBuffers(window);
@@ -78,7 +93,7 @@ GLFWwindow* windowAndContext() {
     return window;
 }
 
-bool setupShadersAndVertex(uint *shaderProgram, uint *VAO) {
+bool setupShadersAndBuffers(uint *shaderProgram, uint *VAO) {
 
     // Shaders:
     unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
@@ -162,10 +177,66 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
     glViewport(0, 0, width, height);
 }
 
-void processInput(GLFWwindow *window)
+void processInput(GLFWwindow *window, color* current_color)
 {
     if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
         glfwSetWindowShouldClose(window, true);
         return;
-    }        
+    }
+
+    if(glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS) {
+        *current_color = RED;
+        return;
+    }
+
+    if(glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS) {
+        *current_color = GREEN;
+        return;
+    }
+
+    if(glfwGetKey(window, GLFW_KEY_B) == GLFW_PRESS) {
+        *current_color = BLUE;
+        return;
+    }
+
+    if(glfwGetKey(window, GLFW_KEY_N) == GLFW_PRESS) {
+        *current_color = BLACK;
+        return;
+    }
 }
+
+void handleColor(float *r_p, float *g_p, float *b_p, color current_color) {
+    float delta = 0.01;
+    float r = *r_p, g = *g_p, b = *b_p;
+    switch (current_color)
+        {
+        case BLACK:
+            r = r - delta > 0.f ? r - delta : 0.f;
+            g = g - delta > 0.f ? g - delta : 0.f;
+            b = b - delta > 0.f ? b - delta : 0.f;
+            break;
+
+        case RED:
+            r = r + delta < 1.f ? r + delta : 1.f;
+            g = g - delta > 0.f ? g - delta : 0.f;
+            b = b - delta > 0.f ? b - delta : 0.f;
+            break;
+
+        case GREEN:
+            r = r - delta > 0.f ? r - delta : 0.f;
+            g = g - delta < 1.f ? g + delta : 1.f;
+            b = b - delta > 0.f ? b - delta : 0.f;
+            break;
+
+        case BLUE:
+            r = r - delta > 0.f ? r - delta : 0.f;
+            g = g - delta > 0.f ? g - delta : 0.f;
+            b = b - delta < 1.f ? b + delta : 1.f;
+            break;
+        }
+    
+    *r_p = r;
+    *g_p = g;
+    *b_p = b;
+}
+

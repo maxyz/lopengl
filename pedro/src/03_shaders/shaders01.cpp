@@ -1,10 +1,11 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <iostream>
+#include <cmath>
 
 typedef unsigned int uint;
 
-bool setupShadersAndVertex(uint *shaderProgram, uint *VAO);
+bool setupShadersAndBuffers(uint *shaderProgram, uint *VAO);
 GLFWwindow* windowAndContext();
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow *window);
@@ -17,9 +18,10 @@ const char *vertexShaderSource = "#version 330 core\n"
     "}\0";
 const char *fragmentShaderSource = "#version 330 core\n"
     "out vec4 FragColor;\n"
+    "uniform vec4 ourColor;\n"
     "void main()\n"
     "{\n"
-    "   FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
+    "   FragColor = ourColor;\n"
     "}\n\0";
 
 
@@ -30,8 +32,8 @@ int main()
     
     uint shaderProgram, VAO;
 
-    if (!setupShadersAndVertex(&shaderProgram, &VAO)) return -1;
-    
+    if (!setupShadersAndBuffers(&shaderProgram, &VAO)) return -1;
+
     while(!glfwWindowShouldClose(window))
     {
         processInput(window);
@@ -41,7 +43,14 @@ int main()
         glClear(GL_COLOR_BUFFER_BIT);
 
         glUseProgram(shaderProgram);
+
+        GLfloat timeValue = glfwGetTime();
+        GLfloat greenValue = (sin(timeValue) / 2) + 0.5;
+        GLint vertexColorLocation = glGetUniformLocation(shaderProgram, "ourColor");
+        glUniform4f(vertexColorLocation, 0.0f, greenValue, 0.0f, 1.0f);
+
         glBindVertexArray(VAO);
+        
         glDrawArrays(GL_TRIANGLES, 0, 3);
 
         glfwSwapBuffers(window);
@@ -78,7 +87,7 @@ GLFWwindow* windowAndContext() {
     return window;
 }
 
-bool setupShadersAndVertex(uint *shaderProgram, uint *VAO) {
+bool setupShadersAndBuffers(uint *shaderProgram, uint *VAO) {
 
     // Shaders:
     unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
