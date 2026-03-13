@@ -16,11 +16,13 @@ int main()
     GLFWwindow *window = windowAndContext();
     if (window == NULL) return -1;
     
-    Shader shader("shader01.vs", "shader.frag");
+    Shader shader("shader03extra.vs", "shader03.frag");
 
     uint VAO;
 
     if (!setupBuffers(&VAO)) return -1;
+
+    GLfloat current_offset = 0., step = 0.05;
 
     while(!glfwWindowShouldClose(window))
     {
@@ -31,10 +33,14 @@ int main()
         glClear(GL_COLOR_BUFFER_BIT);
 
         shader.Use();
+        GLint offsetLocation = glGetUniformLocation(shader.Program, "x_offset");
+        glUniform1f(offsetLocation, current_offset);
 
         glBindVertexArray(VAO);
         
         glDrawArrays(GL_TRIANGLES, 0, 3);
+
+        current_offset = current_offset < 1.5 ? current_offset + step : -1.5;
 
         glfwSwapBuffers(window);
         glfwPollEvents();    
@@ -75,10 +81,10 @@ bool setupBuffers(uint *VAO) {
     // set up vertex data (and buffer(s)) and configure vertex attributes
     // ------------------------------------------------------------------
     float vertices[] = {
-        // Vertexes         // Colors
-        -0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f,
-         0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f,
-         0.0f,  0.5f, 0.0f, 0.0f, 0.0f, 1.0f,
+        // Vertexes
+        -0.5f, -0.5f, 0.0f, 
+         0.5f, -0.5f, 0.0f, 
+         0.0f,  0.5f, 0.0f,
     }; 
 
     unsigned int VBO;
@@ -92,12 +98,8 @@ bool setupBuffers(uint *VAO) {
 
     // REVISAR INFO SOBRE ESTO CUANDO TENGA ACCESO AL LIBRO:
     // Datos de posición
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
-
-    // Datos de color
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
-    glEnableVertexAttribArray(1);
 
     // note that this is allowed, the call to glVertexAttribPointer registered VBO as the vertex attribute's bound vertex buffer object so afterwards we can safely unbind
     glBindBuffer(GL_ARRAY_BUFFER, 0); 

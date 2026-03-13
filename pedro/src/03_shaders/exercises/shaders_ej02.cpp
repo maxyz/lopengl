@@ -16,11 +16,13 @@ int main()
     GLFWwindow *window = windowAndContext();
     if (window == NULL) return -1;
     
-    Shader shader("shader01.vs", "shader.frag");
+    Shader shader("shader02.vs", "shader.frag");
 
     uint VAO;
 
     if (!setupBuffers(&VAO)) return -1;
+
+    GLfloat current_offset = 0., step = 0.05;
 
     while(!glfwWindowShouldClose(window))
     {
@@ -31,10 +33,14 @@ int main()
         glClear(GL_COLOR_BUFFER_BIT);
 
         shader.Use();
+        GLint offsetLocation = glGetUniformLocation(shader.Program, "x_offset");
+        glUniform1f(offsetLocation, current_offset);
 
         glBindVertexArray(VAO);
         
         glDrawArrays(GL_TRIANGLES, 0, 3);
+
+        current_offset = current_offset < 1.5 ? current_offset + step : -1.5;
 
         glfwSwapBuffers(window);
         glfwPollEvents();    
