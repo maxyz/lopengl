@@ -47,6 +47,7 @@ int main()
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback); 
 
     // **** TEXTURE ****
+    stbi_set_flip_vertically_on_load(true);  
     // Give an id to the texture
     unsigned int texture;
     glGenTextures(1, &texture);    
