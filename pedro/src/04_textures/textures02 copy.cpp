@@ -3,7 +3,8 @@
 #include <iostream>
 #include <string>
 #include "shader/shader.h"
-#include "texture/texture.h"
+// #define STB_IMAGE_IMPLEMENTATION
+// #include <stb/stb_image.h>
 
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
