@@ -2,19 +2,14 @@
     "tasks": [
         {
             "type": "cppbuild",
-            "label": "C/C++: g++ build active file",
-            "command": "/usr/bin/g++",
+            "label": "C/C++: gcc build active file",
+            "command": "/usr/bin/gcc",
             "args": [
                 "-fdiagnostics-color=always",
                 "-g",
                 "${file}",
-                "${workspaceFolder}/src/glad.c", // Include GLAD source
                 "-o",
-                "${fileDirname}/${fileBasenameNoExtension}",
-                "-I${workspaceFolder}/include",  // Tell compiler where headers are
-                "-lglfw",                        // Link GLFW
-                "-lGL",                          // Link OpenGL
-                "-ldl"                           // Link helper for loading libraries
+                "${fileDirname}/${fileBasenameNoExtension}"
             ],
             "options": {
                 "cwd": "${fileDirname}"

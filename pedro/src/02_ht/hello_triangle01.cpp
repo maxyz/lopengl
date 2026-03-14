@@ -4,7 +4,7 @@
 
 typedef unsigned int uint;
 
-bool setupShaders(uint *shaderProgram, uint *VAO);
+bool setupShadersAndVertex(uint *shaderProgram, uint *VAO);
 GLFWwindow* windowAndContext();
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow *window);
@@ -30,7 +30,7 @@ int main()
     
     uint shaderProgram, VAO;
 
-    if (!setupShaders(&shaderProgram, &VAO)) return -1;
+    if (!setupShadersAndVertex(&shaderProgram, &VAO)) return -1;
     
     while(!glfwWindowShouldClose(window))
     {
@@ -42,7 +42,7 @@ int main()
 
         glUseProgram(shaderProgram);
         glBindVertexArray(VAO);
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+        glDrawArrays(GL_TRIANGLES, 0, 3);
 
         glfwSwapBuffers(window);
         glfwPollEvents();    
@@ -78,7 +78,7 @@ GLFWwindow* windowAndContext() {
     return window;
 }
 
-bool setupShaders(uint *shaderProgram, uint *VAO) {
+bool setupShadersAndVertex(uint *shaderProgram, uint *VAO) {
 
     // Shaders:
     unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
@@ -127,29 +127,22 @@ bool setupShaders(uint *shaderProgram, uint *VAO) {
     glDeleteShader(vertexShader);
     glDeleteShader(fragmentShader);
 
+    // set up vertex data (and buffer(s)) and configure vertex attributes
+    // ------------------------------------------------------------------
     float vertices[] = {
-     0.5f,  0.5f, 0.0f,  // top right
-     0.5f, -0.5f, 0.0f,  // bottom right
-    -0.5f, -0.5f, 0.0f,  // bottom left
-    -0.5f,  0.5f, 0.0f   // top left 
-    };
-    unsigned int indices[] = {  // note that we start from 0!
-        0, 1, 3,   // first triangle
-        1, 2, 3    // second triangle
-    };  
+        -0.5f, -0.5f, 0.0f, // left  
+         0.5f, -0.5f, 0.0f, // right 
+         0.0f,  0.5f, 0.0f  // top   
+    }; 
 
-    unsigned int VBO, EBO;
+    unsigned int VBO;
     glGenVertexArrays(1, VAO);
     glGenBuffers(1, &VBO);
-    glGenBuffers(1, &EBO);
     // bind the Vertex Array Object first, then bind and set vertex buffer(s), and then configure vertex attributes(s).
     glBindVertexArray(*VAO);
 
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
