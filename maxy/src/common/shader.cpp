@@ -39,7 +39,7 @@ Shader::build_res Shader::build(std::string_view vertexPath,
   }
   // delete shaders; they're linked into our program and no longer necessary
   glDeleteShader(v_res.value());
-  glDeleteShader(p_res.value());
+  glDeleteShader(f_res.value());
 
   return Shader{p_res.value()};
 };
