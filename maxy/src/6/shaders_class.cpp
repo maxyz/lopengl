@@ -83,7 +83,7 @@ link_shaders(std::vector<unsigned int> shaders);
 unsigned int buffers();
 
 std::expected<std::vector<std::function<void()>>, std::string> init_shaders() {
-  auto res = Shader::build("shaders/shader.vert", "shaders/shader.frag");
+  auto res = Shader::build("shaders/6_shader.vert", "shaders/6_shader.frag");
   if (!res.has_value()) {
     return std::unexpected(res.error());
   }

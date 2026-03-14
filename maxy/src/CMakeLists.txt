@@ -15,3 +15,5 @@ add_subdirectory(ex_5.8)
 
 add_subdirectory(6)
 add_subdirectory(ex_6.8)
+
+add_subdirectory(7)
