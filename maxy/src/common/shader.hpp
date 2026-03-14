@@ -1,5 +1,4 @@
-#ifndef LOPENGL_SHADER_H
-#define LOPENGL_SHADER_H
+#pragma once
 
 #include <glad/gl.h>
 
@@ -31,5 +30,3 @@ compile_shader_res compile_shader(const GLenum type, const char *source);
 
 using link_shaders_res = std::expected<id_t, std::string>;
 link_shaders_res link_shaders(const std::vector<unsigned int> shaders);
-
-#endif
