@@ -10,6 +10,10 @@ set(LIBS ${LIBS} ${OPENGL_gl_LIBRARY})
 find_package(glfw3 REQUIRED)
 set(LIBS ${LIBS} glfw)
 
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(STB REQUIRED IMPORTED_TARGET stb)
+set(LIBS ${LIBS} PkgConfig::STB)
+
 include_directories(${OPENGL_INCLUDE_DIR})
 include_directories(${CMAKE_SOURCE_DIR}/include)
 include_directories(${CMAKE_SOURCE_DIR}/src)
