@@ -141,9 +141,9 @@ bool setupShadersAndBuffers(uint *shaderProgram, uint *VAO) {
     // ------------------------------------------------------------------
     float vertices[] = {
         // Vertexes         // Colors
-        -0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f,
-         0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f,
-         0.0f,  0.5f, 0.0f, 0.0f, 0.0f, 1.0f,
+        -0.5f, -0.5f, 0.0f, 0.5f, 0.0f, 0.5f,
+         0.5f, -0.5f, 0.0f, 1.0f, 1.0f, 0.0f,
+         0.0f,  0.5f, 0.0f, 0.0f, 1.0f, 1.0f,
     }; 
 
     unsigned int VBO;

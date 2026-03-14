@@ -2,7 +2,7 @@
 #include <GLFW/glfw3.h>
 #include <iostream>
 #include <cmath>
-#include <shader/shader.cpp>
+#include "shader/shader.h"
 
 typedef unsigned int uint;
 

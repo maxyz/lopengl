@@ -1,4 +1,4 @@
-#include <shader/shader.h>
+#include "shader.h"
 
 Shader::Shader(const GLchar* vertexPath, const GLchar* fragmentPath) {
     // 1. Retrieve the vertex/fragment source code from filePath
@@ -88,7 +88,10 @@ Shader::Shader(const GLchar* vertexPath, const GLchar* fragmentPath) {
     glDeleteShader(fragment);
 }
 
-
 void Shader::Use() {
     glUseProgram(this->Program);
+}
+
+void Shader::setInt(const GLchar* uniformName, const int value) {
+    glUniform1i(glGetUniformLocation(this->Program, uniformName), value);
 }

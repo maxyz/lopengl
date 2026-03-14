@@ -4,7 +4,6 @@
 #include <fstream>
 #include <sstream>
 #include <iostream>
-using namespace std;
 #include <glad/glad.h> 
 
 class Shader
@@ -19,6 +18,7 @@ public:
 
     // Use the program
     void Use();
+    void setInt(const GLchar* uniformName, const int value);
 };
 
 #endif

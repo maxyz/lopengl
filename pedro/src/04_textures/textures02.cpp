@@ -1,8 +1,11 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <iostream>
-#include <cmath>
+#include <string>
 #include "shader/shader.h"
+#include "texture/texture.h"
+
+// NO ANDA Y NO SE POR QUÉ. ASUMO QUE ES PROBLEMA DE MI FRAG SHADER PERO TENGO LO MISMO QUE EL AUTOR
 
 typedef unsigned int uint;
 
@@ -16,11 +19,15 @@ int main()
     GLFWwindow *window = windowAndContext();
     if (window == NULL) return -1;
     
-    Shader shader("shader01.vs", "shader.frag");
-
+    Shader shader("shaders/shader01.vs", "shaders/shader02.frag");
     uint VAO;
 
     if (!setupBuffers(&VAO)) return -1;
+
+    Texture2D tex1("media/container.jpg", JPG, false), tex2("media/awesomeface.png", PNG, true);
+
+    shader.setInt("tex1", 0);
+    shader.setInt("tex2", 1);
 
     while(!glfwWindowShouldClose(window))
     {
@@ -32,9 +39,12 @@ int main()
 
         shader.Use();
 
+        tex1.Activate(0);
+        tex2.Activate(1);
+
         glBindVertexArray(VAO);
         
-        glDrawArrays(GL_TRIANGLES, 0, 3);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
         glfwSwapBuffers(window);
         glfwPollEvents();    
@@ -72,32 +82,44 @@ GLFWwindow* windowAndContext() {
 
 bool setupBuffers(uint *VAO) {
 
-    // set up vertex data (and buffer(s)) and configure vertex attributes
-    // ------------------------------------------------------------------
     float vertices[] = {
-        // Vertexes         // Colors
-        -0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f,
-         0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f,
-         0.0f,  0.5f, 0.0f, 0.0f, 0.0f, 1.0f,
-    }; 
+        // positions          // colors           // texture coords
+        0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f,   // top right
+        0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f,   // bottom right
+        -0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f,   // bottom left
+        -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f    // top left 
+    };
 
-    unsigned int VBO;
+    uint indices[] = {  // note that we start from 0!
+        0, 1, 3,   // first triangle
+        1, 2, 3    // second triangle
+    };  
+
+    uint VBO, EBO;
     glGenVertexArrays(1, VAO);
     glGenBuffers(1, &VBO);
+    glGenBuffers(1, &EBO);
+
     // bind the Vertex Array Object first, then bind and set vertex buffer(s), and then configure vertex attributes(s).
     glBindVertexArray(*VAO);
 
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-    // REVISAR INFO SOBRE ESTO CUANDO TENGA ACCESO AL LIBRO:
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+
     // Datos de posición
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
 
     // Datos de color
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
+
+    // Datos de textura
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+    glEnableVertexAttribArray(2);
 
     // note that this is allowed, the call to glVertexAttribPointer registered VBO as the vertex attribute's bound vertex buffer object so afterwards we can safely unbind
     glBindBuffer(GL_ARRAY_BUFFER, 0); 
@@ -121,3 +143,4 @@ void processInput(GLFWwindow *window)
         return;
     }        
 }
+

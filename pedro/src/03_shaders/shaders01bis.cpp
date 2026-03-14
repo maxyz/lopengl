@@ -206,7 +206,7 @@ void processInput(GLFWwindow *window, color* current_color)
 }
 
 void handleColor(float *r_p, float *g_p, float *b_p, color current_color) {
-    float delta = 0.01;
+    float delta = 0.05;
     float r = *r_p, g = *g_p, b = *b_p;
     switch (current_color)
         {

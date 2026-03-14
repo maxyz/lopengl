@@ -2,7 +2,7 @@
 #include <GLFW/glfw3.h>
 #include <iostream>
 #include <cmath>
-#include <shader/shader.cpp>
+#include "shader/shader.h"
 
 typedef unsigned int uint;
 
@@ -22,7 +22,7 @@ int main()
 
     if (!setupBuffers(&VAO)) return -1;
 
-    GLfloat current_offset = 0., step = 0.05;
+    GLfloat current_offset = 0., step = 0.01;
 
     while(!glfwWindowShouldClose(window))
     {
