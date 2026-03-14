@@ -25,6 +25,7 @@ std::expected<Image, std::string> load_image(const std::string &filename) {
   if (!path) {
     return std::unexpected(path.error());
   }
+  stbi_set_flip_vertically_on_load(true);
   Image image;
   auto data = stbi_load((*path).c_str(), &image.width, &image.height,
                         &image.nr_channels, 0);

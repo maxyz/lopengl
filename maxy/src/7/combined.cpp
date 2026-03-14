@@ -86,11 +86,11 @@ const unsigned int indices[] = {
 
 unsigned int buffers();
 std::expected<unsigned int, std::string>
-load_texture(const std::string &filename);
+load_texture(const std::string &filename, GLenum format = GL_RGB);
 
 std::expected<std::vector<std::function<void()>>, std::string> init_shaders() {
-  auto res = Shader::build("shaders/7_texture_disco.vert",
-                           "shaders/7_texture_disco.frag");
+  auto res =
+      Shader::build("shaders/7_combined.vert", "shaders/7_combined.frag");
   if (!res.has_value()) {
     return std::unexpected(res.error());
   }
@@ -102,18 +102,26 @@ std::expected<std::vector<std::function<void()>>, std::string> init_shaders() {
     return std::unexpected(texture_.error());
   }
   auto texture = *texture_;
-  texture_ = load_texture(std::string{"awesomeface.png"}, 1);
+  texture_ = load_texture("textures/awesomeface.png", GL_RGBA);
   if (!texture_) {
     return std::unexpected(texture_.error());
   }
+  auto texture1 = *texture_;
   auto vao = buffers();
 
-  auto f = [p, vao, texture]() {
+  auto f = [p, vao, texture, texture1]() {
     glUseProgram(p);
+    glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, texture);
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, texture1);
     glBindVertexArray(vao);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
   };
+
+  shader.use();
+  shader.setInt("texture1", 0);
+  shader.setInt("texture2", 1);
 
   std::vector<std::function<void()>> v{f};
   return v;
@@ -152,7 +160,7 @@ unsigned int buffers() {
 }
 
 std::expected<unsigned int, std::string>
-load_texture(const std::string &filename, unsigned int gl_texture = 0) {
+load_texture(const std::string &filename, GLenum format) {
   auto image = load_image(filename);
   if (!image) {
     return std::unexpected(image.error());
@@ -160,7 +168,6 @@ load_texture(const std::string &filename, unsigned int gl_texture = 0) {
 
   unsigned int texture;
   glGenTextures(1, &texture);
-  glActiveTexture(GL_TEXTURE0 + gl_texture);
   glBindTexture(GL_TEXTURE_2D, texture);
 
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -169,7 +176,7 @@ load_texture(const std::string &filename, unsigned int gl_texture = 0) {
                   GL_LINEAR_MIPMAP_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, image->width, image->height, 0, GL_RGB,
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, image->width, image->height, 0, format,
                GL_UNSIGNED_BYTE, image->data.get());
   glGenerateMipmap(GL_TEXTURE_2D);
 
