@@ -1,4 +1,4 @@
-default_target: textures-chapter textures-refactor textures-ej1 textures-ej2 textures-ej3
+default_target: textures-chapter textures-refactor textures-ej1 textures-ej2 textures-ej3 textures-ej4
 
 libGLAD.a: ../gl.c
 	gcc -I ../../include/ -c ../gl.c -o gl.o
@@ -24,6 +24,9 @@ textures-ej2: textures-ej2.cpp libGLAD.a stb_image.o shader.o texture.o
 textures-ej3: textures-ej3.cpp libGLAD.a stb_image.o shader.o texture.o
 	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
 
+textures-ej4: textures-ej4.cpp libGLAD.a stb_image.o shader.o texture.o
+	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
+
 texture.o: ../lib/texture.cpp ../lib/texture.h
 	g++ $(CPPFLAGS) -c $< -o $@
 
@@ -34,4 +37,4 @@ stb_image.o: ../lib/stb_image.cpp ../lib/stb_image.h
 	g++ $(CPPFLAGS) -c $< -o $@
 
 clean:
-	rm -f libGLAD.a gl.o stb_image.o shader.o texture.o textures-chapter textures-refactor textures-ej1 textures-ej2 textures-ej3
+	rm -f libGLAD.a gl.o stb_image.o shader.o texture.o textures-chapter textures-refactor textures-ej1 textures-ej2 textures-ej3 textures-ej4
