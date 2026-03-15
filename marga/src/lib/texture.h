@@ -17,6 +17,12 @@ public:
 
     // flip orientation
     static void flip_vertically();
+
+    // Change the wrap values
+    void set_wrap(GLenum wrap_value);
+
+    // Change the filtering values
+    void set_filter(GLenum filter_value);
 };
 
 #endif

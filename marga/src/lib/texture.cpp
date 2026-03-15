@@ -26,3 +26,18 @@ Texture::Texture(const char* filename, GLenum format)
 void Texture::flip_vertically() {
     stbi_set_flip_vertically_on_load(true);
 }
+
+void Texture::set_wrap(GLenum wrap_value)
+{
+    glBindTexture(GL_TEXTURE_2D, ID);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrap_value);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap_value);
+
+}
+
+void Texture::set_filter(GLenum filter_value)
+{
+    glBindTexture(GL_TEXTURE_2D, ID);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter_value);
+}
+
