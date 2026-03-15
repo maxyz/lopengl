@@ -5,8 +5,6 @@
 #include "shader/shader.h"
 #include "texture/texture.h"
 
-// NO ANDA Y NO SE POR QUÉ. ASUMO QUE ES PROBLEMA DE MI FRAG SHADER PERO TENGO LO MISMO QUE EL AUTOR
-
 typedef unsigned int uint;
 
 bool setupBuffers(uint *VAO);

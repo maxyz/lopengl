@@ -17,14 +17,14 @@ int main()
     GLFWwindow *window = windowAndContext();
     if (window == NULL) return -1;
     
-    Shader shader("shaders/shader01.vs", "shaders/shader02.frag");
+    Shader shader("shaders/shader_ej01.vs", "shaders/shader_ej01.frag");
     uint VAO;
 
     if (!setupBuffers(&VAO)) return -1;
 
     stbi_set_flip_vertically_on_load(true);
 
-    Texture2D tex1("media/container.jpg", JPG), tex2("media/awesomeface.png", PNG);
+    Texture2D tex1("../media/container.jpg", JPG), tex2("../media/awesomeface.png", PNG);
     
     shader.Use();
 
@@ -86,10 +86,10 @@ bool setupBuffers(uint *VAO) {
 
     float vertices[] = {
         // positions          // colors           // texture coords
-        0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f,   // top right
-        0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f,   // bottom right
+        0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   2.0f, 2.0f,   // top right
+        0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   2.0f, 0.0f,   // bottom right
         -0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f,   // bottom left
-        -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f    // top left 
+        -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 2.0f    // top left 
     };
 
     uint indices[] = {  // note that we start from 0!
