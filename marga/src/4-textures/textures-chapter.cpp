@@ -94,7 +94,7 @@ int main()
     stbi_image_free(data);
 
     // Read shaders
-    Shader ourShader("texture-shader.vs", "mixed-shader.fs");
+    Shader ourShader("shaders/texture-shader.vs", "shaders/mixed-shader.fs");
 
     // Rectangle with texture
     float vertices[] = {
