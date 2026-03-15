@@ -24,7 +24,11 @@ int main()
 
     if (!setupBuffers(&VAO)) return -1;
 
+    stbi_set_flip_vertically_on_load(true);
+    
     Texture2D tex1("media/container.jpg", JPG, false), tex2("media/awesomeface.png", PNG, true);
+    
+    shader.Use();
 
     shader.setInt("tex1", 0);
     shader.setInt("tex2", 1);
