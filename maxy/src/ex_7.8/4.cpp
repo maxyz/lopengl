@@ -133,12 +133,7 @@ std::expected<std::vector<cb_t>, std::string> init_shaders() {
     auto levelLocation = glGetUniformLocation(p, "level");
     GLfloat level;
     glGetUniformfv(p, levelLocation, &level);
-    level += delta;
-    if (level > 1.0f) {
-      level = 1.0f;
-    } else if (level < 0.0f) {
-      level = 0.0f;
-    }
+    level = std::clamp(level + delta, 0.f, 1.f);
     glUseProgram(p);
     glUniform1fv(levelLocation, 1, &level);
   };
