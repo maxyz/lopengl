@@ -5,7 +5,7 @@
 #include <iostream>
 #include <string>
 #include "shader/shader.h"
-#include "stb_image/stb_image.h"
+#include <stb/stb_image.h>
 
 typedef unsigned int uint;
 

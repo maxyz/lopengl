@@ -4,6 +4,9 @@
 #include <string>
 #include "shader/shader.h"
 #include "texture/texture.h"
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 typedef unsigned int uint;
 
@@ -17,7 +20,7 @@ int main()
     GLFWwindow *window = windowAndContext();
     if (window == NULL) return -1;
     
-    Shader shader("shaders/shader01.vs", "shaders/shader02.frag");
+    Shader shader("shaders/shader01.vs", "shaders/shader01.frag");
     uint VAO;
 
     if (!setupBuffers(&VAO)) return -1;
@@ -26,6 +29,11 @@ int main()
 
     Texture2D tex1("../media/container.jpg", JPG), tex2("../media/awesomeface.png", PNG);
     
+    glm::mat4 trans(1.0f);
+    // trans = glm::translate(trans, glm::vec3(1.0f,1.0f,0.0f));
+    trans = glm::rotate(trans, glm::radians(90.f), glm::vec3(0.0, 0.0, 1.0));
+    trans = glm::scale(trans, glm::vec3(0.5f, 0.5f, 0.5f));
+
     shader.Use();
 
     shader.setInt("tex1", 0);
@@ -43,6 +51,9 @@ int main()
 
         tex1.Activate(0);
         tex2.Activate(1);
+
+        uint transformLocation = glGetUniformLocation(shader.Program, "transform");
+        glUniformMatrix4fv(transformLocation, 1, GL_FALSE, glm::value_ptr(trans));
 
         glBindVertexArray(VAO);
         
@@ -85,11 +96,11 @@ GLFWwindow* windowAndContext() {
 bool setupBuffers(uint *VAO) {
 
     float vertices[] = {
-        // positions          // colors           // texture coords
-        0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f,   // top right
-        0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f,   // bottom right
-        -0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f,   // bottom left
-        -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f    // top left 
+        // positions         // texture coords
+        0.5f,  0.5f, 0.0f,   1.0f, 1.0f,   // top right
+        0.5f, -0.5f, 0.0f,   1.0f, 0.0f,   // bottom right
+        -0.5f, -0.5f, 0.0f,  0.0f, 0.0f,   // bottom left
+        -0.5f,  0.5f, 0.0f,  0.0f, 1.0f    // top left 
     };
 
     uint indices[] = {  // note that we start from 0!
@@ -112,16 +123,12 @@ bool setupBuffers(uint *VAO) {
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
     // Datos de posición
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
 
-    // Datos de color
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
-    glEnableVertexAttribArray(1);
-
     // Datos de textura
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
-    glEnableVertexAttribArray(2);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
 
     // note that this is allowed, the call to glVertexAttribPointer registered VBO as the vertex attribute's bound vertex buffer object so afterwards we can safely unbind
     glBindBuffer(GL_ARRAY_BUFFER, 0); 

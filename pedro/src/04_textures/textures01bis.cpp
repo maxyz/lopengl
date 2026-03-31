@@ -23,8 +23,7 @@ int main()
     if (!setupBuffers(&VAO)) return -1;
 
     // Texture2D texture("media/awesomeface.png", JPG, true);
-    Texture2D texture("media/container.jpg", JPG, false);
-
+    Texture2D texture("../media/container.jpg", JPG);
 
     while(!glfwWindowShouldClose(window))
     {
