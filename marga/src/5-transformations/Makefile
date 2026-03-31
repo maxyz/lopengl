@@ -1,4 +1,4 @@
-EXES = glm-example transforms transforms-ej1 transforms-ej2
+EXES = glm-example transforms transforms-ej1 transforms-ej2 transforms-extra
 
 default_target: $(EXES)
 
@@ -21,6 +21,9 @@ transforms-ej1: transforms-ej1.cpp libGLAD.a stb_image.o shader.o texture.o
 	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
 
 transforms-ej2: transforms-ej2.cpp libGLAD.a stb_image.o shader.o texture.o
+	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
+
+transforms-extra: transforms-extra.cpp libGLAD.a stb_image.o shader.o texture.o
 	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
 
 texture.o: ../lib/texture.cpp ../lib/texture.h
