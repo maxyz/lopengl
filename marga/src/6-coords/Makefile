@@ -1,4 +1,4 @@
-EXES = coords coords-cube many-cubes
+EXES = coords coords-cube many-cubes coords-ej1
 
 default_target: $(EXES)
 
@@ -8,8 +8,8 @@ libGLAD.a: ../gl.c
 	ranlib libGLAD.a
 
 LDFLAGS = -lglfw -lGL -lX11 -lpthread -lXrandr -lXi -ldl -g
-CPPFLAGS = -I ../../include/ -I ../lib/
-EXTRAS = /usr/lib/x86_64-linux-gnu/libglfw.so libGLAD.a
+CPPFLAGS = -I ../../include/ -I ../lib/ -I /usr/include/freetype2/
+EXTRAS = /usr/lib/x86_64-linux-gnu/libglfw.so /usr/lib/x86_64-linux-gnu/libftgl.so libGLAD.a
 
 # Libraries used by many chapters
 texture.o: ../lib/texture.cpp ../lib/texture.h
@@ -29,6 +29,9 @@ coords-cube: coords-cube.cpp libGLAD.a stb_image.o shader.o texture.o
 	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
 
 many-cubes: many-cubes.cpp libGLAD.a stb_image.o shader.o texture.o
+	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
+
+coords-ej1: coords-ej1.cpp libGLAD.a stb_image.o shader.o texture.o
 	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
 
 
