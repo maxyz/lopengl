@@ -65,8 +65,8 @@ int main()
 
     Texture::flip_vertically();
 
-    Texture texture1 = Texture("media/container.jpg", GL_RGB);
-    Texture texture2 = Texture("media/awesomeface.png", GL_RGBA);
+    Texture texture1 = Texture("../media/container.jpg", GL_RGB);
+    Texture texture2 = Texture("../media/awesomeface.png", GL_RGBA);
 
     // Read shaders
     Shader ourShader("shaders/vertex.glsl", "shaders/fragment.glsl");
