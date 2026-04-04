@@ -1,4 +1,4 @@
-EXES = coords
+EXES = coords coords-cube many-cubes
 
 default_target: $(EXES)
 
@@ -23,6 +23,12 @@ stb_image.o: ../lib/stb_image.cpp ../lib/stb_image.h
 
 # This chapter's files
 coords: coords.cpp libGLAD.a stb_image.o shader.o texture.o
+	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
+
+coords-cube: coords-cube.cpp libGLAD.a stb_image.o shader.o texture.o
+	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
+
+many-cubes: many-cubes.cpp libGLAD.a stb_image.o shader.o texture.o
 	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
 
 
