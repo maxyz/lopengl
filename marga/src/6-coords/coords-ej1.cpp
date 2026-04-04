@@ -1,17 +1,16 @@
 #include <glad/gl.h>
 #include <GLFW/glfw3.h>
 #include <iostream>
+#include <format>
 #include <cmath>
 #include "stb_image.h"
 #include "shader.h"
 #include "texture.h"
+#include "write_text.h"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
-
-// For writing text on the screen
-#include <FTGL/ftgl.h>
 
 #include "cube.cpp"
 
@@ -27,13 +26,13 @@ void processInput(GLFWwindow *window, float *fov, float *ratio)
     if(glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
     if(glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
-        *fov += 0.1;
+        *fov += 0.5;
     if(glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
-        *fov -= 0.1;
+        *fov -= 0.5;
     if(glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
-        *ratio += 0.1;
+        *ratio += 0.01;
     if(glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
-        *ratio -= 0.1;
+        *ratio -= 0.01;
 }
 
 int main()
@@ -64,7 +63,7 @@ int main()
     glViewport(0, 0, 800, 600);
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback); 
 
-    Texture::flip_vertically();
+    //Texture::flip_vertically();
 
     Texture texture1 = Texture("../media/container.jpg", GL_RGB);
     Texture texture2 = Texture("../media/awesomeface.png", GL_RGBA);
@@ -105,19 +104,14 @@ int main()
     ourShader.setInt("texture1", 0);
     ourShader.setInt("texture2", 1);
 
+    TextWriter writer = TextWriter("../media/Roboto-Regular.ttf");
+    Shader fontShader("shaders/font_vertex.glsl", "shaders/font_fragment.glsl");
+
     float fov = 45.0;
     float ratio = 800.0 / 600.0;
 
     // Enable depth testing
     glEnable(GL_DEPTH_TEST);  
-
-    // Create a pixmap font from a TrueType file.
-    FTGLPixmapFont font("../media/Roboto-Regular.ttf");
-    // If something went wrong, bail out.
-    if(font.Error()) {
-        std::cout << "Error opening font: " << font.Error() << std::endl;
-        return -1;
-    }
 
     // Render loop
     while(!glfwWindowShouldClose(window))
@@ -160,10 +154,20 @@ int main()
         // Draw all the triangles
         glDrawArrays(GL_TRIANGLES, 0, 36);
 
-        // Set the font size and render a small text.
-        glColor4f(0.0f,0.5f,0.5f,0.5f);
-        font.FaceSize(72);
-        font.Render("Hello World!");
+        // -*- Write text on screen -*-
+        fontShader.use();
+        fontShader.setVec4f("textColor", glm::value_ptr(glm::vec4(1.0f, 1.0f, 1.0f, 1.0f))); // white
+        // Orthographic projection: pixel coords, origin bottom-left
+        glm::mat4 textProj = glm::ortho(0.0f, 800.0f, 0.0f, 600.0f);
+        fontShader.setMatrix4fv("projection", glm::value_ptr(textProj));
+        // Position the text in the screen
+        glm::mat4 textModel = glm::translate(glm::mat4(1.0f), glm::vec3(10.0f, 550.0f, 0.0f));
+        fontShader.setMatrix4fv("model", glm::value_ptr(textModel));
+        writer.write( std::format("FOV: {:.2f}", fov) );
+        // Position the text in the screen
+        textModel = glm::translate(glm::mat4(1.0f), glm::vec3(10.0f, 510.0f, 0.0f));
+        fontShader.setMatrix4fv("model", glm::value_ptr(textModel));
+        writer.write( std::format("Ratio: {:.2f}", ratio) );
 
         // check and call events and swap buffers
         glfwPollEvents();         
