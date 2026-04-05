@@ -19,20 +19,36 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
     glViewport(0, 0, width, height);
 }
 
-void processInput(GLFWwindow *window, float *fov, float *ratio)
+void processInput(GLFWwindow *window, float *camx, float *camy, float *camz, float *rotx, float *roty, float *rotz)
 {
     if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
     if(glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
     if(glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
-        *fov += 0.5;
+        *camy -= 0.1;
     if(glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
-        *fov -= 0.5;
+        *camy += 0.1;
     if(glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
-        *ratio += 0.01;
+        *camx -= 0.1;
     if(glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
-        *ratio -= 0.01;
+        *camx += 0.1;
+    if(glfwGetKey(window, GLFW_KEY_PAGE_UP) == GLFW_PRESS)
+        *camz += 0.1;
+    if(glfwGetKey(window, GLFW_KEY_PAGE_DOWN) == GLFW_PRESS)
+        *camz -= 0.1;
+    if(glfwGetKey(window, GLFW_KEY_KP_4) == GLFW_PRESS)
+        *rotx -= 1;
+    if(glfwGetKey(window, GLFW_KEY_KP_6) == GLFW_PRESS)
+        *rotx += 1;
+    if(glfwGetKey(window, GLFW_KEY_KP_8) == GLFW_PRESS)
+        *roty -= 1;
+    if(glfwGetKey(window, GLFW_KEY_KP_2) == GLFW_PRESS)
+        *roty += 1;
+    if(glfwGetKey(window, GLFW_KEY_KP_9) == GLFW_PRESS)
+        *rotz -= 1;
+    if(glfwGetKey(window, GLFW_KEY_KP_3) == GLFW_PRESS)
+        *rotz += 1;
 }
 
 int main()
@@ -116,6 +132,8 @@ int main()
 
     float fov = 45.0;
     float ratio = 800.0 / 600.0;
+    float camx = 0.0f, camy = 0.0f, camz = -3.0f;
+    float rotx = 1.0f, roty = 1.0f, rotz = 1.0f;
 
     // Enable depth testing
     glEnable(GL_DEPTH_TEST);  
@@ -124,7 +142,7 @@ int main()
     while(!glfwWindowShouldClose(window))
     {
         // input
-        processInput(window, &fov, &ratio);
+        processInput(window, &camx, &camy, &camz, &rotx, &roty, &rotz);
         // rendering commands here
         glClearColor(0.5f, 0.3f, 0.5f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -143,7 +161,10 @@ int main()
         // ** View **
         glm::mat4 view = glm::mat4(1.0f);
         // note that we're translating the scene in the reverse direction of where we want to move
-        view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
+        view = glm::translate(view, glm::vec3(camx, camy, camz));
+        view = glm::rotate(view, glm::radians(rotx), glm::vec3(0.0f, 1.0f, 0.0f));
+        view = glm::rotate(view, glm::radians(roty), glm::vec3(1.0f, 0.0f, 0.0f));
+        view = glm::rotate(view, glm::radians(rotz), glm::vec3(0.0f, 0.0f, 1.0f));
         // ** Projection **
         glm::mat4 projection;
         projection = glm::perspective(glm::radians(fov), ratio, 0.1f, 100.0f);
@@ -158,7 +179,10 @@ int main()
         {
             glm::mat4 model = glm::mat4(1.0f);
             model = glm::translate(model, cubePositions[i]);
-            float angle = (float)glfwGetTime() *20.0f * (i+1); 
+            float angle = 20.0f * (i+1);
+            if (i % 3 == 0) {
+                angle = (float)glfwGetTime() * 45.0f;
+            } 
             model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
             ourShader.setMatrix4fv("model", glm::value_ptr(model));
             glDrawArrays(GL_TRIANGLES, 0, 36);
@@ -173,11 +197,11 @@ int main()
         // Position the text in the screen
         glm::mat4 textModel = glm::translate(glm::mat4(1.0f), glm::vec3(10.0f, 550.0f, 0.0f));
         fontShader.setMatrix4fv("model", glm::value_ptr(textModel));
-        writer.write( std::format("FOV: {:.2f}", fov) );
+        writer.write( std::format("Cam X: {:.2f} - Y: {:.2f} - Z: {:.2f}", camx, camy, camz) );
         // Position the text in the screen
         textModel = glm::translate(glm::mat4(1.0f), glm::vec3(10.0f, 510.0f, 0.0f));
         fontShader.setMatrix4fv("model", glm::value_ptr(textModel));
-        writer.write( std::format("Ratio: {:.2f}", ratio) );
+        writer.write( std::format("Rot X: {:.2f}, - Y: {:.2f} - Z: {:.2f}", rotx, roty, rotz) );
 
         // check and call events and swap buffers
         glfwPollEvents();         
