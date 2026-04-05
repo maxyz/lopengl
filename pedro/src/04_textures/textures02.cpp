@@ -2,8 +2,8 @@
 #include <GLFW/glfw3.h>
 #include <iostream>
 #include <string>
-#include "shader/shader.h"
-#include "texture/texture.h"
+#include "shader.h"
+#include "texture.h"
 
 typedef unsigned int uint;
 

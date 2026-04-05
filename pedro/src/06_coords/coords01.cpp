@@ -3,30 +3,12 @@
 #include <iostream>
 #include <string>
 #include "shader.h"
-#include <stb/stb_image.h>
+#include "texture.h"
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 typedef unsigned int uint;
-
-// int main() {
-
-//     uint texture;
-//     glGenTextures(1, &texture);
-//     glBindTexture(GL_TEXTURE_2D, texture);
-
-//     // parametros bastante standard para el wrapping y filtering
-//     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	
-//     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-//     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-//     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-//     int width, height, nrChannels;
-//     unsigned char *data = stbi_load("container.jpg", &width, &height, &nrChannels, 0);
-    
-//     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-//     glGenerateMipmap(GL_TEXTURE_2D);
-//     stbi_image_free(data);
-
-// }
 
 bool setupBuffers(uint *VAO);
 GLFWwindow* windowAndContext();
@@ -43,22 +25,14 @@ int main()
 
     if (!setupBuffers(&VAO)) return -1;
 
-    uint texture;
-    glGenTextures(1, &texture);
-    glBindTexture(GL_TEXTURE_2D, texture);
+    stbi_set_flip_vertically_on_load(true);
 
-    // parametros bastante standard para el wrapping y filtering
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-    int width, height, nrChannels;
-    unsigned char *data = stbi_load("media/container.jpg", &width, &height, &nrChannels, 0);
+    Texture2D tex1("../media/container.jpg", JPG), tex2("../media/awesomeface.png", PNG);
     
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-    glGenerateMipmap(GL_TEXTURE_2D);
-    stbi_image_free(data);
+    shader.Use();
+
+    shader.setInt("tex1", 0);
+    shader.setInt("tex2", 1);
 
     while(!glfwWindowShouldClose(window))
     {
@@ -70,7 +44,29 @@ int main()
 
         shader.Use();
 
-        glBindTexture(GL_TEXTURE_2D, texture);
+        tex1.Activate(0);
+        tex2.Activate(1);
+
+        // MODEL MATRIX
+        glm::mat4 model = glm::mat4(1.0f);
+        model = glm::rotate(model, glm::radians(-55.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+
+        int modelLoc = glGetUniformLocation(shader.Program, "model");
+        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+
+        // VIEW MATRIX
+        glm::mat4 view = glm::mat4(1.0f);
+        view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
+
+        int viewLoc = glGetUniformLocation(shader.Program, "view");
+        glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+
+        // PROJECTION MATRIX
+        glm::mat4 projection;
+        projection = glm::perspective(glm::radians(45.0f), 800.0f / 600.0f, 0.1f, 100.0f);
+
+        int projectionLoc = glGetUniformLocation(shader.Program, "projection");
+        glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
 
         glBindVertexArray(VAO);
         
@@ -173,4 +169,3 @@ void processInput(GLFWwindow *window)
         return;
     }        
 }
-
