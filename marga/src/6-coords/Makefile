@@ -1,4 +1,4 @@
-EXES = coords coords-cube many-cubes coords-ej1 coords-ej2 coords-ej3
+EXES = coords coords-cube many-cubes coords-ej1 coords-ej2 coords-ej3 coords-extra
 
 default_target: $(EXES)
 
@@ -44,6 +44,9 @@ coords-ej3: coords-ej3.cpp libGLAD.a stb_image.o stb_truetype.o shader.o texture
 	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
 
 coords-ej2: coords-ej2.cpp libGLAD.a stb_image.o stb_truetype.o shader.o texture.o write_text.o
+	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
+
+coords-extra: coords-extra.cpp libGLAD.a stb_image.o stb_truetype.o shader.o texture.o write_text.o
 	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
 
 
