@@ -24,3 +24,5 @@ add_subdirectory(ex_8.19)
 
 add_subdirectory(9)
 add_subdirectory(ex_9.9)
+
+add_subdirectory(10)

@@ -1,0 +1,386 @@
+#include <cmath>
+#include <expected>
+#include <functional>
+#include <glm/geometric.hpp>
+#include <iostream>
+#include <vector>
+
+#include <glad/gl.h>
+
+#include <GLFW/glfw3.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+#include <stb_image.h>
+
+#include "common/assets.hpp"
+#include "common/shader.hpp"
+
+const char *TITLE = "LOpenGL";
+const GLuint WIDTH = 800;
+const GLuint HEIGHT = 600;
+
+enum event_t {
+  NONE = 0,
+  increase_fov = 1 << 0,
+  decrease_fov = 1 << 1,
+  camera_up = 1 << 2,
+  camera_down = 1 << 3,
+  camera_left = 1 << 4,
+  camera_right = 1 << 5,
+  camera_for = 1 << 6,
+  camera_back = 1 << 7,
+  camera_yaw_left = 1 << 8,
+  camera_yaw_right = 1 << 9,
+};
+
+using cb_t = std::function<void(uint64_t, float)>;
+using cbs_t = std::vector<cb_t>;
+
+std::expected<GLFWwindow *, std::string> init_window();
+std::expected<cbs_t, std::string> init_shaders();
+std::expected<void, std::string> init_textures();
+
+void event_loop(GLFWwindow *window, cbs_t cbs);
+
+int main() {
+  auto window = init_window();
+  if (!window) {
+    std::cerr << window.error() << std::endl;
+    return -1;
+  }
+
+  auto res = init_shaders();
+  if (!res) {
+    std::cerr << res.error() << std::endl;
+    return -1;
+  }
+  event_loop(*window, *res);
+
+  glfwTerminate();
+  return 0;
+}
+
+void framebufferSizeCallback(GLFWwindow *window, int width, int height);
+
+std::expected<GLFWwindow *, std::string> init_window() {
+  glfwInit();
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
+  GLFWwindow *window = glfwCreateWindow(WIDTH, HEIGHT, TITLE, NULL, NULL);
+  if (window == NULL) {
+    glfwTerminate();
+    return std::unexpected("failed to create GLFW window");
+  }
+  glfwMakeContextCurrent(window);
+  int version = gladLoadGL(glfwGetProcAddress);
+  if (version == 0) {
+    glfwTerminate();
+    return std::unexpected("failed to init glad on top of glfw");
+  }
+  glViewport(0, 0, WIDTH, HEIGHT);
+  glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
+  glEnable(GL_DEPTH_TEST);
+
+  return window;
+}
+
+void framebufferSizeCallback(GLFWwindow *window, int width, int height) {
+  glViewport(0, 0, width, height);
+}
+
+const float h = std::sin(M_PI / 3);
+
+const float vertices[] = {
+    -.5f, -.5f, -.5f, .0f, .0f, // back
+    .5f,  -.5f, -.5f, 1.f, .0f, // back
+    .5f,  .5f,  -.5f, 1.f, 1.f, // back
+    .5f,  .5f,  -.5f, 1.f, 1.f, // back 2
+    -.5f, .5f,  -.5f, .0f, 1.f, // back 2
+    -.5f, -.5f, -.5f, .0f, .0f, // back 2
+
+    .5f,  -.5f, .5f,  .0f, .0f, // front
+    -.5f, -.5f, .5f,  1.f, .0f, // front
+    -.5f, .5f,  .5f,  1.f, 1.f, // front
+    -.5f, .5f,  .5f,  1.f, 1.f, // front 2
+    .5f,  .5f,  .5f,  .0f, 1.f, // front 2
+    .5f,  -.5f, .5f,  .0f, .0f, // front 2
+
+    -.5f, -.5f, .5f,  .0f, .0f, // left
+    -.5f, -.5f, -.5f, 1.f, .0f, // left
+    -.5f, .5f,  -.5f, 1.f, 1.f, // left
+    -.5f, .5f,  -.5f, 1.f, 1.f, // left 2
+    -.5f, .5f,  .5f,  .0f, 1.f, // left 2
+    -.5f, -.5f, .5f,  .0f, .0f, // left 2
+
+    .5f,  -.5f, -.5f, .0f, .0f, // right
+    .5f,  -.5f, .5f,  1.f, .0f, // right
+    .5f,  .5f,  .5f,  1.f, 1.f, // right
+    .5f,  .5f,  .5f,  1.f, 1.f, // right 2
+    .5f,  .5f,  -.5f, .0f, 1.f, // right 2
+    .5f,  -.5f, -.5f, .0f, .0f, // right 2
+
+    -.5f, -.5f, -.5f, .0f, .0f, // bottom
+    .5f,  -.5f, -.5f, 1.f, .0f, // bottom
+    .5f,  -.5f, .5f,  1.f, 1.f, // bottom
+    .5f,  -.5f, .5f,  1.f, 1.f, // bottom 2
+    -.5f, -.5f, .5f,  .0f, 1.f, // bottom 2
+    -.5f, -.5f, -.5f, .0f, .0f, // bottom 2
+
+    -.5f, .5f,  .5f,  .0f, .0f, // top
+    .5f,  .5f,  .5f,  1.f, .0f, // top
+    .5f,  .5f,  -.5f, 1.f, 1.f, // top
+    .5f,  .5f,  -.5f, 1.f, 1.f, // top 2
+    -.5f, .5f,  -.5f, .0f, 1.f, // top 2
+    -.5f, .5f,  .5f,  .0f, .0f, // top 2
+
+};
+
+glm::vec3 cubePositions[] = {
+    glm::vec3(0.0f, 0.0f, 0.0f),    glm::vec3(2.0f, 5.0f, -15.0f),
+    glm::vec3(-1.5f, -2.2f, -2.5f), glm::vec3(-3.8f, -2.0f, -12.3f),
+    glm::vec3(2.4f, -0.4f, -3.5f),  glm::vec3(-1.7f, 3.0f, -7.5f),
+    glm::vec3(1.3f, -2.0f, -2.5f),  glm::vec3(1.5f, 2.0f, -2.5f),
+    glm::vec3(1.5f, 0.2f, -1.5f),   glm::vec3(-1.3f, 1.0f, -1.5f)};
+
+unsigned int buffers();
+std::expected<unsigned int, std::string>
+load_texture(const std::string &filename, GLenum format = GL_RGB);
+
+glm::vec3 camera_front = glm::vec3(0.f, 0.f, -1.f);
+glm::vec3 camera_pos = glm::vec3(0.f, 0.f, 3.f);
+float fov = 45.f;
+
+const glm::vec3 UP = glm::vec3(0.f, 1.f, 0.f);
+const float CAM_SPEED = 3.f;
+const auto radius = 10.f;
+
+std::expected<cbs_t, std::string> init_shaders() {
+  auto res = Shader::build("shaders/10_camera_circle.vert",
+                           "shaders/10_camera_circle.frag");
+  if (!res.has_value()) {
+    return std::unexpected(res.error());
+  }
+  auto shader = *res;
+  auto p = shader.ID;
+  const std::string filename{"textures/container.jpg"};
+  auto texture_ = load_texture(filename);
+  if (!texture_) {
+    return std::unexpected(texture_.error());
+  }
+  auto texture = *texture_;
+  texture_ = load_texture("textures/awesomeface.png", GL_RGBA);
+  if (!texture_) {
+    return std::unexpected(texture_.error());
+  }
+  auto texture1 = *texture_;
+  auto vao = buffers();
+
+  auto f = [p, vao, texture, texture1](uint64_t e, float delta) {
+    if (e & event_t::increase_fov) {
+      fov += 1.f;
+    }
+    if (e & event_t::decrease_fov) {
+      fov -= 1.f;
+    }
+    if (e & event_t::camera_up) {
+      camera_pos.y += delta * CAM_SPEED;
+    }
+    if (e & event_t::camera_down) {
+      camera_pos.y -= delta * CAM_SPEED;
+    }
+    if (e & event_t::camera_left) {
+      camera_pos -=
+          delta * CAM_SPEED * glm::normalize(glm::cross(camera_front, UP));
+    }
+    if (e & event_t::camera_right) {
+      camera_pos +=
+          delta * CAM_SPEED * glm::normalize(glm::cross(camera_front, UP));
+    }
+    if (e & event_t::camera_for) {
+      camera_pos += delta * CAM_SPEED * camera_front;
+    }
+    if (e & event_t::camera_back) {
+      camera_pos -= delta * CAM_SPEED * camera_front;
+    }
+    if (e & event_t::camera_yaw_left) {
+      camera_front = glm::normalize(
+          camera_front - .5f * delta * CAM_SPEED *
+                             glm::normalize(glm::cross(camera_front, UP)));
+    }
+    if (e & event_t::camera_yaw_right) {
+      camera_front = glm::normalize(
+          camera_front + .5f * delta * CAM_SPEED *
+                             glm::normalize(glm::cross(camera_front, UP)));
+      ;
+    }
+    glUseProgram(p);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, texture);
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, texture1);
+
+    glm::mat4 model;
+
+    // float camX = sin(glfwGetTime()) * radius;
+    // float camZ = cos(glfwGetTime()) * radius;
+    // glm::vec3 circle = glm::vec3{camX, 0, camZ};
+
+    // glm::mat4 view = glm::translate(glm::mat4(1.f), camera_pos);
+    glm::mat4 view = glm::lookAt(camera_pos, camera_pos + camera_front, UP);
+
+    glm::mat4 projection = glm::perspective(
+        glm::radians(fov),
+        static_cast<float>(WIDTH) / static_cast<float>(HEIGHT), .1f, 100.f);
+
+    GLint loc;
+
+    loc = glGetUniformLocation(p, "view");
+    glUniformMatrix4fv(loc, 1, GL_FALSE, glm::value_ptr(view));
+
+    loc = glGetUniformLocation(p, "projection");
+    glUniformMatrix4fv(loc, 1, GL_FALSE, glm::value_ptr(projection));
+
+    glBindVertexArray(vao);
+    float angle;
+
+    for (unsigned int i = 0; i < 10; ++i) {
+      angle = 20.f * i;
+      if (i % 3 == 0)
+        angle = glfwGetTime() * 25.f;
+      model = glm::translate(glm::mat4(1.f), cubePositions[i]);
+      model = glm::rotate(model, glm::radians(angle), glm::vec3(1.f, .3f, .5f));
+      loc = glGetUniformLocation(p, "model");
+      glUniformMatrix4fv(loc, 1, GL_FALSE, glm::value_ptr(model));
+
+      glDrawArrays(GL_TRIANGLES, 0, 36);
+    }
+  };
+
+  shader.use();
+  shader.setInt("texture1", 0);
+  shader.setInt("texture2", 1);
+
+  cbs_t v{f};
+  return v;
+}
+
+unsigned int buffers() {
+  unsigned int VAO;
+  unsigned int VBO;
+  glGenVertexArrays(1, &VAO);
+  glGenBuffers(1, &VBO);
+
+  glBindVertexArray(VAO);
+
+  glBindBuffer(GL_ARRAY_BUFFER, VBO);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)0);
+  glEnableVertexAttribArray(0);
+  glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float),
+                        (void *)(3 * (sizeof(float))));
+  glEnableVertexAttribArray(1);
+
+  glBindVertexArray(0);
+
+  return VAO;
+}
+
+std::expected<unsigned int, std::string>
+load_texture(const std::string &filename, GLenum format) {
+  auto image = load_image(filename);
+  if (!image) {
+    return std::unexpected(image.error());
+  }
+
+  unsigned int texture;
+  glGenTextures(1, &texture);
+  glBindTexture(GL_TEXTURE_2D, texture);
+
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
+                  GL_LINEAR_MIPMAP_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, image->width, image->height, 0, format,
+               GL_UNSIGNED_BYTE, image->data.get());
+  glGenerateMipmap(GL_TEXTURE_2D);
+
+  return texture;
+}
+
+void processInput(GLFWwindow *window, uint64_t &e);
+
+struct delta_t {
+  float last;  // Time of last frame
+  float delta; // Time between current frame and last frame
+};
+
+void update_delta(delta_t &delta) {
+  float now = glfwGetTime();
+  delta.delta = now - delta.last;
+  delta.last = now;
+}
+
+void event_loop(GLFWwindow *window,
+                std::vector<std::function<void(uint64_t, float)>> cbs) {
+  uint64_t e;
+
+  delta_t delta{};
+
+  while (!glfwWindowShouldClose(window)) {
+    update_delta(delta);
+
+    e = event_t::NONE;
+    processInput(window, e);
+    glClearColor(.2f, .3f, .3f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    for (auto cb : cbs) {
+      cb(e, delta.delta);
+    }
+
+    glfwSwapBuffers(window);
+    glfwPollEvents();
+  }
+}
+
+void processInput(GLFWwindow *window, uint64_t &e) {
+  if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
+    glfwSetWindowShouldClose(window, true);
+  }
+  if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
+    e |= event_t::increase_fov;
+  }
+  if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
+    e |= event_t::decrease_fov;
+  }
+  if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS) {
+    e |= event_t::camera_up;
+  }
+  if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS) {
+    e |= event_t::camera_down;
+  }
+  if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) {
+    e |= event_t::camera_left;
+  }
+  if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) {
+    e |= event_t::camera_right;
+  }
+  if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+    e |= event_t::camera_for;
+  }
+  if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+    e |= event_t::camera_back;
+  }
+  if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+    e |= event_t::camera_yaw_left;
+  }
+  if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+    e |= event_t::camera_yaw_right;
+  }
+}
