@@ -7,3 +7,9 @@ add_custom_command(TARGET 10_camera_circle POST_BUILD
 
 add_executable(10_walk_around walk_around.cpp)
 target_link_libraries(10_walk_around ${LIBS})
+
+add_executable(10_mouse_input mouse_input.cpp)
+target_link_libraries(10_mouse_input ${LIBS})
+
+add_executable(10_camera_class camera_class.cpp)
+target_link_libraries(10_camera_class ${LIBS})
