@@ -219,41 +219,41 @@ void processInput(GLFWwindow *window, float &fov, glm::vec3 &cameraPos)
 
     if(glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS) {
         fov += 1.0f;
-        return;
+    
     }
 
     if(glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS) {
         fov -= 1.0f;
-        return;
+        
     }
 
     if(glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
         cameraPos += glm::vec3(0.0f, 0.0f, 0.1f);
-        return;
+        
     }
 
     if(glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
         cameraPos -= glm::vec3(0.0f, 0.0f, 0.1f);
-        return;
+        
     }
 
     if(glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
         cameraPos += glm::vec3(0.1f, 0.0f, 0.0f);
-        return;
+        
     }
 
     if(glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
         cameraPos -= glm::vec3(0.1f, 0.0f, 0.0f);
-        return;
+        
     }
 
     if(glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
         cameraPos -= glm::vec3(0.0f, 0.1f, 0.0f);
-        return;
+        
     }
 
     if(glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
         cameraPos += glm::vec3(0.0f, 0.1f, 0.0f);
-        return;
+        
     }
 }
