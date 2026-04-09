@@ -38,18 +38,25 @@ public:
     update_vectors();
   }
 
+  bool fly() { return m_fly; }
+  void fly(const bool fly) { m_fly = fly; }
+
   glm::mat4 get_view_matrix() {
     return glm::lookAt(position, position + front, up);
   }
 
   void process_movement(CameraMovement direction, float delta) {
     float velocity = speed * delta;
+    glm::vec3 f = front;
+    if (!m_fly) {
+      f = glm::cross(world_up, right);
+    }
     switch (direction) {
     case FORWARD:
-      position += front * velocity;
+      position += f * velocity;
       break;
     case BACKWARD:
-      position -= front * velocity;
+      position -= f * velocity;
       break;
     case LEFT:
       position -= right * velocity;
@@ -83,6 +90,8 @@ public:
   void update_fov(float delta) { fov = std::clamp(fov + delta, 1.f, 90.f); }
 
 private:
+  bool m_fly = true;
+
   void update_vectors() {
     glm::vec3 f;
     f.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
