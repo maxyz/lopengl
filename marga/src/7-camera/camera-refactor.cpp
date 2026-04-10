@@ -15,9 +15,42 @@
 
 #include "cube.cpp"
 
-void framebuffer_size_callback(GLFWwindow* window, int width, int height)
+const int INITIAL_WIDTH = 800;
+const int INITIAL_HEIGHT = 600;
+
+float width = (float) INITIAL_WIDTH, height = (float) INITIAL_HEIGHT;
+
+void framebuffer_size_callback(GLFWwindow* window, int _width, int _height)
 {
     glViewport(0, 0, width, height);
+    width = (float) _width;
+    height = (float) _height;
+
+}
+
+// Mouse input requires a number of global variables :-/
+Camera camera = Camera(glm::vec3(0.0f, 0.0f, 3.0f));
+double lastX = 400, lastY = 300;
+bool firstMouse = true;
+
+// Handle mouse input
+void mouse_callback(GLFWwindow* window, double xpos, double ypos)
+{
+    float xoffset = xpos - lastX;
+    float yoffset = lastY - ypos; // reversed since y-coordinates range from bottom to top
+    lastX = xpos;
+    lastY = ypos;
+
+    if (firstMouse) {
+        firstMouse = false;
+        return;
+    }
+    camera.ProcessMouseMovement(xoffset, yoffset);
+}
+
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
+{
+    camera.ProcessMouseScroll(yoffset);
 }
 
 void processInput(GLFWwindow *window, float deltaTime, Camera &camera)
@@ -44,44 +77,20 @@ void processInput(GLFWwindow *window, float deltaTime, Camera &camera)
 
     if (direction != NONE)
         camera.ProcessKeyboard(direction, deltaTime);
-/*    if(glfwGetKey(window, GLFW_KEY_KP_4) == GLFW_PRESS)
-        *rotx -= 1;
-    if(glfwGetKey(window, GLFW_KEY_KP_6) == GLFW_PRESS)
-        *rotx += 1;
-    if(glfwGetKey(window, GLFW_KEY_KP_8) == GLFW_PRESS)
-        *roty -= 1;
-    if(glfwGetKey(window, GLFW_KEY_KP_2) == GLFW_PRESS)
-        *roty += 1;
-    if(glfwGetKey(window, GLFW_KEY_KP_9) == GLFW_PRESS)
-        *rotz -= 1;
-    if(glfwGetKey(window, GLFW_KEY_KP_3) == GLFW_PRESS)
-        *rotz += 1;*/
-}
 
-// Mouse input requires a number of global variables :-/
-float lastX = 400, lastY = 300;
-bool firstMouse = true;
-Camera camera = Camera(glm::vec3(0.0f, 0.0f, 3.0f));
-
-void mouse_callback(GLFWwindow* window, double xpos, double ypos)
-{
-    float xoffset = xpos - lastX;
-    float yoffset = lastY - ypos; // reversed since y-coordinates range from bottom to top
-    lastX = xpos;
-    lastY = ypos;
-
-    if (firstMouse) {
-        firstMouse = false;
-        return;
+    // Right click releases the mouse
+    if(glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_2) == GLFW_PRESS) {
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+        glfwSetCursorPosCallback(window, NULL);
     }
-    camera.ProcessMouseMovement(xoffset, yoffset);
+    // Left click captures the mouse again
+    if(glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_1) == GLFW_PRESS) {
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+        glfwGetCursorPos(window, &lastX, &lastY);
+        firstMouse = true;
+        glfwSetCursorPosCallback(window, mouse_callback);
+    }
 }
-
-void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
-{
-    camera.ProcessMouseScroll(yoffset);
-}
-
 
 int main()
 {
@@ -89,9 +98,8 @@ int main()
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    //glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
   
-    GLFWwindow* window = glfwCreateWindow(800, 600, "Coordinate Systems", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(INITIAL_WIDTH, INITIAL_HEIGHT, "Camera", NULL, NULL);
     if (window == NULL)
     {
         std::cout << "Failed to create GLFW window" << std::endl;
@@ -108,7 +116,7 @@ int main()
     }
 
     // Initial size and call back for resizing
-    glViewport(0, 0, 800, 600);
+    glViewport(0, 0, INITIAL_WIDTH, INITIAL_HEIGHT);
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback); 
 
     Texture::flip_vertically();
@@ -162,8 +170,6 @@ int main()
     TextWriter writer = TextWriter("../media/Roboto-Regular.ttf");
     Shader fontShader("shaders/font_vertex.glsl", "shaders/font_fragment.glsl");
 
-    float ratio = 800.0 / 600.0;
-
     float deltaTime = 0.0f;	// Time between current frame and last frame
     float lastFrame = 0.0f; // Time of last frame
 
@@ -202,14 +208,12 @@ int main()
         // Coordinate matrixes
         // ** View **
         glm::mat4 view = camera.GetViewMatrix();
-        //
         // ** Projection **
         glm::mat4 projection;
-        projection = glm::perspective(glm::radians(camera.Zoom), ratio, 0.1f, 100.0f);
+        projection = glm::perspective(glm::radians(camera.Zoom), width/height, 0.1f, 100.0f);
 
         ourShader.setMatrix4fv("view", glm::value_ptr(view));
         ourShader.setMatrix4fv("projection", glm::value_ptr(projection));
-
 
         // Draw each of the 10 cubes, with a different model matrix
         glBindVertexArray(VAO);
@@ -230,15 +234,15 @@ int main()
         fontShader.use();
         fontShader.setVec4f("textColor", glm::value_ptr(glm::vec4(1.0f, 1.0f, 1.0f, 1.0f))); // white
         // Orthographic projection: pixel coords, origin bottom-left
-        glm::mat4 textProj = glm::ortho(0.0f, 800.0f, 0.0f, 600.0f);
+        glm::mat4 textProj = glm::ortho(0.0f, width, 0.0f, height);
         fontShader.setMatrix4fv("projection", glm::value_ptr(textProj));
         // Position the text in the screen
-        glm::mat4 textModel = glm::translate(glm::mat4(1.0f), glm::vec3(10.0f, 550.0f, 0.0f));
+        glm::mat4 textModel = glm::translate(glm::mat4(1.0f), glm::vec3(10.0f, height-30.0, 0.0f));
         fontShader.setMatrix4fv("model", glm::value_ptr(textModel));
         writer.write( std::format("Pos ({:.2f}, {:.2f}, {:.2f})", camera.Position.x, camera.Position.y, camera.Position.z) );
 
         // Position the text in the screen
-        textModel = glm::translate(glm::mat4(1.0f), glm::vec3(10.0f, 510.0f, 0.0f));
+        textModel = glm::translate(glm::mat4(1.0f), glm::vec3(10.0f, height-70.0, 0.0f));
         fontShader.setMatrix4fv("model", glm::value_ptr(textModel));
         writer.write( std::format("Front ({:.2f}, {:.2f}, {:.2f})", camera.Front.x, camera.Front.y, camera.Front.z) );
 
