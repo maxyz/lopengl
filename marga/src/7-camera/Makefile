@@ -1,4 +1,4 @@
-EXES = camera-keyb camera-move camera-refactor camera-ej1
+EXES = camera-keyb camera-move camera-refactor camera-ej1 camera-ej2
 
 default_target: $(EXES)
 
@@ -40,6 +40,8 @@ camera-refactor: camera-refactor.cpp libGLAD.a stb_image.o shader.o texture.o wr
 camera-ej1: camera-ej1.cpp libGLAD.a stb_image.o shader.o texture.o write_text.o stb_truetype.o ../lib/camera-fps.h
 	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
 
+camera-ej2: camera-ej2.cpp libGLAD.a stb_image.o shader.o texture.o write_text.o stb_truetype.o
+	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
 
 
 clean:
