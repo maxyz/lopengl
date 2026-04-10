@@ -56,7 +56,9 @@ public:
     void moveLeft();
     void moveRight();
     void moveFront();
+    void moveFrontPlane();
     void moveBack();
+    void moveBackPlane();
     void moveUp();
     void moveWorldUp();
     void moveDown();

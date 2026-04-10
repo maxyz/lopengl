@@ -1,19 +1,27 @@
 #include "camera.h"
 
 void Camera::moveLeft(){
-    position -= glm::normalize(glm::cross(front, up)) * deltaSpeed;
+    position -= right * deltaSpeed;
 }
 
 void Camera::moveRight(){
-    position += glm::normalize(glm::cross(front, up)) * deltaSpeed;
+    position += right * deltaSpeed;
 }
 
 void Camera::moveFront() {
     position += deltaSpeed * front;
 }
 
+void Camera::moveFrontPlane() {
+    position += deltaSpeed * glm::normalize(glm::vec3(front.x, 0.0f, front.z));
+}
+
 void Camera::moveBack() {
     position -= deltaSpeed * front;
+}
+
+void Camera::moveBackPlane() {
+    position -= deltaSpeed * glm::normalize(glm::vec3(front.x, 0.0f, front.z));
 }
 
 void Camera::moveUp() {
