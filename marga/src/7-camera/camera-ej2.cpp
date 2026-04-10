@@ -14,47 +14,21 @@
 
 #include "cube.cpp"
 
-void framebuffer_size_callback(GLFWwindow* window, int width, int height)
+const int INITIAL_WIDTH = 800;
+const int INITIAL_HEIGHT = 600;
+
+float width = (float) INITIAL_WIDTH, height = (float) INITIAL_HEIGHT;
+
+void framebuffer_size_callback(GLFWwindow* window, int _width, int _height)
 {
     glViewport(0, 0, width, height);
-}
+    width = (float) _width;
+    height = (float) _height;
 
-void processInput(GLFWwindow *window, float deltaTime, glm::vec3 *cameraPos, glm::vec3 *cameraFront, glm::vec3 *cameraUp)
-{
-    if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-        glfwSetWindowShouldClose(window, true);
-    if(glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
-        glfwSetWindowShouldClose(window, true);
-
-    const float cameraSpeed = 2.5f * deltaTime;
-    if(glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
-        *cameraPos += cameraSpeed * *cameraUp;
-    if(glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
-        *cameraPos -= cameraSpeed * *cameraUp;
-    if(glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
-        *cameraPos += glm::normalize(glm::cross(*cameraFront, *cameraUp)) * cameraSpeed;;
-    if(glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
-        *cameraPos -= glm::normalize(glm::cross(*cameraFront, *cameraUp)) * cameraSpeed;;
-    if(glfwGetKey(window, GLFW_KEY_PAGE_UP) == GLFW_PRESS)
-        *cameraPos += cameraSpeed * *cameraFront;
-    if(glfwGetKey(window, GLFW_KEY_PAGE_DOWN) == GLFW_PRESS)
-        *cameraPos -= cameraSpeed * *cameraFront;
-/*    if(glfwGetKey(window, GLFW_KEY_KP_4) == GLFW_PRESS)
-        *rotx -= 1;
-    if(glfwGetKey(window, GLFW_KEY_KP_6) == GLFW_PRESS)
-        *rotx += 1;
-    if(glfwGetKey(window, GLFW_KEY_KP_8) == GLFW_PRESS)
-        *roty -= 1;
-    if(glfwGetKey(window, GLFW_KEY_KP_2) == GLFW_PRESS)
-        *roty += 1;
-    if(glfwGetKey(window, GLFW_KEY_KP_9) == GLFW_PRESS)
-        *rotz -= 1;
-    if(glfwGetKey(window, GLFW_KEY_KP_3) == GLFW_PRESS)
-        *rotz += 1;*/
 }
 
 // Mouse input requires a number of global variables :-/
-float lastX = 400, lastY = 300;
+double lastX = 400, lastY = 300;
 float yaw = -90.0f, pitch = 0.0f;
 bool firstMouse = true;
 
@@ -97,6 +71,42 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
         fov = 60.0f;
 }
 
+void processInput(GLFWwindow *window, float deltaTime, glm::vec3 *cameraPos, glm::vec3 *cameraFront, glm::vec3 *cameraUp)
+{
+    if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+        glfwSetWindowShouldClose(window, true);
+    if(glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
+        glfwSetWindowShouldClose(window, true);
+
+    const float cameraSpeed = 2.5f * deltaTime;
+    if(glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
+        *cameraPos += cameraSpeed * *cameraUp;
+    if(glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
+        *cameraPos -= cameraSpeed * *cameraUp;
+    if(glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
+        *cameraPos += glm::normalize(glm::cross(*cameraFront, *cameraUp)) * cameraSpeed;;
+    if(glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
+        *cameraPos -= glm::normalize(glm::cross(*cameraFront, *cameraUp)) * cameraSpeed;;
+    if(glfwGetKey(window, GLFW_KEY_PAGE_UP) == GLFW_PRESS)
+        *cameraPos += cameraSpeed * *cameraFront;
+    if(glfwGetKey(window, GLFW_KEY_PAGE_DOWN) == GLFW_PRESS)
+        *cameraPos -= cameraSpeed * *cameraFront;
+
+    // Right click releases the mouse
+    if(glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_2) == GLFW_PRESS) {
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+        glfwSetCursorPosCallback(window, NULL);
+    }
+    // Left click captures the mouse again
+    if(glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_1) == GLFW_PRESS) {
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+        glfwGetCursorPos(window, &lastX, &lastY);
+        firstMouse = true;
+        glfwSetCursorPosCallback(window, mouse_callback);
+    }
+}
+
+
 
 glm::mat4 my_lookAt(glm::vec3 P, glm::vec3 target, glm::vec3 up)
 {
@@ -123,7 +133,7 @@ int main()
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     //glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
   
-    GLFWwindow* window = glfwCreateWindow(800, 600, "Coordinate Systems", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(INITIAL_WIDTH, INITIAL_HEIGHT, "Coordinate Systems", NULL, NULL);
     if (window == NULL)
     {
         std::cout << "Failed to create GLFW window" << std::endl;
@@ -140,7 +150,7 @@ int main()
     }
 
     // Initial size and call back for resizing
-    glViewport(0, 0, 800, 600);
+    glViewport(0, 0, INITIAL_WIDTH, INITIAL_HEIGHT);
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback); 
 
     Texture::flip_vertically();
@@ -194,8 +204,6 @@ int main()
     TextWriter writer = TextWriter("../media/Roboto-Regular.ttf");
     Shader fontShader("shaders/font_vertex.glsl", "shaders/font_fragment.glsl");
 
-    float ratio = 800.0 / 600.0;
-
     glm::vec3 cameraPos   = glm::vec3(0.0f, 0.0f,  3.0f);
     glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
     glm::vec3 cameraUp    = glm::vec3(0.0f, 1.0f,  0.0f);
@@ -248,7 +256,7 @@ int main()
         //
         // ** Projection **
         glm::mat4 projection;
-        projection = glm::perspective(glm::radians(fov), ratio, 0.1f, 100.0f);
+        projection = glm::perspective(glm::radians(fov), width/height, 0.1f, 100.0f);
 
         ourShader.setMatrix4fv("view", glm::value_ptr(view));
         ourShader.setMatrix4fv("projection", glm::value_ptr(projection));
@@ -273,14 +281,14 @@ int main()
         fontShader.use();
         fontShader.setVec4f("textColor", glm::value_ptr(glm::vec4(1.0f, 1.0f, 1.0f, 1.0f))); // white
         // Orthographic projection: pixel coords, origin bottom-left
-        glm::mat4 textProj = glm::ortho(0.0f, 800.0f, 0.0f, 600.0f);
+        glm::mat4 textProj = glm::ortho(0.0f, width, 0.0f, height);
         fontShader.setMatrix4fv("projection", glm::value_ptr(textProj));
         // Position the text in the screen
-        glm::mat4 textModel = glm::translate(glm::mat4(1.0f), glm::vec3(10.0f, 550.0f, 0.0f));
+        glm::mat4 textModel = glm::translate(glm::mat4(1.0f), glm::vec3(10.0f, height-30.0, 0.0f));
         fontShader.setMatrix4fv("model", glm::value_ptr(textModel));
         writer.write( std::format("Pos ({:.2f}, {:.2f}, {:.2f})", cameraPos.x, cameraPos.y, cameraPos.z) );
         // Position the text in the screen
-        textModel = glm::translate(glm::mat4(1.0f), glm::vec3(10.0f, 510.0f, 0.0f));
+        textModel = glm::translate(glm::mat4(1.0f), glm::vec3(10.0f, height-70.0, 0.0f));
         fontShader.setMatrix4fv("model", glm::value_ptr(textModel));
         writer.write( std::format("Front ({:.2f}, {:.2f}, {:.2f})", cameraFront.x, cameraFront.y, cameraFront.z) );
 
