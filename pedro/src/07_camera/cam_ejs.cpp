@@ -282,6 +282,11 @@ void processInput(GLFWwindow *window, Camera &cam)
     if(glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
         cam.moveWorldDown();
     }
+
+    if(glfwGetKey(window, GLFW_KEY_C) == GLFW_PRESS) {
+        cam.myCamMode = !cam.myCamMode;
+    }
+
 }
 
 void processInput(GLFWwindow *window)

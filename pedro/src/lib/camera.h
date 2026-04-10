@@ -39,11 +39,14 @@ public:
     float yaw;
     float mouseSensitivity;
 
+    bool myCamMode;;
+
     Camera(glm::vec3 inPosition = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 inUp = glm::vec3(0.0f, 1.0f, 0.0f), float inYaw = YAW, float inPitch = PITCH) :
     front(glm::vec3(0.0f, 0.0f, -1.0f)), 
     speed(SPEED), 
     mouseSensitivity(SENSITIVITY),
-    fov(FOV)
+    fov(FOV),
+    myCamMode(false)
     {   
         position = inPosition;
         worldUp = inUp;

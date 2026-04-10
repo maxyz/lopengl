@@ -1,4 +1,4 @@
-EXES = cam cam2 cam_ej1
+EXES = cam cam2 cam_ejs
 
 default_target: $(EXES)
 
@@ -17,7 +17,7 @@ cam: cam.cpp libGLAD.a stb_image.o shader.o texture.o
 cam2: cam2.cpp libGLAD.a stb_image.o shader.o texture.o camera.o
 	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
 
-cam_ej1: cam_ej1.cpp libGLAD.a stb_image.o shader.o texture.o camera.o
+cam_ejs: cam_ejs.cpp libGLAD.a stb_image.o shader.o texture.o camera.o
 	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
 
 camera.o: ../lib/camera.cpp ../lib/camera.h
