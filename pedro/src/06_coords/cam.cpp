@@ -51,7 +51,7 @@ int main()
     shader.setInt("tex2", 1);
 
     float fov = 45.f;
-    glm::vec3 cameraPos(0.0f, 0.0f, 3.0f);
+    glm::vec3 cameraPos(0.0f, 0.0f, -2.0f);
 
     while(!glfwWindowShouldClose(window))
     {
@@ -69,15 +69,15 @@ int main()
         tex1.Activate(0);
         tex2.Activate(1);
 
-        // VIEW MATRIX
-        const float radius = 10.0f;
-        float camX = sin(glfwGetTime()) * radius;
-        float camZ = cos(glfwGetTime()) * radius;
-        glm::mat4 view;
-        view = glm::lookAt(glm::vec3(camX, 0.0, camZ), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));  
+        // // VIEW MATRIX
+        // const float radius = 10.0f;
+        // float camX = sin(glfwGetTime()) * radius;
+        // float camZ = cos(glfwGetTime()) * radius;
+        // glm::mat4 view;
+        // view = glm::lookAt(glm::vec3(camX, 0.0, camZ), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));  
 
-        // glm::mat4 view = glm::mat4(1.0f);
-        // view = glm::translate(view, cameraPos);
+        glm::mat4 view = glm::mat4(1.0f);
+        view = glm::translate(view, cameraPos);
 
         shader.setMat4("view", view);
 
@@ -98,7 +98,7 @@ int main()
             if (i % 3 == 0) extraAngle = (float)glfwGetTime();
             
             model = glm::rotate(model, extraAngle * glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
-            shader.setMat4("model", model);
+            shader.setMat4("model", projection);
 
 
             glDrawArrays(GL_TRIANGLES, 0, 36);

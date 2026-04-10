@@ -1,4 +1,4 @@
-EXES = coords01 coords02 coords_ej01
+EXES = coords01 coords02 coords_ej01 cam
 
 default_target: $(EXES)
 
@@ -10,6 +10,9 @@ libGLAD.a: ../glad.c
 LDFLAGS = -lglfw -lGL -lX11 -lpthread -lXrandr -lXi -ldl -g
 CPPFLAGS = -I ../../include/ -I ../lib/
 EXTRAS = /usr/lib/x86_64-linux-gnu/libglfw.so libGLAD.a
+
+cam: cam.cpp libGLAD.a stb_image.o shader.o texture.o
+	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
 
 coords01: coords01.cpp libGLAD.a stb_image.o shader.o texture.o
 	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@

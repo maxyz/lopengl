@@ -4,7 +4,7 @@ glm::mat4 myLookAt(glm::vec3 position, glm::vec3 target, glm::vec3 up) {
     
     glm::mat4 rotation(1.0f), traslation(1.0f);
     glm::vec3 zAxis = glm::normalize(position - target);
-    glm::vec3 xAxis = glm::normalize(glm::cross(zAxis, up));
+    glm::vec3 xAxis = glm::normalize(glm::cross(glm::normalize(up), zAxis));
     glm::vec3 yAxis = glm::cross(zAxis, xAxis);
 
     rotation[0][0] = xAxis.x;

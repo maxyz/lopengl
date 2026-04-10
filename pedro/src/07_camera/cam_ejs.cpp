@@ -26,7 +26,7 @@ float lastFrame = 0.0f;
 bool firstMouse = true;
 float lastX = 800.f / 2.0, lastY = 400.f / 2.0;
 
-Camera cam(  glm::vec3(0.0f, 5.0f,  3.0f));
+Camera cam(glm::vec3(0.0f, 2.0f,  3.0f));
 
 int main()
 {
