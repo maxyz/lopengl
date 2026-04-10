@@ -33,7 +33,7 @@ stb_image.o: ../lib/stb_image.cpp
 	g++ $(CPPFLAGS) -c $< -o $@
 
 clean:
-	rm -f libGLAD.a glad.o stb_image.o stb_image.o shader.o texture.o $(EXES)
+	rm -f libGLAD.a glad.o stb_image.o stb_image.o shader.o texture.o camera.o $(EXES)
 
 # en general:
 # file: file.cpp libGLAD.a stb_image.o shader.o texture.o
