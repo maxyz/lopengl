@@ -92,6 +92,22 @@ void Shader::Use() {
     glUseProgram(this->Program);
 }
 
+void Shader::setBool(const GLchar* uniformName, const bool value) {
+    glUniform1i(glGetUniformLocation(this->Program, uniformName), (int)value);
+}
+
 void Shader::setInt(const GLchar* uniformName, const int value) {
     glUniform1i(glGetUniformLocation(this->Program, uniformName), value);
+}
+
+void Shader::setVec3(const GLchar* uniformName, const glm::vec3 &value) {
+    glUniform3fv(glGetUniformLocation(this->Program, uniformName), 1, glm::value_ptr(value));
+}
+
+void Shader::setVec4(const GLchar* uniformName, const glm::vec4 &value) {
+    glUniform4fv(glGetUniformLocation(this->Program, uniformName), 1, glm::value_ptr(value));
+}
+
+void Shader::setMat4(const GLchar* uniformName, const glm::mat4 &value) {
+    glUniformMatrix4fv(glGetUniformLocation(this->Program, uniformName), 1, GL_FALSE, glm::value_ptr(value));
 }
