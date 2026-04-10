@@ -26,13 +26,13 @@ void processInput(GLFWwindow *window, float *camx, float *camy, float *camz, flo
     if(glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
     if(glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
-        *camy -= 0.1;
-    if(glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
         *camy += 0.1;
+    if(glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
+        *camy -= 0.1;
     if(glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
-        *camx -= 0.1;
-    if(glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
         *camx += 0.1;
+    if(glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
+        *camx -= 0.1;
     if(glfwGetKey(window, GLFW_KEY_PAGE_UP) == GLFW_PRESS)
         *camz += 0.1;
     if(glfwGetKey(window, GLFW_KEY_PAGE_DOWN) == GLFW_PRESS)
@@ -132,7 +132,7 @@ int main()
 
     float fov = 45.0;
     float ratio = 800.0 / 600.0;
-    float camx = 0.0f, camy = 0.0f, camz = -3.0f;
+    float camx = 0.0f, camy = 0.0f, camz = 0.0f;
     float rotx = 1.0f, roty = 1.0f, rotz = 1.0f;
 
     // Enable depth testing
@@ -159,12 +159,18 @@ int main()
 
         // Coordinate matrixes
         // ** View **
-        glm::mat4 view = glm::mat4(1.0f);
+        //glm::mat4 view = glm::mat4(1.0f);
         // note that we're translating the scene in the reverse direction of where we want to move
-        view = glm::translate(view, glm::vec3(camx, camy, camz));
-        view = glm::rotate(view, glm::radians(rotx), glm::vec3(0.0f, 1.0f, 0.0f));
-        view = glm::rotate(view, glm::radians(roty), glm::vec3(1.0f, 0.0f, 0.0f));
-        view = glm::rotate(view, glm::radians(rotz), glm::vec3(0.0f, 0.0f, 1.0f));
+        const float radius = 10.0f;
+        rotx = sin(glfwGetTime()) * radius;
+        rotz = cos(glfwGetTime()) * radius;
+        roty = 0.0;
+        glm::mat4 view;
+        view = glm::lookAt(glm::vec3(rotx, roty, rotz), glm::vec3(camx, camy, camz), glm::vec3(0.0, 1.0, 0.0));
+        //view = glm::translate(view, glm::vec3(camx, camy, camz));
+        //view = glm::rotate(view, glm::radians(rotx), glm::vec3(0.0f, 1.0f, 0.0f));
+        //view = glm::rotate(view, glm::radians(roty), glm::vec3(1.0f, 0.0f, 0.0f));
+        //view = glm::rotate(view, glm::radians(rotz), glm::vec3(0.0f, 0.0f, 1.0f));
         // ** Projection **
         glm::mat4 projection;
         projection = glm::perspective(glm::radians(fov), ratio, 0.1f, 100.0f);

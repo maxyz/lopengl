@@ -1,4 +1,4 @@
-EXES = camera
+EXES = camera-keyb camera-move
 
 default_target: $(EXES)
 
@@ -28,8 +28,12 @@ write_text.o: ../lib/write_text.cpp ../lib/write_text.h stb_image.o stb_truetype
 	g++ $(CPPFLAGS) -c $< -o $@
 
 # This chapter's files
-camera: camera.cpp libGLAD.a stb_image.o shader.o texture.o write_text.o stb_truetype.o
+camera-keyb: camera-keyb.cpp libGLAD.a stb_image.o shader.o texture.o write_text.o stb_truetype.o
 	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
+
+camera-move: camera-move.cpp libGLAD.a stb_image.o shader.o texture.o write_text.o stb_truetype.o
+	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
+
 
 clean:
 	rm -f libGLAD.a gl.o stb_image.o stb_truetype.o shader.o texture.o write_text.o $(EXES)
