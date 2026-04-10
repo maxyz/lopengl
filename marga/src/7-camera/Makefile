@@ -1,4 +1,4 @@
-EXES = camera-keyb camera-move
+EXES = camera-keyb camera-move camera-refactor
 
 default_target: $(EXES)
 
@@ -33,6 +33,10 @@ camera-keyb: camera-keyb.cpp libGLAD.a stb_image.o shader.o texture.o write_text
 
 camera-move: camera-move.cpp libGLAD.a stb_image.o shader.o texture.o write_text.o stb_truetype.o
 	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
+
+camera-refactor: camera-refactor.cpp libGLAD.a stb_image.o shader.o texture.o write_text.o stb_truetype.o ../lib/camera.h
+	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
+
 
 
 clean:
