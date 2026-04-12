@@ -14,16 +14,19 @@ typedef unsigned int uint;
 
 bool setupBuffers(uint *VAO);
 GLFWwindow* windowAndContext();
-void framebuffer_size_callback(GLFWwindow* window, int width, int height);
+void framebuffer_size_callback(GLFWwindow* window, int _width, int _height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void processInput(GLFWwindow *window);
 void processInput(GLFWwindow *window, Camera &cam);
 
+float width = 800.0f, height = 600.0f;
+
 float deltaTime = 0.0f;
 float lastFrame = 0.0f;
 
 bool firstMouse = true;
+bool mouseLocked = true;
 float lastX = 800.f / 2.0, lastY = 400.f / 2.0;
 
 Camera cam(  glm::vec3(0.0f, 5.0f,  3.0f));
@@ -89,7 +92,7 @@ int main()
 
         // PROJECTION MATRIX
         glm::mat4 projection;
-        projection = glm::perspective(glm::radians(cam.fov), 800.0f / 600.0f, 0.1f, 100.0f);
+        projection = glm::perspective(glm::radians(cam.fov), width / height, 0.1f, 100.0f);
 
         shader.setMat4("projection", projection);
 
@@ -124,7 +127,7 @@ GLFWwindow* windowAndContext() {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
   
-    GLFWwindow *window = glfwCreateWindow(800, 600, "CrazyWindowAction", NULL, NULL);
+    GLFWwindow *window = glfwCreateWindow(width, height, "CrazyWindowAction", NULL, NULL);
     if (window == NULL)
     {
         std::cout << "Failed to create GLFW window" << std::endl;
@@ -137,13 +140,13 @@ GLFWwindow* windowAndContext() {
     glfwSetCursorPosCallback(window, mouse_callback);
     glfwSetScrollCallback(window, scroll_callback);
 
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
     {
         std::cout << "Failed to initialize GLAD" << std::endl;
         return NULL;
     }
-
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
     return window;
 }
@@ -222,12 +225,16 @@ bool setupBuffers(uint *VAO) {
     return 1;
 }
 
-void framebuffer_size_callback(GLFWwindow* window, int width, int height)
+void framebuffer_size_callback(GLFWwindow* window, int _width, int _height)
 {
-    glViewport(0, 0, width, height);
+    glViewport(0, 0, _width, _height);
+    width = _width;
+    height = _height;
 }
 
 void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
+
+    if (!mouseLocked) return;
 
     if (firstMouse)
     {
@@ -281,6 +288,17 @@ void processInput(GLFWwindow *window, Camera &cam)
 
     if(glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
         cam.moveWorldDown();
+    }
+
+    if(glfwGetKey(window, GLFW_KEY_TAB) == GLFW_PRESS) {
+        if (mouseLocked) {
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+            mouseLocked = false;
+            firstMouse = true;
+        } else {
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+            mouseLocked = true;
+        }
     }
 }
 
