@@ -25,6 +25,7 @@ public:
     void setBool(const GLchar* uniformName, const bool value);
     void setVec3(const GLchar* uniformName, const glm::vec3 &value);
     void setVec4(const GLchar* uniformName, const glm::vec4 &value);
+    void setMat3(const GLchar* uniformName, const glm::mat3 &value);
     void setMat4(const GLchar* uniformName, const glm::mat4 &value);
 
     void setVertexMatrices(glm::mat4 &view, glm::mat4 model, glm::mat4 &projection);
