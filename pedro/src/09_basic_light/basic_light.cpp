@@ -326,7 +326,12 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 
 void processInput(GLFWwindow *window, Camera &cam)
 {
-    cam.deltaSpeed = cam.speed * deltaTime;
+    if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
+        glfwSetWindowShouldClose(window, true);
+        return;
+    }
+
+    // SETTINGS
 
     if(!tabPreviouslyPressed && glfwGetKey(window, GLFW_KEY_TAB) == GLFW_PRESS) {
         if (mouseLocked) {
@@ -349,11 +354,17 @@ void processInput(GLFWwindow *window, Camera &cam)
         rotateLight = !rotateLight;
     }
 
-    if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
-        glfwSetWindowShouldClose(window, true);
-        return;
+    if(glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
+        cam.speed += 0.1f;
     }
 
+    if(glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
+        cam.speed -= 0.1f;
+    }
+    
+    // MOVEMENT
+    cam.deltaSpeed = cam.speed * deltaTime;
+    
     if(glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
         cam.moveFront();
     }
