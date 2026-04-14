@@ -2,7 +2,9 @@
 #include <GLFW/glfw3.h>
 #include <iostream>
 #include <cmath>
-#include "shader/shader.h"
+#include "shader.h"
+
+
 
 typedef unsigned int uint;
 
@@ -32,7 +34,7 @@ int main()
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        shader.Use();
+        shader.use();
         GLint offsetLocation = glGetUniformLocation(shader.Program, "x_offset");
         glUniform1f(offsetLocation, current_offset);
 

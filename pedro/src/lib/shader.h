@@ -20,7 +20,7 @@ public:
     Shader(const GLchar* vertexPath, const GLchar* fragmentPath);
 
     // Use the program
-    void Use();
+    void use();
     void setInt(const GLchar* uniformName, const int value);
     void setBool(const GLchar* uniformName, const bool value);
     void setVec3(const GLchar* uniformName, const glm::vec3 &value);

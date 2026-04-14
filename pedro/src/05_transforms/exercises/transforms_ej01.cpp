@@ -31,7 +31,7 @@ int main()
     
 
 
-    shader.Use();
+    shader.use();
 
     shader.setInt("tex1", 0);
     shader.setInt("tex2", 1);
@@ -44,7 +44,7 @@ int main()
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        shader.Use();
+        shader.use();
 
         tex1.Activate(0);
         tex2.Activate(1);

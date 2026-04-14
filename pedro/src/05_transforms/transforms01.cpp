@@ -34,7 +34,7 @@ int main()
     trans = glm::rotate(trans, glm::radians(90.f), glm::vec3(0.0, 0.0, 1.0));
     trans = glm::scale(trans, glm::vec3(0.5f, 0.5f, 0.5f));
 
-    shader.Use();
+    shader.use();
 
     shader.setInt("tex1", 0);
     shader.setInt("tex2", 1);
@@ -47,7 +47,7 @@ int main()
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        shader.Use();
+        shader.use();
 
         tex1.Activate(0);
         tex2.Activate(1);

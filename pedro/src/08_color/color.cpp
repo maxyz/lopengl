@@ -10,6 +10,9 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#define OBJECTS 0
+#define LIGHT_SOURCE 1
+
 typedef unsigned int uint;
 
 bool setupBuffers(uint *VAO);
@@ -40,32 +43,31 @@ int main()
 
     glEnable(GL_DEPTH_TEST);
     
-    Shader shader("shaders/shader02.vs", "shaders/shader01.frag");
     uint VAO[2];
 
-    if (!setupBuffers(&VAO)) return -1;
+    if (!setupBuffers(VAO)) return -1;
 
-    stbi_set_flip_vertically_on_load(true);
+    // glm::vec3 cubePositions[] = {
+    //     glm::vec3( 0.0f,  0.0f,  0.0f), 
+    //     glm::vec3( 2.0f,  5.0f, -15.0f), 
+    //     glm::vec3(-1.5f, -2.2f, -2.5f),  
+    //     glm::vec3(-3.8f, -2.0f, -12.3f),  
+    //     glm::vec3( 2.4f, -0.4f, -3.5f),  
+    //     glm::vec3(-1.7f,  3.0f, -7.5f),  
+    //     glm::vec3( 1.3f, -2.0f, -2.5f),  
+    //     glm::vec3( 1.5f,  2.0f, -2.5f), 
+    //     glm::vec3( 1.5f,  0.2f, -1.5f), 
+    //     glm::vec3(-1.3f,  1.0f, -1.5f)  
+    // };
 
-    Texture2D tex1("../media/container.jpg", JPG), tex2("../media/awesomeface.png", PNG);
-    
-    glm::vec3 cubePositions[] = {
-        glm::vec3( 0.0f,  0.0f,  0.0f), 
-        glm::vec3( 2.0f,  5.0f, -15.0f), 
-        glm::vec3(-1.5f, -2.2f, -2.5f),  
-        glm::vec3(-3.8f, -2.0f, -12.3f),  
-        glm::vec3( 2.4f, -0.4f, -3.5f),  
-        glm::vec3(-1.7f,  3.0f, -7.5f),  
-        glm::vec3( 1.3f, -2.0f, -2.5f),  
-        glm::vec3( 1.5f,  2.0f, -2.5f), 
-        glm::vec3( 1.5f,  0.2f, -1.5f), 
-        glm::vec3(-1.3f,  1.0f, -1.5f)  
-    };
+    // Setup Shaders
+    Shader lightingShader("shaders/shader01.vs", "shaders/lightShader01.frag");
+    Shader lightSourceShader("shaders/shader01.vs", "shaders/sourceShader01.frag");
 
-    shader.Use();
-
-    shader.setInt("tex1", 0);
-    shader.setInt("tex2", 1);
+    // Setup Textures
+    // Texture2D texture("...", JPG/PNG);
+    // shader.Use();
+    // shader.setInt("texture", 0);
 
 
     while(!glfwWindowShouldClose(window))
@@ -83,37 +85,29 @@ int main()
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        shader.Use();
-
-        tex1.Activate(0);
-        tex2.Activate(1);
-
+        // VIEW MATRIX
         glm::mat4 view = cam.lookFront();
-
-        shader.setMat4("view", view);
 
         // PROJECTION MATRIX
         glm::mat4 projection;
         projection = glm::perspective(glm::radians(cam.fov), width / height, 0.1f, 100.0f);
 
-        shader.setMat4("projection", projection);
+        // Render Objects
+        glBindVertexArray(VAO[OBJECTS]);
 
-        glBindVertexArray(VAO);
+        lightingShader.use();
+        lightingShader.setVec3("objectColor", glm::vec3(1.0f, 0.5f, 0.31f));
+        lightingShader.setVec3("lightColor",  glm::vec3(1.0f, 1.0f, 1.0f));
 
-        for(unsigned int i = 0; i < 10; i++)
-        {
-            glm::mat4 model = glm::mat4(1.0f);
-            model = glm::translate(model, cubePositions[i]);
-            float angle = 20.0f * i, extraAngle = 1.0;
+        glDrawArrays(GL_TRIANGLES, 0, 36);
 
-            if (i % 3 == 0) extraAngle = (float)glfwGetTime();
-            
-            model = glm::rotate(model, extraAngle * glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
-            shader.setMat4("model", model);
+        // Render Light source
+        glBindVertexArray(VAO[LIGHT_SOURCE]);
 
+        // etc
 
-            glDrawArrays(GL_TRIANGLES, 0, 36);
-        }
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+
 
         glfwSwapBuffers(window);
         glfwPollEvents();    
@@ -170,7 +164,7 @@ bool setupBuffers(uint *VAO) {
     glGenVertexArrays(2, VAO);
     glGenBuffers(1, &VBO);
 
-    glBindVertexArray(VAO[0]);
+    glBindVertexArray(VAO[OBJECTS]);
 
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
@@ -180,7 +174,7 @@ bool setupBuffers(uint *VAO) {
     glEnableVertexAttribArray(0);
 
     // Bind to setup light source
-    glBindVertexArray(VAO[1]);
+    glBindVertexArray(VAO[LIGHT_SOURCE]);
     
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
