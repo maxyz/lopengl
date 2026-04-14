@@ -36,7 +36,7 @@ float lastX = 800.f / 2.0, lastY = 400.f / 2.0;
 
 glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
 
-Camera cam(glm::vec3(0.0f, 0.0f, 3.0f));
+Camera cam(glm::vec3(0.0f, 0.0f, 5.0f));
 
 int main()
 {
@@ -63,8 +63,8 @@ int main()
     // };
 
     // Setup Shaders
-    Shader lightingShader("shaders/shader01.vs", "shaders/lightShader01.frag");
-    Shader lightSourceShader("shaders/shader01.vs", "shaders/sourceShader01.frag");
+    Shader lightingShader("shaders/lightShader01.vs", "shaders/lightShader01.frag");
+    Shader lightSourceShader("shaders/sourceShader01.vs", "shaders/sourceShader01.frag");
 
     // Setup Textures
     // Texture2D texture("...", JPG/PNG);
@@ -84,7 +84,7 @@ int main()
 
         // Render:
         // glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         // VIEW MATRIX
@@ -96,29 +96,39 @@ int main()
 
         // MODEL MATRIX
         glm::mat4 model(1.0f);
-
-        // Render Objects
-        glBindVertexArray(VAO[OBJECTS]);
-
-        lightingShader.use();
-        lightingShader.setVec3("objectColor", glm::vec3(1.0f, 0.5f, 0.31f));
-        lightingShader.setVec3("lightColor",  glm::vec3(1.0f, 1.0f, 1.0f));
-
-        lightingShader.setVertexMatrices(view, model, projection);
-
-        glDrawArrays(GL_TRIANGLES, 0, 36);
-
+        
         // Render Light source
         glBindVertexArray(VAO[LIGHT_SOURCE]);
-        
+
         lightSourceShader.use();
-        model = glm::mat4(1.0f);
+        
+            // Vertex Uniforms
+        glm::mat4 rotation = glm::rotate(glm::mat4(1.0f), (float)glm::radians(1.5), glm::vec3(0.0f,1.0f,0.0f));
+
+        lightPos = glm::vec3(rotation * glm::vec4(lightPos, 1.0));
+
         model = glm::translate(model, lightPos);
         model = glm::scale(model, glm::vec3(0.2f));
 
         lightSourceShader.setVertexMatrices(view, model, projection);
 
         glDrawArrays(GL_TRIANGLES, 0, 36);
+
+        // Render Objects
+        glBindVertexArray(VAO[OBJECTS]);
+
+        lightingShader.use();
+        model = glm::mat4(1.0f);
+
+            // Vertex Uniforms
+        lightingShader.setVertexMatrices(view, model, projection);
+            // Frag Uniforms
+        lightingShader.setVec3("objectColor", glm::vec3(1.0f, 0.5f, 0.31f));
+        lightingShader.setVec3("lightColor",  glm::vec3(1.0f, 1.0f, 1.0f));
+        lightingShader.setVec3("lightPos",  lightPos);
+
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+
 
         glfwSwapBuffers(window);
         glfwPollEvents();    
@@ -161,48 +171,49 @@ GLFWwindow* windowAndContext() {
 bool setupBuffers(uint *VAO) {
 
     float vertices[] = {
-        -0.5f, -0.5f, -0.5f, 
-         0.5f, -0.5f, -0.5f,  
-         0.5f,  0.5f, -0.5f,  
-         0.5f,  0.5f, -0.5f,  
-        -0.5f,  0.5f, -0.5f, 
-        -0.5f, -0.5f, -0.5f, 
+    // Vertex Pos       | Normal Vector
+    -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+     0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 
+     0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 
+     0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 
+    -0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 
+    -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 
 
-        -0.5f, -0.5f,  0.5f, 
-         0.5f, -0.5f,  0.5f,  
-         0.5f,  0.5f,  0.5f,  
-         0.5f,  0.5f,  0.5f,  
-        -0.5f,  0.5f,  0.5f, 
-        -0.5f, -0.5f,  0.5f, 
+    -0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+     0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+     0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+     0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+    -0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+    -0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
 
-        -0.5f,  0.5f,  0.5f, 
-        -0.5f,  0.5f, -0.5f, 
-        -0.5f, -0.5f, -0.5f, 
-        -0.5f, -0.5f, -0.5f, 
-        -0.5f, -0.5f,  0.5f, 
-        -0.5f,  0.5f,  0.5f, 
+    -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
+    -0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
+    -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
+    -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
+    -0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
+    -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
 
-         0.5f,  0.5f,  0.5f,  
-         0.5f,  0.5f, -0.5f,  
-         0.5f, -0.5f, -0.5f,  
-         0.5f, -0.5f, -0.5f,  
-         0.5f, -0.5f,  0.5f,  
-         0.5f,  0.5f,  0.5f,  
+     0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
+     0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
+     0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
+     0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
+     0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
+     0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
 
-        -0.5f, -0.5f, -0.5f, 
-         0.5f, -0.5f, -0.5f,  
-         0.5f, -0.5f,  0.5f,  
-         0.5f, -0.5f,  0.5f,  
-        -0.5f, -0.5f,  0.5f, 
-        -0.5f, -0.5f, -0.5f, 
+    -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
+     0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
+     0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
+     0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
+    -0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
+    -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
 
-        -0.5f,  0.5f, -0.5f, 
-         0.5f,  0.5f, -0.5f,  
-         0.5f,  0.5f,  0.5f,  
-         0.5f,  0.5f,  0.5f,  
-        -0.5f,  0.5f,  0.5f, 
-        -0.5f,  0.5f, -0.5f, 
-    };
+    -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
+     0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
+     0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
+     0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
+    -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
+    -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f
+};
 
     uint VBO;
 
@@ -216,13 +227,16 @@ bool setupBuffers(uint *VAO) {
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
     // position attribute
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
+    // normal attribute
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
 
     // Bind to setup light source
     glBindVertexArray(VAO[LIGHT_SOURCE]);
     
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
 
     glBindBuffer(GL_ARRAY_BUFFER, 0); 

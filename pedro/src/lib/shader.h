@@ -27,7 +27,7 @@ public:
     void setVec4(const GLchar* uniformName, const glm::vec4 &value);
     void setMat4(const GLchar* uniformName, const glm::mat4 &value);
 
-    void setCameraMatrices(glm::mat4 &view, glm::mat4 model, glm::mat4 &projection);
+    void setVertexMatrices(glm::mat4 &view, glm::mat4 model, glm::mat4 &projection);
 };
 
 #endif

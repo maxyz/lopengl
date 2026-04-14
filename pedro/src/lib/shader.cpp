@@ -112,7 +112,7 @@ void Shader::setMat4(const GLchar* uniformName, const glm::mat4 &value) {
     glUniformMatrix4fv(glGetUniformLocation(this->Program, uniformName), 1, GL_FALSE, glm::value_ptr(value));
 }
 
-void Shader::setCameraMatrices(glm::mat4 &view, glm::mat4 model, glm::mat4 &projection) {
+void Shader::setVertexMatrices(glm::mat4 &view, glm::mat4 model, glm::mat4 &projection) {
     setMat4("view", view);
     setMat4("model", model);
     setMat4("projection", projection);
