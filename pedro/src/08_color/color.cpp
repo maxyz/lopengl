@@ -34,7 +34,9 @@ bool firstMouse = true;
 bool mouseLocked = true;
 float lastX = 800.f / 2.0, lastY = 400.f / 2.0;
 
-Camera cam(  glm::vec3(0.0f, 5.0f,  3.0f));
+glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
+
+Camera cam(glm::vec3(0.0f, 0.0f, 3.0f));
 
 int main()
 {
@@ -69,7 +71,6 @@ int main()
     // shader.Use();
     // shader.setInt("texture", 0);
 
-
     while(!glfwWindowShouldClose(window))
     {
         float currentFrame = (float)glfwGetTime();
@@ -79,10 +80,11 @@ int main()
         processInput(window, cam);
         // processInput(window);
 
-        printf("DEBUG >> DELTA TIME (in ms): %f\n", deltaTime*1000);
+        // printf("DEBUG >> DELTA TIME (in ms): %f\n", deltaTime*1000);
 
         // Render:
-        glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+        // glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         // VIEW MATRIX
@@ -92,6 +94,9 @@ int main()
         glm::mat4 projection;
         projection = glm::perspective(glm::radians(cam.fov), width / height, 0.1f, 100.0f);
 
+        // MODEL MATRIX
+        glm::mat4 model(1.0f);
+
         // Render Objects
         glBindVertexArray(VAO[OBJECTS]);
 
@@ -99,15 +104,21 @@ int main()
         lightingShader.setVec3("objectColor", glm::vec3(1.0f, 0.5f, 0.31f));
         lightingShader.setVec3("lightColor",  glm::vec3(1.0f, 1.0f, 1.0f));
 
+        lightingShader.setCameraMatrices(view, model, projection);
+
         glDrawArrays(GL_TRIANGLES, 0, 36);
 
         // Render Light source
         glBindVertexArray(VAO[LIGHT_SOURCE]);
+        
+        lightSourceShader.use();
+        model = glm::mat4(1.0f);
+        model = glm::translate(model, lightPos);
+        model = glm::scale(model, glm::vec3(0.2f));
 
-        // etc
+        lightSourceShader.setCameraMatrices(view, model, projection);
 
         glDrawArrays(GL_TRIANGLES, 0, 36);
-
 
         glfwSwapBuffers(window);
         glfwPollEvents();    
@@ -150,13 +161,48 @@ GLFWwindow* windowAndContext() {
 bool setupBuffers(uint *VAO) {
 
     float vertices[] = {
-        -0.5f, -0.5f, -0.5f,
-        0.5f, -0.5f, -0.5f,
-        0.5f,  0.5f, -0.5f,
-        0.5f,  0.5f, -0.5f,
-        -0.5f,  0.5f, -0.5f,
-        -0.5f, -0.5f, -0.5f
-    };  
+        -0.5f, -0.5f, -0.5f, 
+         0.5f, -0.5f, -0.5f,  
+         0.5f,  0.5f, -0.5f,  
+         0.5f,  0.5f, -0.5f,  
+        -0.5f,  0.5f, -0.5f, 
+        -0.5f, -0.5f, -0.5f, 
+
+        -0.5f, -0.5f,  0.5f, 
+         0.5f, -0.5f,  0.5f,  
+         0.5f,  0.5f,  0.5f,  
+         0.5f,  0.5f,  0.5f,  
+        -0.5f,  0.5f,  0.5f, 
+        -0.5f, -0.5f,  0.5f, 
+
+        -0.5f,  0.5f,  0.5f, 
+        -0.5f,  0.5f, -0.5f, 
+        -0.5f, -0.5f, -0.5f, 
+        -0.5f, -0.5f, -0.5f, 
+        -0.5f, -0.5f,  0.5f, 
+        -0.5f,  0.5f,  0.5f, 
+
+         0.5f,  0.5f,  0.5f,  
+         0.5f,  0.5f, -0.5f,  
+         0.5f, -0.5f, -0.5f,  
+         0.5f, -0.5f, -0.5f,  
+         0.5f, -0.5f,  0.5f,  
+         0.5f,  0.5f,  0.5f,  
+
+        -0.5f, -0.5f, -0.5f, 
+         0.5f, -0.5f, -0.5f,  
+         0.5f, -0.5f,  0.5f,  
+         0.5f, -0.5f,  0.5f,  
+        -0.5f, -0.5f,  0.5f, 
+        -0.5f, -0.5f, -0.5f, 
+
+        -0.5f,  0.5f, -0.5f, 
+         0.5f,  0.5f, -0.5f,  
+         0.5f,  0.5f,  0.5f,  
+         0.5f,  0.5f,  0.5f,  
+        -0.5f,  0.5f,  0.5f, 
+        -0.5f,  0.5f, -0.5f, 
+    };
 
     uint VBO;
 
@@ -211,7 +257,6 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
     cam.handleMouseMovement(xoffset, yoffset);
 }
 
-
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
     cam.handleMouseScroll(yoffset);
@@ -233,6 +278,10 @@ void processInput(GLFWwindow *window, Camera &cam)
         
     }
     tabPreviouslyPressed = glfwGetKey(window, GLFW_KEY_TAB) == GLFW_PRESS;
+
+    if(glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS) {
+        cam.resetFov();
+    }
 
     if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
         glfwSetWindowShouldClose(window, true);

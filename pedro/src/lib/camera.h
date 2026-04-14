@@ -72,6 +72,8 @@ public:
 
     glm::mat4 lookFront();
 
+    void resetFov() { fov = FOV; };
+
 private:
     
     void updateCameraVectors();
