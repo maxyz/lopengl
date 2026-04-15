@@ -121,8 +121,8 @@ std::expected<std::vector<std::function<void()>>, std::string> init_shaders() {
   };
 
   shader.use();
-  shader.setInt("texture1", 0);
-  shader.setInt("texture2", 1);
+  shader.set_int("texture1", 0);
+  shader.set_int("texture2", 1);
 
   std::vector<std::function<void()>> v{f};
   return v;

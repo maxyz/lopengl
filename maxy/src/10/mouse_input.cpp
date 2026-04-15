@@ -1,5 +1,5 @@
-#include <cmath>
 #include <algorithm>
+#include <cmath>
 #include <expected>
 #include <functional>
 #include <glm/geometric.hpp>
@@ -79,7 +79,8 @@ std::expected<GLFWwindow *, std::string> init_window() {
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-  GLFWwindow *window = glfwCreateWindow(viewport.width, viewport.height, TITLE, NULL, NULL);
+  GLFWwindow *window =
+      glfwCreateWindow(viewport.width, viewport.height, TITLE, NULL, NULL);
   if (window == NULL) {
     glfwTerminate();
     return std::unexpected("failed to create GLFW window");
@@ -154,7 +155,7 @@ const float vertices[] = {
 
 };
 
-glm::vec3 cubePositions[] = {
+glm::vec3 cube_positions[] = {
     glm::vec3(0.0f, 0.0f, 0.0f),    glm::vec3(2.0f, 5.0f, -15.0f),
     glm::vec3(-1.5f, -2.2f, -2.5f), glm::vec3(-3.8f, -2.0f, -12.3f),
     glm::vec3(2.4f, -0.4f, -3.5f),  glm::vec3(-1.7f, 3.0f, -7.5f),
@@ -251,9 +252,11 @@ std::expected<cbs_t, std::string> init_shaders() {
     // glm::mat4 view = glm::translate(glm::mat4(1.f), camera_pos);
     glm::mat4 view = glm::lookAt(camera_pos, camera_pos + camera_front, UP);
 
-    glm::mat4 projection = glm::perspective(
-        glm::radians(fov),
-        static_cast<float>(viewport.width) / static_cast<float>(viewport.height), .1f, 100.f);
+    glm::mat4 projection =
+        glm::perspective(glm::radians(fov),
+                         static_cast<float>(viewport.width) /
+                             static_cast<float>(viewport.height),
+                         .1f, 100.f);
 
     GLint loc;
 
@@ -270,7 +273,7 @@ std::expected<cbs_t, std::string> init_shaders() {
       angle = 20.f * i;
       if (i % 3 == 0)
         angle = glfwGetTime() * 25.f;
-      model = glm::translate(glm::mat4(1.f), cubePositions[i]);
+      model = glm::translate(glm::mat4(1.f), cube_positions[i]);
       model = glm::rotate(model, glm::radians(angle), glm::vec3(1.f, .3f, .5f));
       loc = glGetUniformLocation(p, "model");
       glUniformMatrix4fv(loc, 1, GL_FALSE, glm::value_ptr(model));
@@ -280,8 +283,8 @@ std::expected<cbs_t, std::string> init_shaders() {
   };
 
   shader.use();
-  shader.setInt("texture1", 0);
-  shader.setInt("texture2", 1);
+  shader.set_int("texture1", 0);
+  shader.set_int("texture2", 1);
 
   cbs_t v{f};
   return v;
@@ -333,7 +336,7 @@ load_texture(const std::string &filename, GLenum format) {
   return texture;
 }
 
-void processInput(GLFWwindow *window, uint64_t &e);
+void process_input(GLFWwindow *window, uint64_t &e);
 
 struct delta_t {
   float last;  // Time of last frame
@@ -356,7 +359,7 @@ void event_loop(GLFWwindow *window,
     update_delta(delta);
 
     e = event_t::NONE;
-    processInput(window, e);
+    process_input(window, e);
     glClearColor(.2f, .3f, .3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -369,7 +372,7 @@ void event_loop(GLFWwindow *window,
   }
 }
 
-void processInput(GLFWwindow *window, uint64_t &e) {
+void process_input(GLFWwindow *window, uint64_t &e) {
   if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
     glfwSetWindowShouldClose(window, true);
   }
@@ -428,7 +431,7 @@ void mouse_callback(GLFWwindow *window, double x_pos, double y_pos) {
   yaw += x_offset;
   pitch += y_offset;
   pitch = std::clamp(pitch, -89.f, 89.f);
-  
+
   update_camera_front();
 }
 
@@ -444,6 +447,4 @@ void update_camera_front() {
   camera_front = glm::normalize(front);
 }
 
-void update_fov(float delta) {
-  fov = std::clamp(fov + delta, 1.f, 90.f);
-}
+void update_fov(float delta) { fov = std::clamp(fov + delta, 1.f, 90.f); }

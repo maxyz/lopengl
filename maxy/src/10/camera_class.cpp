@@ -74,6 +74,7 @@ void mouse_callback(GLFWwindow *window, double x_pos, double y_pos);
 void scroll_callback(GLFWwindow *window, double x_offset, double y_offset);
 
 void framebufferSizeCallback(GLFWwindow *window, int width, int height);
+void window_focus_callback(GLFWwindow *window, int focused);
 
 std::expected<GLFWwindow *, std::string> init_window() {
   glfwInit();
@@ -95,6 +96,7 @@ std::expected<GLFWwindow *, std::string> init_window() {
   }
   glViewport(0, 0, viewport.width, viewport.height);
   glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
+  glfwSetWindowFocusCallback(window, window_focus_callback);
 
   glfwSetCursorPosCallback(window, mouse_callback);
   glfwSetScrollCallback(window, scroll_callback);
@@ -108,6 +110,18 @@ void framebufferSizeCallback(GLFWwindow *window, int width, int height) {
   viewport.width = width;
   viewport.height = height;
   glViewport(0, 0, width, height);
+}
+
+void window_focus_callback(GLFWwindow *window, int focused) {
+  if (!focused) {
+
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+    glfwSetCursorPosCallback(window, NULL);
+
+  } else {
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    glfwSetCursorPosCallback(window, mouse_callback);
+  }
 }
 
 const float h = std::sin(M_PI / 3);
@@ -157,7 +171,7 @@ const float vertices[] = {
 
 };
 
-glm::vec3 cubePositions[] = {
+glm::vec3 cube_positions[] = {
     glm::vec3(0.0f, 0.0f, 0.0f),    glm::vec3(2.0f, 5.0f, -15.0f),
     glm::vec3(-1.5f, -2.2f, -2.5f), glm::vec3(-3.8f, -2.0f, -12.3f),
     glm::vec3(2.4f, -0.4f, -3.5f),  glm::vec3(-1.7f, 3.0f, -7.5f),
@@ -252,7 +266,7 @@ std::expected<cbs_t, std::string> init_shaders() {
       angle = 20.f * i;
       if (i % 3 == 0)
         angle = glfwGetTime() * 25.f;
-      model = glm::translate(glm::mat4(1.f), cubePositions[i]);
+      model = glm::translate(glm::mat4(1.f), cube_positions[i]);
       model = glm::rotate(model, glm::radians(angle), glm::vec3(1.f, .3f, .5f));
       loc = glGetUniformLocation(p, "model");
       glUniformMatrix4fv(loc, 1, GL_FALSE, glm::value_ptr(model));
@@ -262,8 +276,8 @@ std::expected<cbs_t, std::string> init_shaders() {
   };
 
   shader.use();
-  shader.setInt("texture1", 0);
-  shader.setInt("texture2", 1);
+  shader.set_int("texture1", 0);
+  shader.set_int("texture2", 1);
 
   cbs_t v{f};
   return v;
@@ -315,7 +329,7 @@ load_texture(const std::string &filename, GLenum format) {
   return texture;
 }
 
-void processInput(GLFWwindow *window, uint64_t &e);
+void process_input(GLFWwindow *window, uint64_t &e);
 
 struct delta_t {
   float last;  // Time of last frame
@@ -338,7 +352,7 @@ void event_loop(GLFWwindow *window,
     update_delta(delta);
 
     e = event_t::NONE;
-    processInput(window, e);
+    process_input(window, e);
     glClearColor(.2f, .3f, .3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -351,7 +365,7 @@ void event_loop(GLFWwindow *window,
   }
 }
 
-void processInput(GLFWwindow *window, uint64_t &e) {
+void process_input(GLFWwindow *window, uint64_t &e) {
   if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
     glfwSetWindowShouldClose(window, true);
   }

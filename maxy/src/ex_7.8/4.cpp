@@ -149,8 +149,8 @@ std::expected<std::vector<cb_t>, std::string> init_shaders() {
   };
 
   shader.use();
-  shader.setInt("texture1", 0);
-  shader.setInt("texture2", 1);
+  shader.set_int("texture1", 0);
+  shader.set_int("texture2", 1);
 
   std::vector<cb_t> v{update_level, f};
   return v;
