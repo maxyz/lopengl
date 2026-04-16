@@ -26,3 +26,10 @@ add_custom_command(TARGET 13_ex_2_view POST_BUILD
   ${CMAKE_CURRENT_SOURCE_DIR}/shaders
     $<TARGET_FILE_DIR:13_ex_2_view>/shaders)
 
+add_executable(13_ex_3 ex_3.cpp)
+target_link_libraries(13_ex_3 ${LIBS})
+add_custom_command(TARGET 13_ex_3 POST_BUILD
+  COMMAND ${CMAKE_COMMAND} -E copy_directory
+  ${CMAKE_CURRENT_SOURCE_DIR}/shaders
+    $<TARGET_FILE_DIR:13_ex_3>/shaders)
+
