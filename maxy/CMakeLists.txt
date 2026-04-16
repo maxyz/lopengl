@@ -15,6 +15,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(OpenGL REQUIRED)
 set(LIBS ${LIBS} ${OPENGL_gl_LIBRARY})
+include_directories(${OPENGL_INCLUDE_DIR})
 
 find_package(glfw3 REQUIRED)
 set(LIBS ${LIBS} glfw)
@@ -24,8 +25,8 @@ find_package(glm REQUIRED)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(STB REQUIRED IMPORTED_TARGET stb)
 set(LIBS ${LIBS} PkgConfig::STB)
+include_directories(${STB_INCLUDE_DIRS})
 
-include_directories(${OPENGL_INCLUDE_DIR})
 include_directories(${CMAKE_SOURCE_DIR}/include)
 
 # Put all executables in the root of the build folder

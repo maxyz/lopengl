@@ -55,6 +55,9 @@ void Shader::set_int(const std::string &name, int value) const {
 void Shader::set_float(const std::string &name, float value) const {
   glUniform1f(glGetUniformLocation(ID, name.c_str()), value);
 }
+void Shader::set_vec3(const std::string &name, const glm::vec3 &value) const {
+  ::set_vec3(ID, name, value);
+}
 
 const std::string_view type_to_view(const GLenum type);
 
@@ -128,4 +131,22 @@ read_file_res read_file(const std::filesystem::path &path) {
     return std::unexpected(std::format("error reading shader file \"{}\"\n{}",
                                        path.string(), e.what()));
   }
+}
+
+void set_vec3(const unsigned int id, const std::string &name,
+              const glm::vec3 &value) {
+  GLint location = glGetUniformLocation(id, name.c_str());
+  glUniform3fv(location, 1, glm::value_ptr(value));
+}
+
+void set_vec4(const unsigned int id, const std::string &name,
+              const glm::vec4 &value) {
+  GLint location = glGetUniformLocation(id, name.c_str());
+  glUniform4fv(location, 1, glm::value_ptr(value));
+}
+
+void set_mat4(const unsigned int id, const std::string &name,
+              const glm::mat4 &value) {
+  GLint location = glGetUniformLocation(id, name.c_str());
+  glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(value));
 }
