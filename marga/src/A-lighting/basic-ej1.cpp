@@ -20,9 +20,10 @@ const int INITIAL_HEIGHT = 600;
 float width = (float) INITIAL_WIDTH, height = (float) INITIAL_HEIGHT;
 
 typedef struct Lighting {
-        float ambient;
-        float diffuse;
-        float specular;
+    float ambient;
+    float diffuse;
+    float specular;
+    float shininess;
 } Lighting;
 
 void framebuffer_size_callback(GLFWwindow* window, int _width, int _height)
@@ -96,6 +97,10 @@ void processInput(GLFWwindow *window, float deltaTime, Camera &camera, Lighting 
         light.ambient += 0.05;
     if(glfwGetKey(window, GLFW_KEY_J) == GLFW_PRESS)
         light.ambient -= 0.05;
+    if(glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS)
+        light.shininess *= 2;
+    if(glfwGetKey(window, GLFW_KEY_SEMICOLON) == GLFW_PRESS)
+        light.shininess /= 2;
 
     // Right click releases the mouse
     if(glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_2) == GLFW_PRESS) {
@@ -204,8 +209,8 @@ int main()
     glfwSetCursorPosCallback(window, mouse_callback);
     glfwSetScrollCallback(window, scroll_callback);
 
-    // Starting lighting values (ambient, diffuse, specular)
-    Lighting light = { 0.1, 0.5, 0.5};
+    // Starting lighting values (ambient, diffuse, specular, shininess)
+    Lighting light = { 0.1, 0.5, 0.5, 32 };
 
     // Render loop
     while(!glfwWindowShouldClose(window))
@@ -229,6 +234,7 @@ int main()
         ourShader.setFloat("ambientStrength", light.ambient);
         ourShader.setFloat("diffuseStrength", light.diffuse);
         ourShader.setFloat("specularStrength", light.specular);
+        ourShader.setFloat("shininess", light.shininess);
 
         // Position of the light
         glm::vec3 lightPos(1.2f*sin(glfwGetTime()), 1.0f*cos(glfwGetTime()), 2.0f);
@@ -290,7 +296,7 @@ int main()
 
         textModel = glm::translate(glm::mat4(1.0f), glm::vec3(10.0f, height-110.0, 0.0f));
         fontShader.setMatrix4fv("model", glm::value_ptr(textModel));
-        writer.write( std::format("A: ({:.2f} - D: {:.2f} - S: {:.2f})", light.ambient, light.diffuse, light.specular) );
+        writer.write( std::format("A: {:.2f} - D: {:.2f} - S: {:.2f} - Sh: {:.2f}", light.ambient, light.diffuse, light.specular, light.shininess) );
 
         // check and call events and swap buffers
         glfwPollEvents();         
