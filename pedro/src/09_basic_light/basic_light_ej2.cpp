@@ -35,7 +35,6 @@ bool mouseLocked = true;
 float lastX = 800.f / 2.0, lastY = 400.f / 2.0;
 
 bool rotateLight = true;
-bool coolLightMode = 0;
 
 glm::vec3 lightPos(1.2f, 1.0f, 5.0f);
 
@@ -79,7 +78,7 @@ int main()
     };
 
     // Setup Shaders
-    Shader lightingShader("shaders/lightShader01.vs", "shaders/lightShader01.frag");
+    Shader lightingShader("shaders/lightShader02.vs", "shaders/lightShader02.frag");
     Shader lightSourceShader("shaders/sourceShader01.vs", "shaders/sourceShader01.frag");
 
     // Setup Textures
@@ -102,7 +101,7 @@ int main()
 
         // Render:
         // glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         // VIEW MATRIX
@@ -115,7 +114,7 @@ int main()
         // MODEL MATRIX
         glm::mat4 model(1.0f);
         
-        // RENDER LIGHT SOURCE
+        // Render Light Source
         glBindVertexArray(VAO[LIGHT_SOURCE]);
 
         lightSourceShader.use();
@@ -128,14 +127,11 @@ int main()
         model = glm::scale(model, glm::vec3(0.2f));
 
         lightSourceShader.setVertexMatrices(view, model, projection);
+        lightingShader.setVec3("lightPos",  lightPos);
 
             // Frag Uniform
+        // glm::vec3 lightColor = glm::abs(glm::vec3(sin(currentFrame), cos(currentFrame/ 3.0f), sin(currentFrame * 2.0f)));
         glm::vec3 lightColor(1.0f);
-
-        if (coolLightMode) {
-            lightColor = glm::abs(glm::vec3(sin(currentFrame), cos(currentFrame/ 3.0f), sin(currentFrame * 2.0f)));
-        }
-
         lightSourceShader.setVec3("lightColor", lightColor);
 
         glDrawArrays(GL_TRIANGLES, 0, 36);
@@ -160,18 +156,13 @@ int main()
 
         // lightingShader.setVec3("lightColor",  glm::vec3(1.0f, 1.0f, 1.0f));
         lightingShader.setVec3("lightColor",  lightColor);
-        lightingShader.setVec3("lightPos",  lightPos);
         lightingShader.setVec3("viewPos", cam.position);
 
         for(unsigned int i = 0; i < 10; i++)
         {
-            
+            lightingShader.setVec3("objectColor", glm::vec3(0.8f, 0.8f, 0.8f));
             // lightingShader.setVec3("objectColor", glm::vec3(1.0f, 0.5f, 0.31f));
-            if (coolLightMode) {
-                lightingShader.setVec3("objectColor", glm::vec3(0.8f, 0.8f, 0.8f));
-            } else {
-                lightingShader.setVec3("objectColor", cubeColors[i]);
-            }
+            // lightingShader.setVec3("objectColor", cubeColors[i]);
             
             glm::mat4 model = glm::mat4(1.0f);
             model = glm::translate(model, cubePositions[i] + glm::vec3(0.0f, 0.0f, 5.0f));
@@ -186,6 +177,7 @@ int main()
         }
 
         glDrawArrays(GL_TRIANGLES, 0, 36);
+
 
         glfwSwapBuffers(window);
         glfwPollEvents();    
@@ -369,14 +361,6 @@ void processInput(GLFWwindow *window, Camera &cam)
 
     if(glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
         cam.speed -= 0.1f;
-    }
-
-    if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS) {
-        coolLightMode = 0;
-    }
-
-    if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS) {
-        coolLightMode = 1;
     }
     
     // MOVEMENT

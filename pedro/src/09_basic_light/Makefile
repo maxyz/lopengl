@@ -1,4 +1,4 @@
-EXES = basic_light
+EXES = basic_light basic_light_ej2
 
 LIB = libGLAD.a stb_image.o shader.o texture.o camera.o
 
@@ -14,6 +14,9 @@ CPPFLAGS = -I ../../include/ -I ../lib/
 EXTRAS = /usr/lib/x86_64-linux-gnu/libglfw.so libGLAD.a
 
 basic_light: basic_light.cpp $(LIB)
+	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
+
+basic_light_ej2: basic_light_ej2.cpp $(LIB)
 	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
 
 camera.o: ../lib/camera.cpp ../lib/camera.h
