@@ -1,4 +1,4 @@
-EXES = colors
+EXES = colors basic
 
 default_target: $(EXES)
 
@@ -29,6 +29,9 @@ write_text.o: ../lib/write_text.cpp ../lib/write_text.h stb_image.o stb_truetype
 
 # This chapter's files
 colors: colors.cpp libGLAD.a stb_image.o shader.o texture.o write_text.o stb_truetype.o ../lib/camera.h
+	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
+
+basic: basic.cpp libGLAD.a stb_image.o shader.o texture.o write_text.o stb_truetype.o ../lib/camera.h
 	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
 
 
