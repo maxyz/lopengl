@@ -1,4 +1,4 @@
-EXES = colors basic basic-ej1 basic-ej3
+EXES = colors basic basic-ej1 basic-ej3 basic-ej4
 
 default_target: $(EXES)
 
@@ -28,18 +28,20 @@ write_text.o: ../lib/write_text.cpp ../lib/write_text.h stb_image.o stb_truetype
 	g++ $(CPPFLAGS) -c $< -o $@
 
 # This chapter's files
-colors: colors.cpp libGLAD.a stb_image.o shader.o texture.o write_text.o stb_truetype.o ../lib/camera.h
+colors: colors.cpp libGLAD.a stb_image.o shader.o write_text.o stb_truetype.o ../lib/camera.h
 	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
 
-basic: basic.cpp libGLAD.a stb_image.o shader.o texture.o write_text.o stb_truetype.o ../lib/camera.h
+basic: basic.cpp libGLAD.a stb_image.o shader.o write_text.o stb_truetype.o ../lib/camera.h
 	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
 
-basic-ej1: basic-ej1.cpp libGLAD.a stb_image.o shader.o texture.o write_text.o stb_truetype.o ../lib/camera.h
+basic-ej1: basic-ej1.cpp libGLAD.a stb_image.o shader.o write_text.o stb_truetype.o ../lib/camera.h
 	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
 
-basic-ej3: basic-ej3.cpp libGLAD.a stb_image.o shader.o texture.o write_text.o stb_truetype.o ../lib/camera.h
+basic-ej3: basic-ej3.cpp libGLAD.a stb_image.o shader.o write_text.o stb_truetype.o ../lib/camera.h
 	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
 
+basic-ej4: basic-ej4.cpp libGLAD.a stb_image.o shader.o write_text.o stb_truetype.o ../lib/camera.h
+	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
 
 clean:
 	rm -f libGLAD.a gl.o stb_image.o stb_truetype.o shader.o texture.o write_text.o $(EXES)
