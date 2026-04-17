@@ -1,4 +1,4 @@
-EXES = colors basic
+EXES = colors basic basic-ej1
 
 default_target: $(EXES)
 
@@ -32,6 +32,9 @@ colors: colors.cpp libGLAD.a stb_image.o shader.o texture.o write_text.o stb_tru
 	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
 
 basic: basic.cpp libGLAD.a stb_image.o shader.o texture.o write_text.o stb_truetype.o ../lib/camera.h
+	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
+
+basic-ej1: basic-ej1.cpp libGLAD.a stb_image.o shader.o texture.o write_text.o stb_truetype.o ../lib/camera.h
 	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
 
 
