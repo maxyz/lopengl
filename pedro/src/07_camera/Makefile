@@ -1,4 +1,4 @@
-EXES = cam cam2 camDebounce1 camDebounce2 cam_ejs 
+EXES = cam cam2 camDebounce1 camDebounce2 camLockPerspective cam_ejs 
 
 default_target: $(EXES)
 
@@ -21,6 +21,9 @@ camDebounce1: camDebounce1.cpp libGLAD.a stb_image.o shader.o texture.o camera.o
 	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
 
 camDebounce2: camDebounce2.cpp libGLAD.a stb_image.o shader.o texture.o camera.o
+	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
+
+camLockPerspective: camLockPerspective.cpp libGLAD.a stb_image.o shader.o texture.o camera.o
 	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
 
 cam_ejs: cam_ejs.cpp libGLAD.a stb_image.o shader.o texture.o camera.o
