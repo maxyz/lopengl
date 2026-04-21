@@ -53,7 +53,7 @@ void Shader::set_int(const std::string &name, int value) const {
   glUniform1i(glGetUniformLocation(ID, name.c_str()), value);
 }
 void Shader::set_float(const std::string &name, float value) const {
-  glUniform1f(glGetUniformLocation(ID, name.c_str()), value);
+  ::set_float(ID, name, value);
 }
 void Shader::set_vec3(const std::string &name, const glm::vec3 &value) const {
   ::set_vec3(ID, name, value);
@@ -65,7 +65,7 @@ compile_shader_res compile_shader(const GLenum type, const char *source) {
   int success;
   char info_log[512];
 
-  unsigned int shader;
+  id_t shader;
   shader = glCreateShader(type);
   glShaderSource(shader, 1, &source, NULL);
   glCompileShader(shader);
@@ -79,12 +79,11 @@ compile_shader_res compile_shader(const GLenum type, const char *source) {
   return shader;
 }
 
-std::expected<unsigned int, std::string>
-link_shaders(std::vector<unsigned int> shaders) {
+std::expected<id_t, std::string> link_shaders(std::vector<id_t> shaders) {
   int success;
   char info_log[512];
 
-  unsigned int program;
+  id_t program;
   // std::cerr << "glCreateProgram" << std::endl;
   program = glCreateProgram();
   for (auto shader : shaders) {
@@ -133,20 +132,22 @@ read_file_res read_file(const std::filesystem::path &path) {
   }
 }
 
-void set_vec3(const unsigned int id, const std::string &name,
-              const glm::vec3 &value) {
+void set_float(id_t id, const std::string &name, float value) {
+  GLint location = glGetUniformLocation(id, name.c_str());
+  glUniform1f(location, value);
+}
+
+void set_vec3(id_t id, const std::string &name, const glm::vec3 &value) {
   GLint location = glGetUniformLocation(id, name.c_str());
   glUniform3fv(location, 1, glm::value_ptr(value));
 }
 
-void set_vec4(const unsigned int id, const std::string &name,
-              const glm::vec4 &value) {
+void set_vec4(id_t id, const std::string &name, const glm::vec4 &value) {
   GLint location = glGetUniformLocation(id, name.c_str());
   glUniform4fv(location, 1, glm::value_ptr(value));
 }
 
-void set_mat4(const unsigned int id, const std::string &name,
-              const glm::mat4 &value) {
+void set_mat4(id_t id, const std::string &name, const glm::mat4 &value) {
   GLint location = glGetUniformLocation(id, name.c_str());
   glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(value));
 }
