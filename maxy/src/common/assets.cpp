@@ -36,3 +36,42 @@ std::expected<Image, std::string> load_image(const std::string &filename) {
   image.data.reset(data);
   return image;
 }
+
+std::expected<id_t, std::string> load_texture(const std::string &filename) {
+  auto image = load_image(filename);
+  if (!image) {
+    return std::unexpected(image.error());
+  }
+  auto format = guess_format(*image);
+  if (!format) {
+    return std::unexpected(format.error());
+  }
+
+  id_t texture;
+  glGenTextures(1, &texture);
+  glBindTexture(GL_TEXTURE_2D, texture);
+
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
+                  GL_LINEAR_MIPMAP_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, image->width, image->height, 0,
+               *format, GL_UNSIGNED_BYTE, image->data.get());
+  glGenerateMipmap(GL_TEXTURE_2D);
+
+  return texture;
+}
+
+std::expected<GLenum, std::string> guess_format(const Image &image) {
+  if (image.nr_channels == 1)
+    return GL_RED;
+  if (image.nr_channels == 3)
+    return GL_RGB;
+  if (image.nr_channels == 4)
+    return GL_RGBA;
+  return std::unexpected(std::format(
+      "Could not detect image format, invalid amount of channels {}",
+      image.nr_channels));
+}

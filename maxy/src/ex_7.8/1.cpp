@@ -85,8 +85,6 @@ const unsigned int indices[] = {
 };
 
 unsigned int buffers();
-std::expected<unsigned int, std::string>
-load_texture(const std::string &filename, GLenum format = GL_RGB);
 
 std::expected<std::vector<std::function<void()>>, std::string> init_shaders() {
   auto res = Shader::build("shaders/ex_7.8.1.vert", "shaders/ex_7.8.1.frag");
@@ -101,7 +99,7 @@ std::expected<std::vector<std::function<void()>>, std::string> init_shaders() {
     return std::unexpected(texture_.error());
   }
   auto texture = *texture_;
-  texture_ = load_texture("textures/awesomeface.png", GL_RGBA);
+  texture_ = load_texture("textures/awesomeface.png");
   if (!texture_) {
     return std::unexpected(texture_.error());
   }
@@ -156,30 +154,6 @@ unsigned int buffers() {
   glBindVertexArray(0);
 
   return VAO;
-}
-
-std::expected<unsigned int, std::string>
-load_texture(const std::string &filename, GLenum format) {
-  auto image = load_image(filename);
-  if (!image) {
-    return std::unexpected(image.error());
-  }
-
-  unsigned int texture;
-  glGenTextures(1, &texture);
-  glBindTexture(GL_TEXTURE_2D, texture);
-
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
-                  GL_LINEAR_MIPMAP_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, image->width, image->height, 0, format,
-               GL_UNSIGNED_BYTE, image->data.get());
-  glGenerateMipmap(GL_TEXTURE_2D);
-
-  return texture;
 }
 
 void processInput(GLFWwindow *window);

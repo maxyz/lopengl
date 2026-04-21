@@ -8,7 +8,7 @@
 #include <string>
 #include <vector>
 
-using id_t = unsigned int;
+#include "common/types.hpp"
 
 class Shader {
 public:
@@ -34,6 +34,7 @@ compile_shader_res compile_shader(const GLenum type, const char *source);
 using link_shaders_res = std::expected<id_t, std::string>;
 link_shaders_res link_shaders(const std::vector<id_t> shaders);
 
+void set_int(id_t id, const std::string &name, int value);
 void set_float(id_t id, const std::string &name, float value);
 void set_vec3(id_t id, const std::string &name, const glm::vec3 &value);
 void set_vec4(id_t id, const std::string &name, const glm::vec4 &value);

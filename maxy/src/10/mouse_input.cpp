@@ -163,8 +163,6 @@ glm::vec3 cube_positions[] = {
     glm::vec3(1.5f, 0.2f, -1.5f),   glm::vec3(-1.3f, 1.0f, -1.5f)};
 
 unsigned int buffers();
-std::expected<unsigned int, std::string>
-load_texture(const std::string &filename, GLenum format = GL_RGB);
 void update_camera_front();
 void update_fov(float delta);
 
@@ -193,7 +191,7 @@ std::expected<cbs_t, std::string> init_shaders() {
     return std::unexpected(texture_.error());
   }
   auto texture = *texture_;
-  texture_ = load_texture("textures/awesomeface.png", GL_RGBA);
+  texture_ = load_texture("textures/awesomeface.png");
   if (!texture_) {
     return std::unexpected(texture_.error());
   }
@@ -310,30 +308,6 @@ unsigned int buffers() {
   glBindVertexArray(0);
 
   return VAO;
-}
-
-std::expected<unsigned int, std::string>
-load_texture(const std::string &filename, GLenum format) {
-  auto image = load_image(filename);
-  if (!image) {
-    return std::unexpected(image.error());
-  }
-
-  unsigned int texture;
-  glGenTextures(1, &texture);
-  glBindTexture(GL_TEXTURE_2D, texture);
-
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
-                  GL_LINEAR_MIPMAP_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, image->width, image->height, 0, format,
-               GL_UNSIGNED_BYTE, image->data.get());
-  glGenerateMipmap(GL_TEXTURE_2D);
-
-  return texture;
 }
 
 void process_input(GLFWwindow *window, uint64_t &e);

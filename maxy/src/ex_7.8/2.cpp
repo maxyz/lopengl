@@ -86,8 +86,7 @@ const unsigned int indices[] = {
 
 unsigned int buffers();
 std::expected<unsigned int, std::string>
-load_texture(const std::string &filename, GLenum format = GL_RGB,
-             GLenum wrap = GL_REPEAT);
+load_texture(const std::string &filename, GLenum format, GLenum wrap);
 
 std::expected<std::vector<std::function<void()>>, std::string> init_shaders() {
   auto res = Shader::build("shaders/ex_7.8.2.vert", "shaders/ex_7.8.2.frag");

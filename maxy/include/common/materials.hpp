@@ -13,7 +13,24 @@ struct material_t {
   float shininess;
 };
 
+struct diffuse_map_t {
+  id_t diffuse;
+
+  glm::vec3 specular;
+  float shininess;
+};
+
+struct specular_map_t {
+  id_t diffuse;
+  id_t specular;
+  float shininess;
+};
+
 void set_material(id_t id, const std::string &name, const material_t &value);
+void set_diffuse_map(id_t id, const std::string &name,
+                     const diffuse_map_t &value);
+void set_specular_map(id_t id, const std::string &name,
+                      const specular_map_t &value);
 
 const material_t emerald = {.ambient = glm::vec3(0.0215, 0.1745, 0.0215),
                             .diffuse = glm::vec3(0.07568, 0.61424, 0.07568),

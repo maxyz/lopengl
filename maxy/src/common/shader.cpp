@@ -131,6 +131,10 @@ read_file_res read_file(const std::filesystem::path &path) {
                                        path.string(), e.what()));
   }
 }
+void set_int(id_t id, const std::string &name, int value) {
+  GLint location = glGetUniformLocation(id, name.c_str());
+  glUniform1i(location, value);
+}
 
 void set_float(id_t id, const std::string &name, float value) {
   GLint location = glGetUniformLocation(id, name.c_str());

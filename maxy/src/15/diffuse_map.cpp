@@ -3,7 +3,6 @@
 #include <functional>
 #include <glm/geometric.hpp>
 #include <iostream>
-#include <print>
 #include <vector>
 
 #include <glad/gl.h>
@@ -14,21 +13,37 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <stb_image.h>
 
+#include <backends/imgui_impl_glfw.h>
+#include <backends/imgui_impl_opengl3.h>
+#include <imgui.h>
+
 #include "common/assets.hpp"
 #include "common/camera.hpp"
+#include "common/light.hpp"
+#include "common/materials.hpp"
 #include "common/shader.hpp"
 
 const char *TITLE = "LOpenGL";
-const GLuint WIDTH = 800;
-const GLuint HEIGHT = 600;
+const GLuint WIDTH = 1024;
+const GLuint HEIGHT = 768;
 
 struct view_t {
   float width = WIDTH;
   float height = HEIGHT;
 };
-view_t viewport;
 
-Camera camera = Camera(glm::vec3(0.f, 0.f, 3.f));
+struct state_t {
+  view_t viewport = {.width = WIDTH, .height = HEIGHT};
+  Camera camera = Camera(glm::vec3(0.f, 0.f, 3.f));
+  light_t light = {.position = glm::vec3(2.f, 1.f, -2.f),
+                   .ambient = glm::vec3(.2f, .2f, .2f),
+                   .diffuse = glm::vec3(.5f, .5f, .5f),
+                   .specular = glm::vec3(1.f, 1.f, 1.f)};
+
+  bool mouse_new_focus = true;
+};
+// Global state
+state_t state;
 
 enum event_t {
   NONE = 0,
@@ -48,14 +63,6 @@ enum event_t {
   light_right = 1 << 13,
   light_for = 1 << 14,
   light_back = 1 << 15,
-  ambient_inc = 1 << 16,
-  ambient_dec = 1 << 17,
-  diffuse_inc = 1 << 18,
-  diffuse_dec = 1 << 19,
-  specular_inc = 1 << 20,
-  specular_dec = 1 << 21,
-  shininess_inc = 1 << 22,
-  shininess_dec = 1 << 23,
 };
 
 using cb_t = std::function<void(uint64_t event, float delta)>;
@@ -95,10 +102,16 @@ int main() {
 
 void cleanup(cleanup_t cleanup_) {
   cleanup_();
+
+  ImGui_ImplOpenGL3_Shutdown();
+  ImGui_ImplGlfw_Shutdown();
+  ImGui::DestroyContext();
+
   glfwTerminate();
 }
 
-bool mouse_new_focus = true;
+void key_callback(GLFWwindow *window, int key, int scancode, int action,
+                  int mods);
 void mouse_callback(GLFWwindow *window, double x_pos, double y_pos);
 void scroll_callback(GLFWwindow *window, double x_offset, double y_offset);
 
@@ -111,8 +124,8 @@ std::expected<GLFWwindow *, std::string> init_window() {
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-  GLFWwindow *window =
-      glfwCreateWindow(viewport.width, viewport.height, TITLE, NULL, NULL);
+  GLFWwindow *window = glfwCreateWindow(
+      state.viewport.width, state.viewport.height, TITLE, NULL, NULL);
   if (window == NULL) {
     glfwTerminate();
     return std::unexpected("failed to create GLFW window");
@@ -123,9 +136,26 @@ std::expected<GLFWwindow *, std::string> init_window() {
     glfwTerminate();
     return std::unexpected("failed to init glad on top of glfw");
   }
-  glViewport(0, 0, viewport.width, viewport.height);
+  glViewport(0, 0, state.viewport.width, state.viewport.height);
+
+  IMGUI_CHECKVERSION();
+  ImGui::CreateContext();
+  ImGuiIO &io = ImGui::GetIO();
+  auto font_path = get_asset_path("fonts/NotoSans-Regular.ttf");
+  if (!font_path) {
+    glfwTerminate();
+    return std::unexpected("failed to obtain default font");
+  }
+  io.Fonts->AddFontFromFileTTF(font_path->c_str(), 20);
+  io.IniFilename = NULL;
+
+  ImGui::StyleColorsDark();
+  ImGui_ImplGlfw_InitForOpenGL(window, true);
+  ImGui_ImplOpenGL3_Init();
+
   glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
+  glfwSetKeyCallback(window, key_callback);
   glfwSetCursorPosCallback(window, mouse_callback);
   glfwSetScrollCallback(window, scroll_callback);
   glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
@@ -135,8 +165,8 @@ std::expected<GLFWwindow *, std::string> init_window() {
 }
 
 void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
-  viewport.width = width;
-  viewport.height = height;
+  state.viewport.width = width;
+  state.viewport.height = height;
   glViewport(0, 0, width, height);
 }
 
@@ -146,7 +176,7 @@ void window_focus_callback(GLFWwindow *window, int focused) {
     glfwSetCursorPosCallback(window, NULL);
 
   } else {
-    mouse_new_focus = true;
+    state.mouse_new_focus = true;
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     glfwSetCursorPosCallback(window, mouse_callback);
   }
@@ -207,8 +237,6 @@ glm::vec3 cube_positions[] = {
     glm::vec3(1.3f, -2.0f, -2.5f),  glm::vec3(1.5f, 2.0f, -2.5f),
     glm::vec3(1.5f, 0.2f, -1.5f),   glm::vec3(-1.3f, 1.0f, -1.5f)};
 
-glm::vec3 light_position = glm::vec3(2.f, 1.f, -2.f);
-
 struct buffers_t {
   unsigned int cube_vao;
   unsigned int light_vao;
@@ -217,147 +245,63 @@ struct buffers_t {
 };
 
 buffers_t buffers();
+void process_event_t(uint64_t e, float delta);
+void strobe_light(light_t &light, double now);
 
 std::expected<hooks_t, std::string> init_shaders() {
-  auto shader = Shader::build("shaders/13_cube.vert", "shaders/13_cube.frag");
+  auto shader = Shader::build("shaders/15_view.vert", "shaders/15_view.frag");
   if (!shader) {
     return std::unexpected(shader.error());
   }
   auto light_shader =
-      Shader::build("shaders/13_light.vert", "shaders/13_light.frag");
+      Shader::build("shaders/15_light.vert", "shaders/15_light.frag");
   if (!light_shader) {
     return std::unexpected(light_shader.error());
   }
   auto p = shader->ID;
   auto light_id = light_shader->ID;
-  const std::string filename{"textures/container.jpg"};
-  auto texture_ = load_texture(filename);
-  if (!texture_) {
-    return std::unexpected(texture_.error());
+  const std::string filename{"textures/container2.png"};
+  auto load_texture_res = load_texture(filename);
+  if (!load_texture_res) {
+    return std::unexpected(load_texture_res.error());
   }
-  auto texture = *texture_;
-  texture_ = load_texture("textures/awesomeface.png");
-  if (!texture_) {
-    return std::unexpected(texture_.error());
-  }
-  auto texture1 = *texture_;
+  auto texture = *load_texture_res;
   auto vaos = buffers();
   auto cube_vao = vaos.cube_vao;
   auto light_vao = vaos.light_vao;
-  static auto light_strengths = glm::vec4(.1f, 1.f, .5f, 32.f);
 
-  auto f = [p, light_id, cube_vao, light_vao, texture, texture1](uint64_t e,
-                                                                 float delta) {
+  auto f = [p, light_id, cube_vao, light_vao, texture](uint64_t e,
+                                                       float delta) {
     auto now = glfwGetTime();
+    process_event_t(e, delta);
 
-    if (e & event_t::increase_fov) {
-      camera.update_fov(1.f);
-    }
-    if (e & event_t::decrease_fov) {
-      camera.update_fov(-1.f);
-    }
-    if (e & event_t::camera_up) {
-      camera.process_movement(CameraMovement::UP, delta);
-    }
-    if (e & event_t::camera_down) {
-      camera.process_movement(CameraMovement::DOWN, delta);
-    }
-    if (e & event_t::camera_left) {
-      camera.process_movement(CameraMovement::LEFT, delta);
-    }
-    if (e & event_t::camera_right) {
-      camera.process_movement(CameraMovement::RIGHT, delta);
-    }
-    if (e & event_t::camera_for) {
-      camera.process_movement(CameraMovement::FORWARD, delta);
-    }
-    if (e & event_t::camera_back) {
-      camera.process_movement(CameraMovement::BACKWARD, delta);
-    }
-    if (e & event_t::camera_yaw_left) {
-      camera.process_rotation(-1.f, delta);
-    }
-    if (e & event_t::camera_yaw_right) {
-      camera.process_rotation(1.f, delta);
-    }
-    if (e & event_t::light_up) {
-      light_position += glm::vec3(0.f, 0.f, SPEED * delta);
-    }
-    if (e & event_t::light_down) {
-      light_position -= glm::vec3(0.f, 0.f, SPEED * delta);
-    }
-    if (e & event_t::light_up) {
-      light_position += glm::vec3(0.f, SPEED * delta, 0.f);
-    }
-    if (e & event_t::light_down) {
-      light_position -= glm::vec3(0.f, SPEED * delta, 0.f);
-    }
-    if (e & event_t::light_left) {
-      light_position -= glm::vec3(SPEED * delta, 0.f, 0.f);
-    }
-    if (e & event_t::light_right) {
-      light_position += glm::vec3(SPEED * delta, 0.f, 0.f);
-    }
-    if (e & event_t::light_for) {
-      light_position -= glm::vec3(0.f, 0.f, SPEED * delta);
-    }
-    if (e & event_t::light_back) {
-      light_position += glm::vec3(0.f, 0.f, SPEED * delta);
-    }
-    if (e & event_t::ambient_inc) {
-      light_strengths.x += 0.01;
-      std::println("Ambient: {}", light_strengths.x);
-    }
-    if (e & event_t::ambient_dec) {
-      light_strengths.x -= 0.01;
-      std::println("Ambient: {}", light_strengths.x);
-    }
-    if (e & event_t::diffuse_inc) {
-      light_strengths.y += 0.01;
-      std::println("Diffuse: {}", light_strengths.y);
-    }
-    if (e & event_t::diffuse_dec) {
-      light_strengths.y -= 0.01;
-      std::println("Diffuse: {}", light_strengths.y);
-    }
-    if (e & event_t::specular_inc) {
-      light_strengths.z += 0.01;
-      std::println("Specular: {}", light_strengths.z);
-    }
-    if (e & event_t::specular_dec) {
-      light_strengths.z -= 0.01;
-      std::println("Specular: {}", light_strengths.z);
-    }
-    if (e & event_t::shininess_inc) {
-      light_strengths.w *= 2;
-      std::println("Shininess: {}", light_strengths.w);
-    }
-    if (e & event_t::shininess_dec) {
-      light_strengths.w /= 2;
-      std::println("Shininess: {}", light_strengths.w);
-    }
-    glm::vec3 light_rot = light_position + glm::vec3(sin(now), 0.f, cos(now));
+    strobe_light(state.light, now);
+
     glUseProgram(p);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, texture);
-    glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, texture1);
+    diffuse_map_t diffuse_map = {
+        .diffuse = 0,
+        .specular = glm::vec3(.5f, .5f, .5f),
+        .shininess = 64.f,
+    };
 
     glm::mat4 model;
 
-    glm::mat4 view = camera.get_view_matrix();
+    glm::mat4 view = state.camera.get_view_matrix();
 
     glm::mat4 projection =
-        glm::perspective(glm::radians(camera.fov),
-                         static_cast<float>(viewport.width) /
-                             static_cast<float>(viewport.height),
+        glm::perspective(glm::radians(state.camera.fov),
+                         static_cast<float>(state.viewport.width) /
+                             static_cast<float>(state.viewport.height),
                          .1f, 100.f);
 
     set_mat4(p, "view", view);
     set_mat4(p, "projection", projection);
-    set_vec3(p, "light_pos", light_rot);
-    set_vec3(p, "view_pos", camera.position);
-    set_vec4(p, "light_strengths", light_strengths);
+    set_vec3(p, "light_pos", state.light.position);
+    set_vec3(p, "view_pos", state.camera.position);
+    set_light(p, "light", state.light);
+    set_diffuse_map(p, "diffuse_map", diffuse_map);
 
     glBindVertexArray(cube_vao);
 
@@ -365,6 +309,7 @@ std::expected<hooks_t, std::string> init_shaders() {
 
     set_mat4(light_id, "view", view);
     set_mat4(light_id, "projection", projection);
+    set_light(light_id, "light", state.light);
 
     float angle;
     for (unsigned int i = 0; i < 10; ++i) {
@@ -379,7 +324,7 @@ std::expected<hooks_t, std::string> init_shaders() {
     }
 
     model = glm::mat4(1.f);
-    model = glm::translate(model, light_rot);
+    model = glm::translate(model, state.light.position);
     model = glm::scale(model, glm::vec3(.2f));
 
     glUseProgram(light_id);
@@ -387,14 +332,92 @@ std::expected<hooks_t, std::string> init_shaders() {
     glDrawArrays(GL_TRIANGLES, 0, 36);
   };
 
-  shader->use();
-  shader->set_int("texture1", 0);
-  shader->set_int("texture2", 1);
-  shader->set_vec3("object_color", glm::vec3(1.f, .5f, .31f));
-  shader->set_vec3("light_color", glm::vec3(1.f, 1.f, 1.f));
+  auto imgui = [](uint64_t e, float delta) {
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+    ImGui::NewFrame();
+    ImGui::SetNextWindowPos(ImVec2(6.0f, 6.0f), ImGuiCond_Once);
+    ImGui::Begin("Scene information", NULL, ImGuiWindowFlags_AlwaysAutoResize);
+    ImGui::PushItemWidth(150.0f);
 
-  cbs_t v{f};
+    ImGui::LabelText("Pos", "(%.2f, %.2f, %.2f)", state.camera.position.x,
+                     state.camera.position.y, state.camera.position.z);
+
+    ImGui::PopItemWidth();
+    ImGui::End();
+
+    ImGui::Render();
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+  };
+
+  shader->use();
+  shader->set_int("material.diffuse", 0);
+
+  cbs_t v{f, imgui};
   return hooks_t{.callbacks = v, .cleanup = vaos.cleanup};
+}
+
+void process_event_t(uint64_t e, float delta) {
+  if (e & event_t::increase_fov) {
+    state.camera.update_fov(1.f);
+  }
+  if (e & event_t::decrease_fov) {
+    state.camera.update_fov(-1.f);
+  }
+  if (e & event_t::camera_up) {
+    state.camera.process_movement(CameraMovement::UP, delta);
+  }
+  if (e & event_t::camera_down) {
+    state.camera.process_movement(CameraMovement::DOWN, delta);
+  }
+  if (e & event_t::camera_left) {
+    state.camera.process_movement(CameraMovement::LEFT, delta);
+  }
+  if (e & event_t::camera_right) {
+    state.camera.process_movement(CameraMovement::RIGHT, delta);
+  }
+  if (e & event_t::camera_for) {
+    state.camera.process_movement(CameraMovement::FORWARD, delta);
+  }
+  if (e & event_t::camera_back) {
+    state.camera.process_movement(CameraMovement::BACKWARD, delta);
+  }
+  if (e & event_t::camera_yaw_left) {
+    state.camera.process_rotation(120 * -SPEED * delta, 0.f);
+  }
+  if (e & event_t::camera_yaw_right) {
+    state.camera.process_rotation(120 * SPEED * delta, 0.f);
+  }
+  if (e & event_t::light_up) {
+    state.light.position += glm::vec3(0.f, 0.f, SPEED * delta);
+  }
+  if (e & event_t::light_down) {
+    state.light.position -= glm::vec3(0.f, 0.f, SPEED * delta);
+  }
+  if (e & event_t::light_up) {
+    state.light.position += glm::vec3(0.f, SPEED * delta, 0.f);
+  }
+  if (e & event_t::light_down) {
+    state.light.position -= glm::vec3(0.f, SPEED * delta, 0.f);
+  }
+  if (e & event_t::light_left) {
+    state.light.position -= glm::vec3(SPEED * delta, 0.f, 0.f);
+  }
+  if (e & event_t::light_right) {
+    state.light.position += glm::vec3(SPEED * delta, 0.f, 0.f);
+  }
+  if (e & event_t::light_for) {
+    state.light.position -= glm::vec3(0.f, 0.f, SPEED * delta);
+  }
+  if (e & event_t::light_back) {
+    state.light.position += glm::vec3(0.f, 0.f, SPEED * delta);
+  }
+}
+
+void strobe_light(light_t &light, double now) {
+  glm::vec3 color{sin(now) * 2.f, sin(now) * .7f, cos(now) * 1.3f};
+  light.diffuse = color * glm::vec3(.5f);
+  light.ambient = light.diffuse * glm::vec3(.2f);
 }
 
 buffers_t buffers() {
@@ -522,59 +545,35 @@ void process_input(GLFWwindow *window, uint64_t &e) {
   if (glfwGetKey(window, GLFW_KEY_H) == GLFW_PRESS) {
     e |= event_t::light_down;
   }
-  if (glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS) {
-    if ((glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) ||
-        (glfwGetKey(window, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS)) {
-      e |= event_t::ambient_inc;
-    } else {
-      e |= event_t::ambient_dec;
-    }
-  }
-  if (glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS) {
-    if ((glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) ||
-        (glfwGetKey(window, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS)) {
-      e |= event_t::diffuse_inc;
-    } else {
-      e |= event_t::diffuse_dec;
-    }
-  }
-  if (glfwGetKey(window, GLFW_KEY_C) == GLFW_PRESS) {
-    if ((glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) ||
-        (glfwGetKey(window, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS)) {
-      e |= event_t::specular_inc;
-    } else {
-      e |= event_t::specular_dec;
-    }
-  }
-  if (glfwGetKey(window, GLFW_KEY_V) == GLFW_PRESS) {
-    if ((glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) ||
-        (glfwGetKey(window, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS)) {
-      e |= event_t::shininess_inc;
-    } else {
-      e |= event_t::shininess_dec;
-    }
-  }
 }
+
+void key_callback(GLFWwindow *window, int key, int scancode, int action,
+                  int mods) {}
 
 const float MOUSE_SENSITIVITY = .1f;
 
 void mouse_callback(GLFWwindow *window, double x_pos, double y_pos) {
-  static float x = viewport.width / 2;
-  static float y = viewport.height / 2;
+  ImGuiIO &io = ImGui::GetIO();
+  if (io.WantCaptureMouse) {
+    return;
+  }
 
-  if (mouse_new_focus) {
+  static float x = state.viewport.width / 2;
+  static float y = state.viewport.height / 2;
+
+  if (state.mouse_new_focus) {
     x = x_pos;
     y = y_pos;
-    mouse_new_focus = false;
+    state.mouse_new_focus = false;
   }
 
   float x_offset = x_pos - x;
   float y_offset = y - y_pos;
   x = x_pos;
   y = y_pos;
-  camera.process_rotation(x_offset, y_offset);
+  state.camera.process_rotation(x_offset, y_offset);
 }
 
 void scroll_callback(GLFWwindow *window, double x_offset, double y_offset) {
-  camera.update_fov(static_cast<float>(y_offset));
+  state.camera.update_fov(static_cast<float>(y_offset));
 }
