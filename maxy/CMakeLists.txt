@@ -23,9 +23,14 @@ set(LIBS ${LIBS} glfw)
 find_package(glm REQUIRED)
 
 find_package(PkgConfig REQUIRED)
+
 pkg_check_modules(STB REQUIRED IMPORTED_TARGET stb)
 set(LIBS ${LIBS} PkgConfig::STB)
 include_directories(${STB_INCLUDE_DIRS})
+
+pkg_check_modules(IMGUI REQUIRED IMPORTED_TARGET imgui)
+set(LIBS ${LIBS} PkgConfig::IMGUI)
+include_directories(${IMGUI_INCLUDE_DIRS})
 
 include_directories(${CMAKE_SOURCE_DIR}/include)
 

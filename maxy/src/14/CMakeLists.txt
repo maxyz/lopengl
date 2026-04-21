@@ -32,3 +32,10 @@ add_custom_command(TARGET 14_ex_2 POST_BUILD
   COMMAND ${CMAKE_COMMAND} -E copy_directory
   ${CMAKE_CURRENT_SOURCE_DIR}/shaders
     $<TARGET_FILE_DIR:14_ex_2>/shaders)
+
+add_executable(14_imgui imgui.cpp)
+target_link_libraries(14_imgui ${LIBS})
+add_custom_command(TARGET 14_imgui POST_BUILD
+  COMMAND ${CMAKE_COMMAND} -E copy_directory
+  ${CMAKE_CURRENT_SOURCE_DIR}/shaders
+    $<TARGET_FILE_DIR:14_imgui>/shaders)

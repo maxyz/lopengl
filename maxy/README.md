@@ -1,7 +1,7 @@
 ## Learning OpenGL
 
 ```sh
-sudo apt install libglfw3-dev python3-glad libstb-dev pkgconf
+sudo apt install cmake libglfw3-dev libimgui-dev libstb-dev pkgconf python3-glad
 glad --api="gl:compatibility=4.6" --extensions GL_KHR_debug --out-path=. c
 ```
 
