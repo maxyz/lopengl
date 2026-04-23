@@ -20,7 +20,7 @@ std::string readShader(const char* shaderPath) {
     }
     catch(std::ifstream::failure e)
     {
-        std::cout << "ERROR::SHADER::FILE_NOT_SUCCESFULLY_READ" << std::endl;
+        std::cout << "ERROR::SHADER::FILE_NOT_SUCCESFULLY_READ (" << shaderPath << ")" << std::endl;
     }
     return shaderCode;
 }
