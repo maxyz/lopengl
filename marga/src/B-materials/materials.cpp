@@ -276,6 +276,16 @@ int main()
         ImGui::PopItemWidth();
         ImGui::End();
 
+        // If we are not editing the colors, switch them with time
+        if (glfwGetInputMode(window, GLFW_CURSOR) == GLFW_CURSOR_DISABLED) {
+            light.ambient[0] = sin(glfwGetTime() * 2.0f) * 0.2f;
+            light.ambient[1] = sin(glfwGetTime() * 0.7f) * 0.2f;
+            light.ambient[2] = sin(glfwGetTime() * 1.3f) * 0.2f;
+            light.diffuse[0] = sin(glfwGetTime() * 2.0f) * 0.5f;
+            light.diffuse[1] = sin(glfwGetTime() * 0.7f) * 0.5f;
+            light.diffuse[2] = sin(glfwGetTime() * 1.3f) * 0.5f;
+        }
+
         ourShader.use();
         ourShader.setVec3f("viewPos", glm::value_ptr(camera.Position));
 
