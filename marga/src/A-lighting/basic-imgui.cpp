@@ -45,6 +45,7 @@ bool firstMouse = true;
 // Handle mouse input
 void mouse_callback(GLFWwindow* window, double xpos, double ypos)
 {
+    // Let ImGui handle the mouse
     ImGuiIO& io = ImGui::GetIO();
     if (io.WantCaptureMouse)
         return;  // let ImGui handle it
@@ -82,7 +83,6 @@ void keyboard_callback(GLFWwindow* window, int key, int scancode, int action, in
             firstMouse = true;
         }
     }
-
 }
 
 void processInput(GLFWwindow *window, float deltaTime, Camera &camera)
@@ -218,7 +218,6 @@ int main()
     //io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
     io.Fonts->AddFontFromFileTTF("../media/Roboto-Regular.ttf", 20);
     io.IniFilename = NULL; // Avoid creating imgui.ini
-    //io.Fonts->GetTexDataAsRGBA32();     
 
     // Setup Dear ImGui style
     ImGui::StyleColorsDark();
@@ -249,6 +248,7 @@ int main()
         ImGui::PushItemWidth(150.0f);
         ImGui::LabelText("Pos","(%.2f, %.2f, %.2f)", camera.Position.x, camera.Position.y, camera.Position.z);
         ImGui::LabelText("Front","(%.2f, %.2f, %.2f)", camera.Front.x, camera.Front.y, camera.Front.z);
+        // Only show the controls when the mouse is not captured by the camera
         if (glfwGetInputMode(window, GLFW_CURSOR) != GLFW_CURSOR_DISABLED) {
             ImGui::SliderFloat("Ambience", &light.ambient, -1.0f, 1.0f);
             ImGui::SliderFloat("Diffuse", &light.diffuse, -1.0f, 1.0f);
@@ -258,7 +258,6 @@ int main()
         ImGui::SeparatorText("");
         ImGui::Text("Press TAB to switch modes");
         ImGui::PopItemWidth();
-
         ImGui::End();
 
         ourShader.use();
