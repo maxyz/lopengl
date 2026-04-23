@@ -29,6 +29,13 @@ typedef struct Material {
     float shininess;
 } Material;
 
+typedef struct Light {
+    float position[3];
+    float ambient[3];
+    float diffuse[3];
+    float specular[3];
+} Light;
+
 void framebuffer_size_callback(GLFWwindow* window, int _width, int _height)
 {
     glViewport(0, 0, _width, _height);
@@ -176,11 +183,6 @@ int main()
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
 
-    // Position of the light
-    glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
-    ourShader.use();
-    ourShader.setVec3f("lightPos", glm::value_ptr(lightPos));
-
     // We have 10 cubes
     glm::vec3 cubePositions[] = {
     glm::vec3( 0.0f,  0.0f,  0.0f), 
@@ -207,7 +209,14 @@ int main()
     glfwSetScrollCallback(window, scroll_callback);
     glfwSetKeyCallback(window, keyboard_callback);
 
-    // Starting lighting values (ambient, diffuse, specular, shininess)
+    // Starting lighting values (position, ambient, diffuse, specular)
+    Light light = {
+        {1.2f, 1.0f, 2.0f},
+        {0.2f, 0.2f, 0.2f},
+        {0.5f, 0.5f, 0.5f},
+        {1.0f, 1.0f, 1.0f}
+    };
+    // Starting material values
     Material material = { 
             {1.0f, 0.5f, 0.31f},
             {1.0f, 0.5f, 0.31f},
@@ -254,9 +263,12 @@ int main()
         ImGui::LabelText("Front","(%.2f, %.2f, %.2f)", camera.Front.x, camera.Front.y, camera.Front.z);
         // Only show the controls when the mouse is not captured by the camera
         if (glfwGetInputMode(window, GLFW_CURSOR) != GLFW_CURSOR_DISABLED) {
-            ImGui::ColorEdit3("Ambience Color", material.ambient);
-            ImGui::ColorEdit3("Diffuse Color", material.diffuse);
-            ImGui::ColorEdit3("Specular Color", material.specular);
+            ImGui::ColorEdit3("Light Ambience", light.ambient);
+            ImGui::ColorEdit3("Light Diffuse", light.diffuse);
+            ImGui::ColorEdit3("Light Specular", light.specular);
+            ImGui::ColorEdit3("Material Ambience", material.ambient);
+            ImGui::ColorEdit3("Material Diffuse", material.diffuse);
+            ImGui::ColorEdit3("Material Specular", material.specular);
             ImGui::SliderFloat("Shininess", &material.shininess, 0.0f, 5000.0f);
         }
         ImGui::SeparatorText("");
@@ -265,9 +277,11 @@ int main()
         ImGui::End();
 
         ourShader.use();
-        ourShader.setVec3f("lightColor",  (float[]) {1.0f, 1.0f, 1.0f});
         ourShader.setVec3f("viewPos", glm::value_ptr(camera.Position));
 
+        ourShader.setVec3f("light.ambient", light.ambient);
+        ourShader.setVec3f("light.diffuse", light.diffuse);
+        ourShader.setVec3f("light.specular", light.specular);
         ourShader.setVec3f("material.ambient", material.ambient);
         ourShader.setVec3f("material.diffuse", material.diffuse);
         ourShader.setVec3f("material.specular", material.specular);
@@ -275,7 +289,7 @@ int main()
 
         // Position of the light
         glm::vec3 lightPos(1.2f*sin(glfwGetTime()), 1.0f*cos(glfwGetTime()), 2.0f);
-        ourShader.setVec3f("lightPos", glm::value_ptr(lightPos));
+        ourShader.setVec3f("light.position", glm::value_ptr(lightPos));
 
         // Coordinate matrixes
         // ** View **
