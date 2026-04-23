@@ -23,3 +23,11 @@ void set_specular_map(id_t id, const std::string &name,
   set_int(id, std::format("{}.specular", name), value.specular);
   set_float(id, std::format("{}.shininess", name), value.shininess);
 }
+
+void set_emission_map(id_t id, const std::string &name,
+                      const emission_map_t &value) {
+  set_int(id, std::format("{}.diffuse", name), value.diffuse);
+  set_int(id, std::format("{}.specular", name), value.specular);
+  set_int(id, std::format("{}.emission", name), value.emission);
+  set_float(id, std::format("{}.shininess", name), value.shininess);
+}
