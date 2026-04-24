@@ -43,6 +43,8 @@ namespace material {
     constexpr Material white_rubber(0.05f, 0.05f, 0.05f, 0.5f, 0.5f, 0.5f, 0.7f, 0.7f, 0.7f, 0.078125f);
     constexpr Material yellow_rubber(0.05f, 0.05f, 0.0f, 0.5f, 0.5f, 0.4f, 0.7f, 0.7f, 0.04f, 0.078125f);
 
+    constexpr Material cyan_glazed_ceramic(0.1f, 0.18725f, 0.1745f, 0.496f, 0.84151f, 0.79102f, 0.297254f, 0.30829f, 0.306678f, 2.f);
+
 };
 
 

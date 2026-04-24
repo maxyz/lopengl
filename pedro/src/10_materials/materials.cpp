@@ -23,8 +23,8 @@ struct Light {
     glm::vec3 diffuse;
     glm::vec3 specular;
 
-    float ambient_intensity = 0.2;
-    float diff_intensity = 0.5;
+    float ambient_intensity;
+    float diff_intensity;
 
     void changeColor(const glm::vec3 newColor) {
         color = newColor;
@@ -58,13 +58,25 @@ float lastX = 800.f / 2.0, lastY = 400.f / 2.0;
 bool rotateLight = true;
 bool coolLightMode = 0;
 
-Light light = {
+Light light1 = {
     glm::vec3(1.2f, 1.0f, 5.0f),    // Position
     glm::vec3(1.0f),                // Color
     glm::vec3(0.2f, 0.2f, 0.2f),    // Ambient
     glm::vec3(0.5f, 0.5f, 0.5f),    // Diffuse
-    glm::vec3(1.0f, 1.0f, 1.0f)     // Specular
+    glm::vec3(1.0f, 1.0f, 1.0f),    // Specular
+    0.2f,
+    0.5f
 };   
+
+Light light2 = {
+    glm::vec3(1.2f, 1.0f, 5.0f),    // Position
+    glm::vec3(1.0f),                // Color
+    glm::vec3(1.0f),                // Ambient
+    glm::vec3(1.0f),                // Diffuse
+    glm::vec3(1.0f),                // Specular
+    1.0f,
+    1.0f
+};  
 
 Camera cam(glm::vec3(0.0f, 0.0f, 10.0f));
 
@@ -119,6 +131,8 @@ int main()
     glm::mat4 view;
     glm::mat4 projection;
 
+    Light *currentLight = &light2;
+
     while(!glfwWindowShouldClose(window))
     {
         float currentFrame = (float)glfwGetTime();
@@ -146,21 +160,21 @@ int main()
         
         // VERTEX SHADER
         if (rotateLight)
-            light.position = glm::vec3(source_rotation * glm::vec4(light.position, 1.0));
+            currentLight->position = glm::vec3(source_rotation * glm::vec4(currentLight->position, 1.0));
 
-        model = glm::translate(model, light.position);
+        model = glm::translate(model, currentLight->position);
         model = glm::scale(model, glm::vec3(0.2f));
 
         lightSourceShader.setVertexMatrices(view, model, projection);
 
         // FRAGMENT SHADER
         if (coolLightMode) {
-            light.changeColor(glm::abs(glm::vec3(sin(currentFrame), cos(currentFrame/ 3.0f), sin(currentFrame * 2.0f)))); 
+            currentLight->changeColor(glm::abs(glm::vec3(sin(currentFrame), cos(currentFrame/ 3.0f), sin(currentFrame * 2.0f)))); 
         } else {
-            light.changeColor(glm::vec3(1.0f));
+            currentLight->changeColor(glm::vec3(1.0f));
         }
 
-        lightSourceShader.setVec3("lightColor", light.color);
+        lightSourceShader.setVec3("lightColor", currentLight->color);
 
         glDrawArrays(GL_TRIANGLES, 0, 36);
 
@@ -179,8 +193,8 @@ int main()
         // FRAGMENT SHADER
         lightingShader.setVec3("viewPos", cam.position);
 
-        setLight(lightingShader, light);
-        setMaterial(lightingShader, material::gold);
+        setLight(lightingShader, *currentLight);
+        setMaterial(lightingShader, material::cyan_glazed_ceramic);
 
         for(unsigned int i = 0; i < 10; i++)
         {            
