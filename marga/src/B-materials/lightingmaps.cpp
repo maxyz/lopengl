@@ -151,9 +151,12 @@ int main()
     Shader sourceShader("shaders/source-vertex.glsl", "shaders/source-frag.glsl");
 
     Texture::flip_vertically();
-    Texture texture = Texture("../media/container2.png", GL_RGBA);
+    Texture diffuseMap = Texture("../media/container2.png", GL_RGBA);
+    Texture specularMap = Texture("../media/container2_specular.png", GL_RGBA);
 
+    ourShader.use();
     ourShader.setInt("material.diffuse", 0);
+    ourShader.setInt("material.specular", 1);
 
     // Create an Element Buffer Object
     unsigned int EBO;
@@ -231,14 +234,8 @@ int main()
     glfwSetScrollCallback(window, scroll_callback);
     glfwSetKeyCallback(window, keyboard_callback);
 
-    // Starting lighting values (position, ambient, diffuse, specular)
-    Light light = {
-        {1.2f, 1.0f, 2.0f},
-        glm::vec3( 1.0f,  1.0f,  1.0f),
-        0.2f,
-        0.5f,
-        1.0f,
-    };
+    // Starting lighting values (position, color, ambient, diffuse, specular)
+    Light light = { {1.2f, 1.0f, 2.0f}, glm::vec3( 1.0f,  1.0f,  1.0f), 0.2f, 0.5f, 1.0f, };
     // Starting material values
     Material material = { {0.5f, 0.5f, 0.5f}, 32 };
 
@@ -282,8 +279,7 @@ int main()
         ImGui::LabelText("Front","(%.2f, %.2f, %.2f)", camera.Front.x, camera.Front.y, camera.Front.z);
         // Only show the controls when the mouse is not captured by the camera
         if (glfwGetInputMode(window, GLFW_CURSOR) != GLFW_CURSOR_DISABLED) {
-            ImGui::ColorEdit3("Material Specular", material.specular);
-            ImGui::SliderFloat("Shininess", &material.shininess, 0.0f, 5000.0f);
+            ImGui::SliderFloat("Shininess", &material.shininess, 0.0f, 256.0f);
             ImGui::ColorEdit3("Light Color", glm::value_ptr(light.color));
             ImGui::SliderFloat("Light Ambience", &light.ambientStrength, -1.0f, 1.0f);
             ImGui::SliderFloat("Light Diffuse", &light.diffuseStrength, -1.0f, 1.0f);
@@ -313,7 +309,6 @@ int main()
         ourShader.setVec3f("light.specular", glm::value_ptr(specularColor));
 
         // First cube material
-        ourShader.setVec3f("material.specular", material.specular);
         ourShader.setFloat("material.shininess", material.shininess);
 
         // Position of the light
@@ -329,6 +324,13 @@ int main()
 
         ourShader.setMatrix4fv("view", glm::value_ptr(view));
         ourShader.setMatrix4fv("projection", glm::value_ptr(projection));
+
+        // Bind the texture to draw
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, diffuseMap.ID);
+    
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, specularMap.ID);
 
         // Draw each of the 10 cubes, with a different model matrix
         glBindVertexArray(VAO);
