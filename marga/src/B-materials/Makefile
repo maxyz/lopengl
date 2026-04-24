@@ -1,4 +1,4 @@
-EXES = materials
+EXES = materials lightingmaps
 
 default_target: $(EXES)
 
@@ -21,6 +21,10 @@ shader.o: ../lib/shader.cpp ../lib/shader.h
 # This chapter's files
 materials: materials.cpp libGLAD.a shader.o ../lib/camera.h
 	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
+
+lightingmaps: lightingmaps.cpp libGLAD.a shader.o texture.o ../lib/camera.h
+	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
+
 
 clean:
 	rm -f libGLAD.a gl.o stb_image.o stb_truetype.o shader.o texture.o write_text.o $(EXES)
