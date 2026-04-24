@@ -152,7 +152,7 @@ int main()
 
     Texture::flip_vertically();
     Texture diffuseMap = Texture("../media/container2.png", GL_RGBA);
-    Texture specularMap = Texture("../media/container2_specular.png", GL_RGBA);
+    Texture specularMap = Texture("../media/container2_specular_wood.png", GL_RGBA);
     Texture emissionMap = Texture("../media/lighting_maps_emission.png", GL_RGBA);
 
     ourShader.use();
