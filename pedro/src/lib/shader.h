@@ -23,6 +23,7 @@ public:
     void use();
     void setInt(const GLchar* uniformName, const int value);
     void setBool(const GLchar* uniformName, const bool value);
+    void setFloat(const GLchar* uniformName, const float value);
     void setVec3(const GLchar* uniformName, const glm::vec3 &value);
     void setVec4(const GLchar* uniformName, const glm::vec4 &value);
     void setMat3(const GLchar* uniformName, const glm::mat3 &value);
