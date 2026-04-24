@@ -1,4 +1,4 @@
-EXES = materials lightingmaps
+EXES = materials lightingmaps lm-ej2 lm-ej3 lm-ej4
 
 default_target: $(EXES)
 
@@ -25,6 +25,14 @@ materials: materials.cpp libGLAD.a shader.o ../lib/camera.h
 lightingmaps: lightingmaps.cpp libGLAD.a shader.o texture.o ../lib/camera.h
 	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
 
+lm-ej2: lm-ej2.cpp libGLAD.a shader.o texture.o ../lib/camera.h
+	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
+
+lm-ej3: lm-ej3.cpp libGLAD.a shader.o texture.o ../lib/camera.h
+	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
+
+lm-ej4: lm-ej4.cpp libGLAD.a shader.o texture.o ../lib/camera.h
+	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
 
 clean:
 	rm -f libGLAD.a gl.o stb_image.o stb_truetype.o shader.o texture.o write_text.o $(EXES)
