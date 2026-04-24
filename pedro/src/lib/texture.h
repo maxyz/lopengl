@@ -14,8 +14,8 @@ public:
 
     Texture2D(const GLchar* mediaPath, const mediaFormat format);
 
-    void Activate();
-    void Activate(unsigned int index);
+    void activate();
+    void activate(unsigned int index);
 };
 
 #endif

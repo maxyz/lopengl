@@ -35,7 +35,7 @@ int main()
 
         shader.use();
 
-        texture.Activate();
+        texture.activate();
 
         glBindVertexArray(VAO);
         

@@ -66,8 +66,8 @@ int main()
 
         shader.use();
 
-        tex1.Activate(0);
-        tex2.Activate(1);
+        tex1.activate(0);
+        tex2.activate(1);
 
         // // VIEW MATRIX
         // const float radius = 10.0f;

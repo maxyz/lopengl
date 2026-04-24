@@ -62,8 +62,8 @@ int main()
 
         shader.use();
 
-        tex1.Activate(0);
-        tex2.Activate(1);
+        tex1.activate(0);
+        tex2.activate(1);
 
         // VIEW MATRIX
         glm::mat4 view = glm::mat4(1.0f);

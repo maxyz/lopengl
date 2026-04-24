@@ -44,8 +44,8 @@ int main()
 
         shader.use();
 
-        tex1.Activate(0);
-        tex2.Activate(1);
+        tex1.activate(0);
+        tex2.activate(1);
 
         // MODEL MATRIX
         glm::mat4 model = glm::mat4(1.0f);

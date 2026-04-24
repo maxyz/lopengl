@@ -40,9 +40,9 @@ Texture2D::Texture2D(const GLchar* mediaPath, const mediaFormat format) {
     stbi_image_free(data);
 }
 
-void Texture2D::Activate() { this->Activate(0); }
+void Texture2D::activate() { this->activate(0); }
 
-void Texture2D::Activate(unsigned int index) {
+void Texture2D::activate(unsigned int index) {
     glActiveTexture(GL_TEXTURE0 + index);
     glBindTexture(GL_TEXTURE_2D, this->texture);
 }

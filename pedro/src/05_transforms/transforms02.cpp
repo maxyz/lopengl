@@ -45,8 +45,8 @@ int main()
 
         shader.use();
 
-        tex1.Activate(0);
-        tex2.Activate(1);
+        tex1.activate(0);
+        tex2.activate(1);
         
         glm::mat4 trans(1.0f);
         trans = glm::translate(trans, glm::vec3(0.5f, -0.5f, 0.0f));
