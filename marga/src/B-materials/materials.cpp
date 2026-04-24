@@ -31,9 +31,10 @@ typedef struct Material {
 
 typedef struct Light {
     float position[3];
-    float ambient[3];
-    float diffuse[3];
-    float specular[3];
+    glm::vec3 color;
+    float ambientStrength;
+    float diffuseStrength;
+    float specularStrength;
 } Light;
 
 void framebuffer_size_callback(GLFWwindow* window, int _width, int _height)
@@ -212,9 +213,10 @@ int main()
     // Starting lighting values (position, ambient, diffuse, specular)
     Light light = {
         {1.2f, 1.0f, 2.0f},
-        {0.2f, 0.2f, 0.2f},
-        {0.5f, 0.5f, 0.5f},
-        {1.0f, 1.0f, 1.0f}
+        glm::vec3( 1.0f,  1.0f,  1.0f),
+        0.2f,
+        0.5f,
+        1.0f,
     };
     // Starting material values
     Material material = { 
@@ -222,6 +224,7 @@ int main()
             {1.0f, 0.5f, 0.31f},
             {0.5f, 0.5f, 0.5f}, 
             32 };
+
 
     // Setup Dear ImGui context
     IMGUI_CHECKVERSION();
@@ -263,12 +266,13 @@ int main()
         ImGui::LabelText("Front","(%.2f, %.2f, %.2f)", camera.Front.x, camera.Front.y, camera.Front.z);
         // Only show the controls when the mouse is not captured by the camera
         if (glfwGetInputMode(window, GLFW_CURSOR) != GLFW_CURSOR_DISABLED) {
-            ImGui::ColorEdit3("Light Ambience", light.ambient);
-            ImGui::ColorEdit3("Light Diffuse", light.diffuse);
-            ImGui::ColorEdit3("Light Specular", light.specular);
             ImGui::ColorEdit3("Material Ambience", material.ambient);
             ImGui::ColorEdit3("Material Diffuse", material.diffuse);
             ImGui::ColorEdit3("Material Specular", material.specular);
+            ImGui::ColorEdit3("Light Color", glm::value_ptr(light.color));
+            ImGui::SliderFloat("Light Ambience", &light.ambientStrength, -1.0f, 1.0f);
+            ImGui::SliderFloat("Light Diffuse", &light.diffuseStrength, -1.0f, 1.0f);
+            ImGui::SliderFloat("Light Specular", &light.specularStrength, -1.0f, 1.0f);
             ImGui::SliderFloat("Shininess", &material.shininess, 0.0f, 5000.0f);
         }
         ImGui::SeparatorText("");
@@ -278,20 +282,21 @@ int main()
 
         // If we are not editing the colors, switch them with time
         if (glfwGetInputMode(window, GLFW_CURSOR) == GLFW_CURSOR_DISABLED) {
-            light.ambient[0] = sin(glfwGetTime() * 2.0f) * 0.2f;
-            light.ambient[1] = sin(glfwGetTime() * 0.7f) * 0.2f;
-            light.ambient[2] = sin(glfwGetTime() * 1.3f) * 0.2f;
-            light.diffuse[0] = sin(glfwGetTime() * 2.0f) * 0.5f;
-            light.diffuse[1] = sin(glfwGetTime() * 0.7f) * 0.5f;
-            light.diffuse[2] = sin(glfwGetTime() * 1.3f) * 0.5f;
+            light.color.x = sin(glfwGetTime() * 2.0f);
+            light.color.y = sin(glfwGetTime() * 0.7f);
+            light.color.z = sin(glfwGetTime() * 1.3f);
         }
+
+        glm::vec3 diffuseColor = light.color  * light.diffuseStrength; 
+        glm::vec3 ambientColor = diffuseColor * light.ambientStrength;
+        glm::vec3 specularColor = light.color * light.specularStrength;
 
         ourShader.use();
         ourShader.setVec3f("viewPos", glm::value_ptr(camera.Position));
 
-        ourShader.setVec3f("light.ambient", light.ambient);
-        ourShader.setVec3f("light.diffuse", light.diffuse);
-        ourShader.setVec3f("light.specular", light.specular);
+        ourShader.setVec3f("light.ambient", glm::value_ptr(ambientColor));
+        ourShader.setVec3f("light.diffuse", glm::value_ptr(diffuseColor));
+        ourShader.setVec3f("light.specular", glm::value_ptr(specularColor));
         ourShader.setVec3f("material.ambient", material.ambient);
         ourShader.setVec3f("material.diffuse", material.diffuse);
         ourShader.setVec3f("material.specular", material.specular);
@@ -334,6 +339,7 @@ int main()
         sourceShader.setMatrix4fv("view", glm::value_ptr(view));
         sourceShader.setMatrix4fv("projection", glm::value_ptr(projection));
         sourceShader.setMatrix4fv("model", glm::value_ptr(model));
+        sourceShader.setVec3f("lightColor", glm::value_ptr(light.color));
         // draw the light cube object
         glBindVertexArray(lightVAO);
         glDrawArrays(GL_TRIANGLES, 0, 36);
