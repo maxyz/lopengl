@@ -16,18 +16,12 @@
 #include "backends/imgui_impl_opengl3.h"
 
 #include "lighting_vertices.cpp"
+#include "material_values.cpp"
 
-const int INITIAL_WIDTH = 800;
-const int INITIAL_HEIGHT = 600;
+const int INITIAL_WIDTH = 1024;
+const int INITIAL_HEIGHT = 768;
 
 float width = (float) INITIAL_WIDTH, height = (float) INITIAL_HEIGHT;
-
-typedef struct Material {
-    float ambient[3];
-    float diffuse[3];
-    float specular[3];
-    float shininess;
-} Material;
 
 typedef struct Light {
     float position[3];
@@ -46,7 +40,7 @@ void framebuffer_size_callback(GLFWwindow* window, int _width, int _height)
 }
 
 // Mouse input requires a number of global variables :-/
-Camera camera = Camera(glm::vec3(0.0f, 0.0f, 5.0f));
+Camera camera = Camera(glm::vec3(0.0f, 0.0f, 10.0f));
 double lastX = 400, lastY = 300;
 bool firstMouse = true;
 
@@ -126,7 +120,7 @@ int main()
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-  
+
     GLFWwindow* window = glfwCreateWindow(INITIAL_WIDTH, INITIAL_HEIGHT, "Materials", NULL, NULL);
     if (window == NULL)
     {
@@ -145,7 +139,7 @@ int main()
 
     // Initial size and call back for resizing
     glViewport(0, 0, INITIAL_WIDTH, INITIAL_HEIGHT);
-    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback); 
+    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
     // Read shaders
     Shader ourShader("shaders/vertex.glsl", "shaders/fragment.glsl");
@@ -159,7 +153,7 @@ int main()
     glGenBuffers(1, &VBO);
     // Generate a Vertex array
     unsigned int VAO;
-    glGenVertexArrays(1, &VAO);  
+    glGenVertexArrays(1, &VAO);
 
     // ..:: Initialization code (done once (unless your object frequently changes)) :: ..
     // 1. bind Vertex Array Object
@@ -184,25 +178,40 @@ int main()
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
 
-    // We have 10 cubes
+    // We have 25 cubes
     glm::vec3 cubePositions[] = {
-    glm::vec3( 0.0f,  0.0f,  0.0f), 
-    glm::vec3( 2.0f,  5.0f, -15.0f), 
-    glm::vec3(-1.5f, -2.2f, -2.5f),  
-    glm::vec3(-3.8f, -2.0f, -12.3f),  
-    glm::vec3( 2.4f, -0.4f, -3.5f),  
-    glm::vec3(-1.7f,  3.0f, -7.5f),  
-    glm::vec3( 1.3f, -2.0f, -2.5f),  
-    glm::vec3( 1.5f,  2.0f, -2.5f), 
-    glm::vec3( 1.5f,  0.2f, -1.5f), 
-    glm::vec3(-1.3f,  1.0f, -1.5f)  
+    glm::vec3( 0.0f,  0.0f,  0.0f),
+    glm::vec3(-4.0f, -0.5f, -5.0f),
+    glm::vec3(-1.5f, -2.2f, -2.5f),
+    glm::vec3(-3.8f, -2.0f, -8.3f),
+    glm::vec3( 2.4f, -3.4f, -3.5f),
+    glm::vec3(-1.7f,  3.0f, -7.5f),
+    glm::vec3( 1.3f, -2.0f, -2.5f),
+    glm::vec3( 1.5f,  2.0f, -2.5f),
+    glm::vec3( 1.5f,  0.2f, -1.5f),
+    glm::vec3(-1.3f,  1.0f, -1.5f),
+    glm::vec3( 4.0f, -4.0f, -5.0f),
+    glm::vec3(-4.5f, -2.2f, -2.5f),
+    glm::vec3(-5.8f, -2.0f, -8.3f),
+    glm::vec3( 6.4f, -0.4f, -3.5f),
+    glm::vec3(-6.7f,  3.0f, -7.5f),
+    glm::vec3( 6.3f, -2.0f, -2.5f),
+    glm::vec3( 5.5f,  3.5f, -2.5f),
+    glm::vec3( 4.5f,  0.2f, -1.5f),
+    glm::vec3(-5.3f,  1.0f, -1.5f),
+    glm::vec3(-2.2f, -3.5f, -2.5f),
+    glm::vec3( 3.3f, -2.0f, -2.5f),
+    glm::vec3( 4.5f,  2.0f, -2.5f),
+    glm::vec3( 1.5f,  4.2f, -1.5f),
+    glm::vec3(-1.3f,  3.5f, -1.5f),
+    glm::vec3(-3.3f,  4.0f, -4.5f)
     };
 
     float deltaTime = 0.0f;	// Time between current frame and last frame
     float lastFrame = 0.0f; // Time of last frame
 
     // Enable depth testing
-    glEnable(GL_DEPTH_TEST);  
+    glEnable(GL_DEPTH_TEST);
 
     // Capture the mouse and call the callback function
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
@@ -219,12 +228,11 @@ int main()
         1.0f,
     };
     // Starting material values
-    Material material = { 
-            {1.0f, 0.5f, 0.31f},
-            {1.0f, 0.5f, 0.31f},
-            {0.5f, 0.5f, 0.5f}, 
-            32 };
-
+    Material material = {
+        {1.0f, 0.5f, 0.31f},
+        {1.0f, 0.5f, 0.31f},
+        {0.5f, 0.5f, 0.5f},
+        32 };
 
     // Setup Dear ImGui context
     IMGUI_CHECKVERSION();
@@ -269,25 +277,25 @@ int main()
             ImGui::ColorEdit3("Material Ambience", material.ambient);
             ImGui::ColorEdit3("Material Diffuse", material.diffuse);
             ImGui::ColorEdit3("Material Specular", material.specular);
+            ImGui::SliderFloat("Shininess", &material.shininess, 0.0f, 5000.0f);
             ImGui::ColorEdit3("Light Color", glm::value_ptr(light.color));
             ImGui::SliderFloat("Light Ambience", &light.ambientStrength, -1.0f, 1.0f);
             ImGui::SliderFloat("Light Diffuse", &light.diffuseStrength, -1.0f, 1.0f);
             ImGui::SliderFloat("Light Specular", &light.specularStrength, -1.0f, 1.0f);
-            ImGui::SliderFloat("Shininess", &material.shininess, 0.0f, 5000.0f);
         }
         ImGui::SeparatorText("");
         ImGui::Text("Press TAB to switch modes");
         ImGui::PopItemWidth();
         ImGui::End();
 
-        // If we are not editing the colors, switch them with time
-        if (glfwGetInputMode(window, GLFW_CURSOR) == GLFW_CURSOR_DISABLED) {
-            light.color.x = sin(glfwGetTime() * 2.0f);
-            light.color.y = sin(glfwGetTime() * 0.7f);
-            light.color.z = sin(glfwGetTime() * 1.3f);
-        }
+        // If we are not editing the colors, switch the light color with time
+        //if (glfwGetInputMode(window, GLFW_CURSOR) == GLFW_CURSOR_DISABLED) {
+        //    light.color.x = sin(glfwGetTime() * 2.0f);
+        //    light.color.y = sin(glfwGetTime() * 0.7f);
+        //    light.color.z = sin(glfwGetTime() * 1.3f);
+        //}
 
-        glm::vec3 diffuseColor = light.color  * light.diffuseStrength; 
+        glm::vec3 diffuseColor = light.color  * light.diffuseStrength;
         glm::vec3 ambientColor = diffuseColor * light.ambientStrength;
         glm::vec3 specularColor = light.color * light.specularStrength;
 
@@ -297,6 +305,8 @@ int main()
         ourShader.setVec3f("light.ambient", glm::value_ptr(ambientColor));
         ourShader.setVec3f("light.diffuse", glm::value_ptr(diffuseColor));
         ourShader.setVec3f("light.specular", glm::value_ptr(specularColor));
+
+        // First cube material
         ourShader.setVec3f("material.ambient", material.ambient);
         ourShader.setVec3f("material.diffuse", material.diffuse);
         ourShader.setVec3f("material.specular", material.specular);
@@ -318,7 +328,7 @@ int main()
 
         // Draw each of the 10 cubes, with a different model matrix
         glBindVertexArray(VAO);
-        for(unsigned int i = 0; i < 10; i++)
+        for(unsigned int i = 0; i < 25; i++)
         {
             glm::mat4 model = glm::mat4(1.0f);
             model = glm::translate(model, cubePositions[i]);
@@ -326,8 +336,14 @@ int main()
             model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
             ourShader.setMatrix4fv("model", glm::value_ptr(model));
 
-            float objColor[] = {1.0f-i*0.1f, 0.5f+i*0.03f, 0.31f+i*0.05f};
-            ourShader.setVec3f("objectColor", objColor);
+            // Starting from cube2, set the material from the table
+            if (i > 0) {
+                ourShader.setVec3f("material.ambient", materials[i-1].ambient);
+                ourShader.setVec3f("material.diffuse", materials[i-1].diffuse);
+                ourShader.setVec3f("material.specular", materials[i-1].specular);
+                ourShader.setFloat("material.shininess", materials[i-1].shininess * 128);
+            }
+
             glDrawArrays(GL_TRIANGLES, 0, 36);
         }
 
@@ -350,7 +366,7 @@ int main()
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
         // check and call events and swap buffers
-        glfwPollEvents();         
+        glfwPollEvents();
         glfwSwapBuffers(window);
     }
 

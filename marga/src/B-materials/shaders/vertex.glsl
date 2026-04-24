@@ -13,8 +13,6 @@ void main()
 {
     gl_Position = projection * view * model * vec4(aPos, 1.0);
     FragPos = vec3(model * vec4(aPos, 1.0));
-    // This seems to work ok
-    //Normal = vec3(model * vec4(aNormal, 0.0));
     // This is what the tutorial says. It's relevant when doing non-uniform scaling
     Normal = mat3(transpose(inverse(model))) * aNormal;
 }
