@@ -65,7 +65,7 @@ Light light1 = {
     glm::vec3(0.5f, 0.5f, 0.5f),    // Diffuse
     glm::vec3(1.0f, 1.0f, 1.0f),    // Specular
     0.2f,
-    0.5f
+    0.8f
 };   
 
 Light light2 = {
@@ -117,13 +117,18 @@ int main()
     };
 
     // Setup Shaders
-    Shader lightingShader("shaders/lightShader01.vs", "shaders/lightShader01.frag");
+    Shader lightingShader("shaders/lightShader01.vs", "shaders/lightShader02.frag");
     Shader lightSourceShader("shaders/sourceShader01.vs", "shaders/sourceShader01.frag");
 
     // Setup Textures
     Texture2D containerTexture("../media/container2.png", PNG);
+    Texture2D specularMap("../media/lighting_maps_specular_color.png", PNG);
+    // Texture2D emissionMap("../media/matrix.jpg", JPG);
     lightingShader.use();
     lightingShader.setInt("material.diffuse", 0);
+    lightingShader.setInt("material.specular", 1);
+    // lightingShader.setInt("material.emission", 2);
+
 
     glm::mat4 source_rotation = glm::rotate(glm::mat4(1.0f), (float)glm::radians(1.5), glm::vec3(0.0f,1.0f,0.0f));
 
@@ -131,7 +136,7 @@ int main()
     glm::mat4 view;
     glm::mat4 projection;
 
-    Light *currentLight = &light2;
+    Light *currentLight = &light1;
 
     while(!glfwWindowShouldClose(window))
     {
@@ -150,8 +155,6 @@ int main()
         model = glm::mat4(1.0f);
         view = cam.lookFront();
         projection = glm::perspective(glm::radians(cam.fov), width / height, 0.1f, 100.0f);
-        
-
 
         // #### LIGHT SOURCE ####
         glBindVertexArray(VAO[LIGHT_SOURCE]);
@@ -185,7 +188,12 @@ int main()
 
         lightingShader.use();
 
+        // material properties
+        lightingShader.setFloat("material.shininess", 64.0f);
         containerTexture.activate(0);
+        specularMap.activate(1);
+        // emissionMap.activate(2);
+
 
         model = glm::mat4(1.0f);
 
@@ -444,8 +452,7 @@ void processInput(GLFWwindow *window)
 }
 
 void setMaterial(Shader &shader, const material::Material &mat) {
-    shader.setVec3("material.ambient", mat.ambient);
-    shader.setVec3("material.diffuse", mat.diffuse);
+    // shader.setVec3("material.diffuse", mat.diffuse);
     shader.setVec3("material.specular", mat.specular);
     shader.setFloat("material.shininess", mat.shininess);
 }
