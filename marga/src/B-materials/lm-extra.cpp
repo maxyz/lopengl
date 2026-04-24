@@ -337,7 +337,7 @@ int main()
         glActiveTexture(GL_TEXTURE2);
         glBindTexture(GL_TEXTURE_2D, emissionMap.ID);
 
-        ourShader.setFloat("emissionIntensity", abs(cos(glfwGetTime()/2)));
+        ourShader.setFloat("emissionIntensity", sin(glfwGetTime())+1.0f);
 
         // Draw each of the 10 cubes, with a different model matrix
         glBindVertexArray(VAO);
