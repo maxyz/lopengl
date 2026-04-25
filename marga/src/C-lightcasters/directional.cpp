@@ -24,7 +24,7 @@ const int INITIAL_HEIGHT = 768;
 float width = (float) INITIAL_WIDTH, height = (float) INITIAL_HEIGHT;
 
 struct Light {
-    float position[3];
+    glm::vec3 direction;
     glm::vec3 color;
     float ambientStrength;
     float diffuseStrength;
@@ -234,8 +234,8 @@ int main()
     glfwSetScrollCallback(window, scroll_callback);
     glfwSetKeyCallback(window, keyboard_callback);
 
-    // Starting lighting values (position, color, ambient, diffuse, specular)
-    Light light = { {1.2f, 1.0f, 2.0f}, glm::vec3( 1.0f,  1.0f,  1.0f), 0.2f, 0.5f, 1.0f, };
+    // Starting lighting values (direction, color, ambient, diffuse, specular)
+    Light light = { {-0.2f, 1.0f, 0.3f}, glm::vec3( 1.0f,  1.0f,  1.0f), 0.2f, 0.5f, 1.0f, };
     // Starting material values
     Material material = { {0.5f, 0.5f, 0.5f}, 32 };
 
@@ -280,6 +280,7 @@ int main()
         // Only show the controls when the mouse is not captured by the camera
         if (glfwGetInputMode(window, GLFW_CURSOR) != GLFW_CURSOR_DISABLED) {
             ImGui::SliderFloat("Shininess", &material.shininess, 0.0f, 256.0f);
+            ImGui::DragFloat3("Light direction", glm::value_ptr(light.direction), 0.01f, -10.0f, 10.0f);
             ImGui::ColorEdit3("Light Color", glm::value_ptr(light.color));
             ImGui::SliderFloat("Light Ambience", &light.ambientStrength, -1.0f, 1.0f);
             ImGui::SliderFloat("Light Diffuse", &light.diffuseStrength, -1.0f, 1.0f);
@@ -289,13 +290,6 @@ int main()
         ImGui::Text("Press TAB to switch modes");
         ImGui::PopItemWidth();
         ImGui::End();
-
-        // If we are not editing the colors, switch the light color with time
-        //if (glfwGetInputMode(window, GLFW_CURSOR) == GLFW_CURSOR_DISABLED) {
-        //    light.color.x = sin(glfwGetTime() * 2.0f);
-        //    light.color.y = sin(glfwGetTime() * 0.7f);
-        //    light.color.z = sin(glfwGetTime() * 1.3f);
-        //}
 
         glm::vec3 diffuseColor = light.color  * light.diffuseStrength;
         glm::vec3 ambientColor = diffuseColor * light.ambientStrength;
@@ -308,12 +302,11 @@ int main()
         ourShader.setVec3f("light.diffuse", glm::value_ptr(diffuseColor));
         ourShader.setVec3f("light.specular", glm::value_ptr(specularColor));
 
-        // First cube material
         ourShader.setFloat("material.shininess", material.shininess);
 
-        // Position of the light
-        glm::vec3 lightPos(1.2f*sin(glfwGetTime()), 1.0f*cos(glfwGetTime()), 2.0f);
-        ourShader.setVec3f("light.position", glm::value_ptr(lightPos));
+        // Direction of the light
+        glm::vec3 lightDir = glm::normalize(-1.0f * light.direction);
+        ourShader.setVec3f("light.direction", glm::value_ptr(lightDir));
 
         // Coordinate matrixes
         // ** View **
@@ -343,20 +336,6 @@ int main()
             ourShader.setMatrix4fv("model", glm::value_ptr(model));
             glDrawArrays(GL_TRIANGLES, 0, 36);
         }
-
-        // Draw the light on the screen
-        sourceShader.use();
-        glm::mat4 model = glm::mat4(1.0f);
-        model = glm::translate(model, lightPos);
-        model = glm::scale(model, glm::vec3(0.2f));
-        sourceShader.setMatrix4fv("view", glm::value_ptr(view));
-        sourceShader.setMatrix4fv("projection", glm::value_ptr(projection));
-        sourceShader.setMatrix4fv("model", glm::value_ptr(model));
-        sourceShader.setVec3f("lightColor", glm::value_ptr(light.color));
-        // draw the light cube object
-        glBindVertexArray(lightVAO);
-        glDrawArrays(GL_TRIANGLES, 0, 36);
-
 
         // Render ImGui
         ImGui::Render();
