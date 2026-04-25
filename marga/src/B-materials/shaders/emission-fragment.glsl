@@ -44,7 +44,8 @@ void main()
     //vec3 emission = vec3(texture(material.emission, TexCoords));
 
     // Emission Masked
-    vec3 emission = texture(material.emission,TexCoords + vec2(0.0,time)).rgb * floor(vec3(1.f) - texture(material.specular,TexCoords ).rgb);
+    vec3 emission = texture(material.emission, TexCoords + vec2(0.0, time)).rgb * 
+                    floor(vec3(1.f) - texture(material.specular, TexCoords ).rgb);
 
     vec3 result = ambient + diffuse + specular + emission;
     FragColor = vec4(result, 1.0);

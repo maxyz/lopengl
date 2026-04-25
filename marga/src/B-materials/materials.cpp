@@ -186,21 +186,21 @@ int main()
     glm::vec3(-3.8f, -2.0f, -8.3f),
     glm::vec3( 2.4f, -3.4f, -3.5f),
     glm::vec3(-1.7f,  3.0f, -7.5f),
-    glm::vec3( 1.3f, -2.0f, -2.5f),
+    glm::vec3( 0.3f, -2.5f, -2.5f),
     glm::vec3( 1.5f,  2.0f, -2.5f),
     glm::vec3( 1.5f,  0.2f, -1.5f),
     glm::vec3(-1.3f,  1.0f, -1.5f),
-    glm::vec3( 4.0f, -4.0f, -5.0f),
+    glm::vec3( 6.0f, -3.0f, -5.0f),
     glm::vec3(-4.5f, -2.2f, -2.5f),
     glm::vec3(-5.8f, -2.0f, -8.3f),
-    glm::vec3( 6.4f, -0.4f, -3.5f),
+    glm::vec3( 3.4f, -0.4f, -2.5f),
     glm::vec3(-6.7f,  3.0f, -7.5f),
-    glm::vec3( 6.3f, -2.0f, -2.5f),
+    glm::vec3(-3.3f,  2.0f, -2.5f),
     glm::vec3( 5.5f,  3.5f, -2.5f),
     glm::vec3( 4.5f,  0.2f, -1.5f),
     glm::vec3(-5.3f,  1.0f, -1.5f),
     glm::vec3(-2.2f, -3.5f, -2.5f),
-    glm::vec3( 3.3f, -2.0f, -2.5f),
+    glm::vec3( 3.3f,  3.0f, -2.5f),
     glm::vec3( 4.5f,  2.0f, -2.5f),
     glm::vec3( 1.5f,  4.2f, -1.5f),
     glm::vec3(-1.3f,  3.5f, -1.5f),
@@ -223,8 +223,8 @@ int main()
     Light light = {
         {1.2f, 1.0f, 2.0f},
         glm::vec3( 1.0f,  1.0f,  1.0f),
-        0.2f,
-        0.5f,
+        0.8f,
+        0.8f,
         1.0f,
     };
     // Starting material values
@@ -313,7 +313,7 @@ int main()
         ourShader.setFloat("material.shininess", material.shininess);
 
         // Position of the light
-        glm::vec3 lightPos(1.2f*sin(glfwGetTime()), 1.0f*cos(glfwGetTime()), 2.0f);
+        glm::vec3 lightPos(2.5f*sin(glfwGetTime()), 2.0f*cos(glfwGetTime()), 2.0f);
         ourShader.setVec3f("light.position", glm::value_ptr(lightPos));
 
         // Coordinate matrixes
