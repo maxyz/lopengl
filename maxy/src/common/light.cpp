@@ -9,3 +9,12 @@ void set_light(id_t id, const std::string &name, const light_t &value) {
   set_vec3(id, std::format("{}.diffuse", name), value.diffuse);
   set_vec3(id, std::format("{}.specular", name), value.specular);
 }
+
+void set_directional_light(id_t id, const std::string &name,
+                           const light_directional_t &value) {
+  set_vec3(id, std::format("{}.direction", name), value.direction);
+
+  set_vec3(id, std::format("{}.ambient", name), value.ambient);
+  set_vec3(id, std::format("{}.diffuse", name), value.diffuse);
+  set_vec3(id, std::format("{}.specular", name), value.specular);
+}
