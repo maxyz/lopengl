@@ -1,4 +1,4 @@
-EXES = directional
+EXES = directional attenuation
 
 default_target: $(EXES)
 
@@ -20,6 +20,9 @@ shader.o: ../lib/shader.cpp ../lib/shader.h
 
 # This chapter's files
 directional: directional.cpp libGLAD.a shader.o texture.o ../lib/camera.h
+	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
+
+attenuation: attenuation.cpp libGLAD.a shader.o texture.o ../lib/camera.h
 	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
 
 clean:
