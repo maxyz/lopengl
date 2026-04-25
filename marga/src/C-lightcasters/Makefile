@@ -1,4 +1,4 @@
-EXES = directional attenuation
+EXES = directional attenuation spotlight
 
 default_target: $(EXES)
 
@@ -23,6 +23,9 @@ directional: directional.cpp libGLAD.a shader.o texture.o ../lib/camera.h
 	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
 
 attenuation: attenuation.cpp libGLAD.a shader.o texture.o ../lib/camera.h
+	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
+
+spotlight: spotlight.cpp libGLAD.a shader.o texture.o ../lib/camera.h
 	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
 
 clean:
