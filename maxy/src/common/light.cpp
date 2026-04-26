@@ -31,3 +31,19 @@ void set_positional_light(id_t id, const std::string &name,
   set_float(id, std::format("{}.linear", name), value.linear);
   set_float(id, std::format("{}.quadratic", name), value.quadratic);
 }
+
+void set_spot_light(id_t id, const std::string &name,
+                    const light_spot_t &value) {
+  set_vec3(id, std::format("{}.position", name), value.position);
+  set_vec3(id, std::format("{}.direction", name), value.direction);
+  set_float(id, std::format("{}.cutoff", name), value.cutoff);
+  set_float(id, std::format("{}.outer_cutoff", name), value.outer_cutoff);
+
+  set_vec3(id, std::format("{}.ambient", name), value.ambient);
+  set_vec3(id, std::format("{}.diffuse", name), value.diffuse);
+  set_vec3(id, std::format("{}.specular", name), value.specular);
+
+  set_float(id, std::format("{}.constant", name), value.constant);
+  set_float(id, std::format("{}.linear", name), value.linear);
+  set_float(id, std::format("{}.quadratic", name), value.quadratic);
+}
