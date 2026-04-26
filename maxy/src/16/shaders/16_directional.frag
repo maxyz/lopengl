@@ -5,6 +5,7 @@ out vec4 frag_color;
 in vec2 tex_coord;
 in vec3 frag_pos;
 in vec3 normal;
+in vec3 light_direction_view;
 
 struct material_t {
   sampler2D diffuse;
@@ -28,7 +29,7 @@ void main() {
   vec3 ambient = light.ambient * texture(material.diffuse, tex_coord).rgb;
 
   vec3 norm = normalize(normal);
-  vec3 light_dir = normalize(light.direction);
+  vec3 light_dir = normalize(-light_direction_view);
   float diff = max(dot(norm, light_dir), 0.0);
   vec3 diffuse = light.diffuse * diff * texture(material.diffuse, tex_coord).rgb;
 
