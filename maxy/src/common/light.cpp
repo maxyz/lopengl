@@ -18,3 +18,16 @@ void set_directional_light(id_t id, const std::string &name,
   set_vec3(id, std::format("{}.diffuse", name), value.diffuse);
   set_vec3(id, std::format("{}.specular", name), value.specular);
 }
+
+void set_positional_light(id_t id, const std::string &name,
+                          const light_positional_t &value) {
+  set_vec3(id, std::format("{}.position", name), value.position);
+
+  set_vec3(id, std::format("{}.ambient", name), value.ambient);
+  set_vec3(id, std::format("{}.diffuse", name), value.diffuse);
+  set_vec3(id, std::format("{}.specular", name), value.specular);
+
+  set_float(id, std::format("{}.constant", name), value.constant);
+  set_float(id, std::format("{}.linear", name), value.linear);
+  set_float(id, std::format("{}.quadratic", name), value.quadratic);
+}

@@ -34,12 +34,20 @@ struct view_t {
 };
 
 struct state_t {
-  view_t viewport = {.width = WIDTH, .height = HEIGHT};
+  view_t viewport = {
+      .width = WIDTH,
+      .height = HEIGHT,
+  };
   Camera camera = Camera(glm::vec3(0.f, 0.f, 3.f));
-  light_directional_t light = {.direction = glm::vec3(-.2f, -1.f, -.3f),
-                               .ambient = glm::vec3(.2f, .2f, .2f),
-                               .diffuse = glm::vec3(.5f, .5f, .5f),
-                               .specular = glm::vec3(1.f, 1.f, 1.f)};
+  light_positional_t light = {
+      .position = glm::vec3(2.f, 1.f, 3.f),
+      .ambient = glm::vec3(.2f, .2f, .2f),
+      .diffuse = glm::vec3(.5f, .5f, .5f),
+      .specular = glm::vec3(1.f, 1.f, 1.f),
+      .constant = 1.f,
+      .linear = .09f,
+      .quadratic = .032f,
+  };
 
   bool mouse_new_focus = true;
 };
@@ -312,8 +320,8 @@ const glm::vec3 cube_positions[] = {
     glm::vec3(1.5f, 0.2f, -1.5f),   glm::vec3(-1.3f, 1.0f, -1.5f)};
 
 struct buffers_t {
-  unsigned int cube_vao;
-  unsigned int light_vao;
+  id_t cube_vao;
+  id_t light_vao;
 
   cleanup_t cleanup = []() {};
 };
@@ -324,21 +332,27 @@ void process_event_t(uint64_t e, float delta);
 std::expected<hooks_t, std::string> init_shaders(GLFWwindow *window) {
   struct programs_t {
     id_t view;
+    id_t light;
   };
   struct vaos_t {
     id_t cube;
+    id_t light;
   };
   struct textures_t {
     id_t diffuse;
     id_t specular;
   };
-  auto shader = Shader::build("shaders/16_directional.vert",
-                              "shaders/16_directional.frag");
+  auto shader =
+      Shader::build("shaders/16_positional.vert", "shaders/16_positional.frag");
   if (!shader) {
     return std::unexpected(shader.error());
   }
-
-  programs_t ps{.view = shader->ID};
+  auto light_shader =
+      Shader::build("shaders/16_light.vert", "shaders/16_light.frag");
+  if (!light_shader) {
+    return std::unexpected(light_shader.error());
+  }
+  programs_t ps{.view = shader->ID, .light = light_shader->ID};
 
   auto load_texture_res = load_texture("textures/container2.png");
   if (!load_texture_res) {
@@ -355,7 +369,7 @@ std::expected<hooks_t, std::string> init_shaders(GLFWwindow *window) {
   };
 
   auto vaos = buffers();
-  vaos_t vs = {.cube = vaos.cube_vao};
+  vaos_t vs = {.cube = vaos.cube_vao, .light = vaos.light_vao};
 
   auto f = [ps, vs, ts](uint64_t e, float delta) {
     auto now = glfwGetTime();
@@ -385,11 +399,18 @@ std::expected<hooks_t, std::string> init_shaders(GLFWwindow *window) {
     set_mat4(ps.view, "view", view);
     set_mat4(ps.view, "projection", projection);
     set_vec3(ps.view, "view_pos", state.camera.position);
-    set_directional_light(ps.view, "light", state.light);
+    set_positional_light(ps.view, "light", state.light);
     set_specular_map(ps.view, "material", specular_map);
 
     glBindVertexArray(vs.cube);
 
+    glUseProgram(ps.light);
+
+    set_mat4(ps.light, "view", view);
+    set_mat4(ps.light, "projection", projection);
+    set_positional_light(ps.light, "light", state.light);
+
+    glUseProgram(ps.view);
     float angle;
     for (unsigned int i = 0; i < 10; ++i) {
       angle = 20.f * i;
@@ -397,10 +418,17 @@ std::expected<hooks_t, std::string> init_shaders(GLFWwindow *window) {
       model = glm::translate(glm::mat4(1.f), cube_positions[i]);
       model = glm::rotate(model, glm::radians(angle), glm::vec3(1.f, .3f, .5f));
 
-      glUseProgram(ps.view);
       set_mat4(ps.view, "model", model);
       glDrawArrays(GL_TRIANGLES, 0, 36);
     }
+
+    model = glm::mat4(1.f);
+    model = glm::translate(model, state.light.position);
+    model = glm::scale(model, glm::vec3(.2f));
+
+    glUseProgram(ps.light);
+    set_mat4(ps.light, "model", model);
+    glDrawArrays(GL_TRIANGLES, 0, 36);
   };
 
   auto imgui = [window](uint64_t e, float delta) {
@@ -409,9 +437,18 @@ std::expected<hooks_t, std::string> init_shaders(GLFWwindow *window) {
     ImGui::NewFrame();
 
     ImGuiIO &io = ImGui::GetIO();
-    if (glfwGetInputMode(window, GLFW_CURSOR) == GLFW_CURSOR_DISABLED) {
+    enum mode_t {
+      mode_CAM,
+      mode_GUI,
+    };
+    mode_t mode =
+        (glfwGetInputMode(window, GLFW_CURSOR) == GLFW_CURSOR_DISABLED)
+            ? mode_CAM
+            : mode_GUI;
+
+    if (mode == mode_CAM) {
       io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;
-    } else {
+    } else if (mode == mode_GUI) {
       io.ConfigFlags &= ~ImGuiConfigFlags_NoMouseCursorChange;
     }
 
@@ -424,13 +461,18 @@ std::expected<hooks_t, std::string> init_shaders(GLFWwindow *window) {
     double x, y;
     glfwGetCursorPos(window, &x, &y);
     ImGui::LabelText("Mouse", "(%.2f, %.2f)", x, y);
-    if (glfwGetInputMode(window, GLFW_CURSOR) != GLFW_CURSOR_DISABLED) {
+    if (mode == mode_GUI) {
       ImGui::SeparatorText("Light");
-      ImGui::DragFloat3("Direction", glm::value_ptr(state.light.direction),
-                        .01f, -1.f, 1.f);
       ImGui::ColorEdit3("Ambience", glm::value_ptr(state.light.ambient));
       ImGui::ColorEdit3("Diffuse", glm::value_ptr(state.light.diffuse));
       ImGui::ColorEdit3("Specular", glm::value_ptr(state.light.specular));
+      ImGui::DragFloat("c", &state.light.constant, .1f, 0.f, 10.f);
+      ImGui::SameLine();
+      ImGui::DragFloat("l", &state.light.linear, .001f, 0.f, 1.f);
+      ImGui::SameLine();
+      ImGui::DragFloat("q", &state.light.quadratic, .0001f, 0.f, 1.f);
+      ImGui::SameLine();
+      ImGui::Text("Attenuation");
     }
     ImGui::PopItemWidth();
 
@@ -478,11 +520,29 @@ void process_event_t(uint64_t e, float delta) {
   if (e & event_t::camera_yaw_right) {
     state.camera.process_rotation(120 * SPEED * delta, 0.f);
   }
+  if (e & event_t::light_up) {
+    state.light.position += glm::vec3(0.f, SPEED * delta, 0.f);
+  }
+  if (e & event_t::light_down) {
+    state.light.position -= glm::vec3(0.f, SPEED * delta, 0.f);
+  }
+  if (e & event_t::light_left) {
+    state.light.position -= glm::vec3(SPEED * delta, 0.f, 0.f);
+  }
+  if (e & event_t::light_right) {
+    state.light.position += glm::vec3(SPEED * delta, 0.f, 0.f);
+  }
+  if (e & event_t::light_for) {
+    state.light.position -= glm::vec3(0.f, 0.f, SPEED * delta);
+  }
+  if (e & event_t::light_back) {
+    state.light.position += glm::vec3(0.f, 0.f, SPEED * delta);
+  }
 }
 
 buffers_t buffers() {
-  unsigned int cube_vao;
-  unsigned int vbo;
+  id_t cube_vao;
+  id_t vbo;
   glGenVertexArrays(1, &cube_vao);
   glGenBuffers(1, &vbo);
 
@@ -500,12 +560,21 @@ buffers_t buffers() {
                         (void *)(6 * (sizeof(float))));
   glEnableVertexAttribArray(2);
 
-  auto cleanup = [cube_vao, vbo]() {
+  id_t light_vao;
+  glGenVertexArrays(1, &light_vao);
+  glBindVertexArray(light_vao);
+  glBindBuffer(GL_ARRAY_BUFFER, vbo);
+
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)0);
+  glEnableVertexAttribArray(0);
+
+  auto cleanup = [cube_vao, light_vao, vbo]() {
     glDeleteVertexArrays(1, &cube_vao);
+    glDeleteVertexArrays(1, &light_vao);
     glDeleteBuffers(1, &vbo);
   };
 
-  return {.cube_vao = cube_vao, .cleanup = cleanup};
+  return {.cube_vao = cube_vao, .light_vao = light_vao, .cleanup = cleanup};
 }
 
 void process_input(GLFWwindow *window, uint64_t &e);

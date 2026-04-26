@@ -2,14 +2,18 @@
 
 out vec4 frag_color;
 
-struct light_t {
+struct positional_light_t {
   vec3 position;
 
   vec3 ambient;
   vec3 diffuse;
   vec3 specular;
+
+  float constant;
+  float linear;
+  float quadratic;
 };
-uniform light_t light;
+uniform positional_light_t light;
 
 void main() {
   vec3 color = light.ambient + light.diffuse;
