@@ -26,11 +26,13 @@ Shader::build_res Shader::build(std::string_view vertexPath,
   // 2. compile shaders
   auto v_res = compile_shader(GL_VERTEX_SHADER, vShaderCode);
   if (!v_res.has_value()) {
-    return std::unexpected(v_res.error());
+    return std::unexpected(
+        std::format("error compiling {}\n{}", vertexPath, v_res.error()));
   }
   auto f_res = compile_shader(GL_FRAGMENT_SHADER, fShaderCode);
   if (!f_res.has_value()) {
-    return std::unexpected(f_res.error());
+    return std::unexpected(
+        std::format("error compiling {}: {}", fragmentPath, f_res.error()));
   }
 
   auto p_res = link_shaders({v_res.value(), f_res.value()});
