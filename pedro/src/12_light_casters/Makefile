@@ -1,4 +1,4 @@
-EXES = lighting_maps_1 lighting_maps_2 lighting_maps_3 lighting_maps_extra
+EXES = light_casters light_casters2
 
 LIB = libGLAD.a stb_image.o shader.o texture.o camera.o material.o
 
@@ -13,16 +13,10 @@ LDFLAGS = -lglfw -lGL -lX11 -lpthread -lXrandr -lXi -ldl -g
 CPPFLAGS = -I ../../include/ -I ../lib/
 EXTRAS = /usr/lib/x86_64-linux-gnu/libglfw.so libGLAD.a
 
-lighting_maps_1: lighting_maps_1.cpp $(LIB)
+light_casters: light_casters.cpp $(LIB)
 	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
-
-lighting_maps_2: lighting_maps_2.cpp $(LIB)
-	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
-
-lighting_maps_3: lighting_maps_3.cpp $(LIB)
-	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
-
-lighting_maps_extra: lighting_maps_extra.cpp $(LIB)
+	
+light_casters2: light_casters2.cpp $(LIB)
 	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
 	
 camera.o: ../lib/camera.cpp ../lib/camera.h

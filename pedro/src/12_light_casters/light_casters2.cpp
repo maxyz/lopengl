@@ -17,16 +17,20 @@
 typedef unsigned int uint;
 
 struct Light {
-    glm::vec3 direction;
-    glm::vec3 color;   
+    glm::vec3 color;
+
+    glm::vec3 position;
+
     glm::vec3 ambient;
     glm::vec3 diffuse;
     glm::vec3 specular;
 
+    float constant;
+    float linear;
+    float quadratic;
+
     float ambient_intensity;
     float diff_intensity;
-
-    bool lightOn;
 
     void changeColor(const glm::vec3 newColor) {
         color = newColor;
@@ -61,26 +65,21 @@ bool rotateLight = true;
 bool coolLightMode = 0;
 
 Light light1 = {
-    glm::vec3(-0.2f, -1.0f, -0.3f),    // Position
     glm::vec3(1.0f),                // Color
-    glm::vec3(0.2f),    // Ambient
-    glm::vec3(0.8f),    // Diffuse
-    glm::vec3(1.0f),    // Specular
-    0.2f,
-    0.8f,
-    true
-};   
 
-Light light2 = {
     glm::vec3(1.2f, 1.0f, 5.0f),    // Position
-    glm::vec3(1.0f),                // Color
-    glm::vec3(1.0f),                // Ambient
-    glm::vec3(1.0f),                // Diffuse
-    glm::vec3(1.0f),                // Specular
-    1.0f,
-    1.0f,
-    true
-};  
+
+    glm::vec3(0.2f, 0.2f, 0.2f),    // Ambient
+    glm::vec3(0.5f, 0.5f, 0.5f),    // Diffuse
+    glm::vec3(1.0f, 1.0f, 1.0f),    // Specular
+
+    1.0f,                           // Constant
+    0.09f,                          // Linear
+    0.032f,                         // Quadratic
+
+    0.2f,                           // Ambient Intensity
+    0.8f                            // Diffuse Intensity
+};
 
 Camera cam(glm::vec3(0.0f, 0.0f, 10.0f));
 
@@ -109,20 +108,20 @@ int main()
     };
 
     // Setup Shaders
-    Shader lightingShader("shaders/lightShader01.vs", "shaders/lightShader01.frag");
+    Shader lightingShader("shaders/lightShader01.vs", "shaders/lightShader02.frag");
     Shader lightSourceShader("shaders/sourceShader01.vs", "shaders/sourceShader01.frag");
 
     // Setup Textures
     Texture2D containerTexture("../media/container2.png", PNG);
     Texture2D specularMap("../media/container2_specular2.png", PNG);
-    // Texture2D emissionMap("../media/matrix.jpg", JPG);
+    Texture2D emissionMap("../media/matrix.jpg", JPG);
     lightingShader.use();
     lightingShader.setInt("material.diffuse", 0);
     lightingShader.setInt("material.specular", 1);
     lightingShader.setInt("material.emission", 2);
 
 
-    // glm::mat4 source_rotation = glm::rotate(glm::mat4(1.0f), (float)glm::radians(1.5), glm::vec3(0.0f,1.0f,0.0f));
+    glm::mat4 source_rotation = glm::rotate(glm::mat4(1.0f), (float)glm::radians(1.5), glm::vec3(0.0f,1.0f,0.0f));
 
     glm::mat4 model;
     glm::mat4 view;
@@ -149,31 +148,31 @@ int main()
         projection = glm::perspective(glm::radians(cam.fov), width / height, 0.1f, 100.0f);
 
         // #### LIGHT SOURCE ####
-        // glBindVertexArray(VAO[LIGHT_SOURCE]);
+        glBindVertexArray(VAO[LIGHT_SOURCE]);
 
-        // lightSourceShader.use();
+        lightSourceShader.use();
         
-        // // VERTEX SHADER
-        // if (rotateLight)
-        //     currentLight->position = glm::vec3(source_rotation * glm::vec4(currentLight->position, 1.0));
+        // VERTEX SHADER
+        if (rotateLight)
+            currentLight->position = glm::vec3(source_rotation * glm::vec4(currentLight->position, 1.0));
 
-        // model = glm::translate(model, currentLight->position);
-        // model = glm::scale(model, glm::vec3(0.2f));
+        model = glm::translate(model, currentLight->position);
+        model = glm::scale(model, glm::vec3(0.2f));
 
-        // lightSourceShader.setVertexMatrices(view, model, projection);
+        lightSourceShader.setVertexMatrices(view, model, projection);
 
-        // // FRAGMENT SHADER
-        // if (coolLightMode) {
-        //     currentLight->changeColor(glm::abs(glm::vec3(sin(currentFrame), cos(currentFrame/ 3.0f), sin(currentFrame * 2.0f)))); 
-        // } else {
-        //     currentLight->changeColor(glm::vec3(1.0f));
-        // }
+        // FRAGMENT SHADER
+        if (coolLightMode) {
+            currentLight->changeColor(glm::abs(glm::vec3(sin(currentFrame), cos(currentFrame/ 3.0f), sin(currentFrame * 2.0f)))); 
+        } else {
+            currentLight->changeColor(glm::vec3(1.0f));
+        }
 
-        // lightSourceShader.setVec3("lightColor", currentLight->color);
+        lightSourceShader.setVec3("lightColor", currentLight->color);
 
-        // glDrawArrays(GL_TRIANGLES, 0, 36);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
 
-
+        
 
         // #### OBJECTS ####
         glBindVertexArray(VAO[OBJECTS]);
@@ -184,7 +183,7 @@ int main()
         lightingShader.setFloat("material.shininess", 64.0f);
         containerTexture.activate(0);
         specularMap.activate(1);
-        // emissionMap.activate(2);
+        emissionMap.activate(2);
 
 
         model = glm::mat4(1.0f);
@@ -219,6 +218,8 @@ int main()
     glfwTerminate();
     return 0;
 }
+
+#pragma region 
 
 GLFWwindow* windowAndContext() {
     glfwInit();
@@ -449,9 +450,16 @@ void setMaterial(Shader &shader, const material::Material &mat) {
     shader.setFloat("material.shininess", mat.shininess);
 }
 
+#pragma endregion
+
 void setLight(Shader &shader, const Light &light) {
-    shader.setVec3("light.direction", light.direction);
+    shader.setVec3("light.position", light.position);
+
     shader.setVec3("light.ambient", light.ambient);
     shader.setVec3("light.diffuse", light.diffuse);
     shader.setVec3("light.specular", light.specular);
+
+    shader.setFloat("light.constant", light.constant);
+    shader.setFloat("light.linear", light.linear);
+    shader.setFloat("light.quadratic", light.quadratic);
 }
