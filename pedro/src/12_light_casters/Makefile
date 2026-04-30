@@ -1,4 +1,4 @@
-EXES = light_casters light_casters2
+EXES = light_casters light_casters2 light_casters3
 
 LIB = libGLAD.a stb_image.o shader.o texture.o camera.o material.o
 
@@ -17,6 +17,9 @@ light_casters: light_casters.cpp $(LIB)
 	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
 	
 light_casters2: light_casters2.cpp $(LIB)
+	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
+	
+light_casters3: light_casters3.cpp $(LIB)
 	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
 	
 camera.o: ../lib/camera.cpp ../lib/camera.h
