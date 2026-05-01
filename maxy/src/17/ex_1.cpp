@@ -282,6 +282,9 @@ private:
   GLFWwindow *m_window{};
 
   SceneRenderer() = default;
+
+  void render_scene();
+  void render_imgui();
 };
 
 void init_window_callbacks(GLFWwindow *window);
@@ -516,10 +519,7 @@ SceneRenderer::create(GLFWwindow *window) {
   return r;
 }
 
-void SceneRenderer::render(input_t input, float delta) {
-  auto now = glfwGetTime();
-  process_events(input, delta);
-
+void SceneRenderer::render_scene() {
   glUseProgram(m_ps.view);
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, m_ts.diffuse);
@@ -608,7 +608,9 @@ void SceneRenderer::render(input_t input, float delta) {
     set_mat4(m_ps.view, "model", model);
     glDrawArrays(GL_TRIANGLES, 0, 36);
   }
+}
 
+void SceneRenderer::render_imgui() {
   ImGui_ImplOpenGL3_NewFrame();
   ImGui_ImplGlfw_NewFrame();
   ImGui::NewFrame();
@@ -646,6 +648,14 @@ void SceneRenderer::render(input_t input, float delta) {
 
   ImGui::Render();
   ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+}
+
+void SceneRenderer::render(input_t input, float delta) {
+  process_events(input, delta);
+
+  render_scene();
+
+  render_imgui();
 }
 
 SceneRenderer::~SceneRenderer() {
