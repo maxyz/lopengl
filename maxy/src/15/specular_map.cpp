@@ -46,8 +46,8 @@ struct SceneRenderer {
   id_t light_vao{};
   id_t texture{};
   id_t texture_specular{};
-  id_t vbo{};
-  GLFWwindow *window{};
+  id_t m_vbo{};
+  GLFWwindow *m_window{};
 
   static std::expected<SceneRenderer, std::string> create(GLFWwindow *window);
   void render(input_t input, float delta);
@@ -62,8 +62,8 @@ struct SceneRenderer {
         light_vao(std::exchange(o.light_vao, 0)),
         texture(std::exchange(o.texture, 0)),
         texture_specular(std::exchange(o.texture_specular, 0)),
-        vbo(std::exchange(o.vbo, 0)), window(std::exchange(o.window, nullptr)) {
-  }
+        m_vbo(std::exchange(o.m_vbo, 0)),
+        m_window(std::exchange(o.m_window, nullptr)) {}
   SceneRenderer &operator=(SceneRenderer &&) = delete;
 };
 
@@ -187,8 +187,8 @@ SceneRenderer::create(GLFWwindow *window) {
   r.texture_specular = *load_texture_specular_res;
   r.cube_vao = cube_vao;
   r.light_vao = light_vao;
-  r.vbo = vbo;
-  r.window = window;
+  r.m_vbo = vbo;
+  r.m_window = window;
 
   shader->use();
   shader->set_int("material.diffuse", 0);
@@ -274,11 +274,11 @@ void SceneRenderer::render(input_t input, float delta) {
 }
 
 SceneRenderer::~SceneRenderer() {
-  if (!vbo)
+  if (!m_vbo)
     return;
   glDeleteVertexArrays(1, &cube_vao);
   glDeleteVertexArrays(1, &light_vao);
-  glDeleteBuffers(1, &vbo);
+  glDeleteBuffers(1, &m_vbo);
 }
 
 void process_events(input_t input, float delta) {

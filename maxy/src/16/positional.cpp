@@ -61,11 +61,11 @@ struct SceneRenderer {
     id_t specular{};
   };
 
-  programs_t ps{};
-  vaos_t vs{};
-  textures_t ts{};
-  id_t vbo{};
-  GLFWwindow *window{};
+  programs_t m_ps{};
+  vaos_t m_vs{};
+  textures_t m_ts{};
+  id_t m_vbo{};
+  GLFWwindow *m_window{};
 
   static std::expected<SceneRenderer, std::string> create(GLFWwindow *window);
   void render(input_t input, float delta);
@@ -75,9 +75,9 @@ struct SceneRenderer {
   SceneRenderer(const SceneRenderer &) = delete;
   SceneRenderer &operator=(const SceneRenderer &) = delete;
   SceneRenderer(SceneRenderer &&o) noexcept
-      : ps(std::exchange(o.ps, {})), vs(std::exchange(o.vs, {})),
-        ts(std::exchange(o.ts, {})), vbo(std::exchange(o.vbo, 0)),
-        window(std::exchange(o.window, nullptr)) {}
+      : m_ps(std::exchange(o.m_ps, {})), m_vs(std::exchange(o.m_vs, {})),
+        m_ts(std::exchange(o.m_ts, {})), m_vbo(std::exchange(o.m_vbo, 0)),
+        m_window(std::exchange(o.m_window, nullptr)) {}
   SceneRenderer &operator=(SceneRenderer &&) = delete;
 };
 
@@ -248,14 +248,14 @@ SceneRenderer::create(GLFWwindow *window) {
   glEnableVertexAttribArray(0);
 
   SceneRenderer r;
-  r.ps = {.view = shader->ID, .light = light_shader->ID};
-  r.vs = {.cube = cube_vao, .light = light_vao};
-  r.ts = {
+  r.m_ps = {.view = shader->ID, .light = light_shader->ID};
+  r.m_vs = {.cube = cube_vao, .light = light_vao};
+  r.m_ts = {
       .diffuse = *load_texture_res,
       .specular = *load_texture_specular_res,
   };
-  r.vbo = vbo;
-  r.window = window;
+  r.m_vbo = vbo;
+  r.m_window = window;
 
   shader->use();
   shader->set_int("material.diffuse", 0);
@@ -267,11 +267,11 @@ void SceneRenderer::render(input_t input, float delta) {
   auto now = glfwGetTime();
   process_events(input, delta);
 
-  glUseProgram(ps.view);
+  glUseProgram(m_ps.view);
   glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D, ts.diffuse);
+  glBindTexture(GL_TEXTURE_2D, m_ts.diffuse);
   glActiveTexture(GL_TEXTURE1);
-  glBindTexture(GL_TEXTURE_2D, ts.specular);
+  glBindTexture(GL_TEXTURE_2D, m_ts.specular);
   specular_map_t specular_map = {
       .diffuse = 0,
       .specular = 1,
@@ -288,21 +288,21 @@ void SceneRenderer::render(input_t input, float delta) {
                            static_cast<float>(state.viewport.height),
                        .1f, 100.f);
 
-  set_mat4(ps.view, "view", view);
-  set_mat4(ps.view, "projection", projection);
-  set_vec3(ps.view, "view_pos", state.camera.position);
-  set_positional_light(ps.view, "light", state.light);
-  set_specular_map(ps.view, "material", specular_map);
+  set_mat4(m_ps.view, "view", view);
+  set_mat4(m_ps.view, "projection", projection);
+  set_vec3(m_ps.view, "view_pos", state.camera.position);
+  set_positional_light(m_ps.view, "light", state.light);
+  set_specular_map(m_ps.view, "material", specular_map);
 
-  glBindVertexArray(vs.cube);
+  glBindVertexArray(m_vs.cube);
 
-  glUseProgram(ps.light);
+  glUseProgram(m_ps.light);
 
-  set_mat4(ps.light, "view", view);
-  set_mat4(ps.light, "projection", projection);
-  set_positional_light(ps.light, "light", state.light);
+  set_mat4(m_ps.light, "view", view);
+  set_mat4(m_ps.light, "projection", projection);
+  set_positional_light(m_ps.light, "light", state.light);
 
-  glUseProgram(ps.view);
+  glUseProgram(m_ps.view);
   float angle;
   for (unsigned int i = 0; i < 10; ++i) {
     angle = 20.f * i;
@@ -310,7 +310,7 @@ void SceneRenderer::render(input_t input, float delta) {
     model = glm::translate(glm::mat4(1.f), example_cube_positions[i]);
     model = glm::rotate(model, glm::radians(angle), glm::vec3(1.f, .3f, .5f));
 
-    set_mat4(ps.view, "model", model);
+    set_mat4(m_ps.view, "model", model);
     glDrawArrays(GL_TRIANGLES, 0, 36);
   }
 
@@ -318,8 +318,8 @@ void SceneRenderer::render(input_t input, float delta) {
   model = glm::translate(model, state.light.position);
   model = glm::scale(model, glm::vec3(.2f));
 
-  glUseProgram(ps.light);
-  set_mat4(ps.light, "model", model);
+  glUseProgram(m_ps.light);
+  set_mat4(m_ps.light, "model", model);
   glDrawArrays(GL_TRIANGLES, 0, 36);
 
   ImGui_ImplOpenGL3_NewFrame();
@@ -331,9 +331,10 @@ void SceneRenderer::render(input_t input, float delta) {
     mode_CAM,
     mode_GUI,
   };
-  mode_t mode = (glfwGetInputMode(window, GLFW_CURSOR) == GLFW_CURSOR_DISABLED)
-                    ? mode_CAM
-                    : mode_GUI;
+  mode_t mode =
+      (glfwGetInputMode(m_window, GLFW_CURSOR) == GLFW_CURSOR_DISABLED)
+          ? mode_CAM
+          : mode_GUI;
 
   if (mode == mode_CAM) {
     io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;
@@ -348,7 +349,7 @@ void SceneRenderer::render(input_t input, float delta) {
   ImGui::LabelText("Pos", "(%.2f, %.2f, %.2f)", state.camera.position.x,
                    state.camera.position.y, state.camera.position.z);
   double x, y;
-  glfwGetCursorPos(window, &x, &y);
+  glfwGetCursorPos(m_window, &x, &y);
   ImGui::LabelText("Mouse", "(%.2f, %.2f)", x, y);
   if (mode == mode_GUI) {
     ImGui::SeparatorText("Light");
@@ -372,11 +373,11 @@ void SceneRenderer::render(input_t input, float delta) {
 }
 
 SceneRenderer::~SceneRenderer() {
-  if (!vbo)
+  if (!m_vbo)
     return;
-  glDeleteVertexArrays(1, &vs.cube);
-  glDeleteVertexArrays(1, &vs.light);
-  glDeleteBuffers(1, &vbo);
+  glDeleteVertexArrays(1, &m_vs.cube);
+  glDeleteVertexArrays(1, &m_vs.light);
+  glDeleteBuffers(1, &m_vbo);
 }
 
 void process_events(input_t input, float delta) {
