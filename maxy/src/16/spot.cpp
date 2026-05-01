@@ -184,18 +184,14 @@ void init_window_callbacks(GLFWwindow *window) {
 }
 
 std::expected<GLFWwindow *, std::string> init_window() {
-  auto window = init_glfw_window(state.viewport);
-  if (!window) {
-    return std::unexpected(window.error());
-  }
-  init_window_callbacks(*window);
-
-  auto init_imgui_result = init_imgui(*window);
-  if (!init_imgui_result) {
-    return std::unexpected(init_imgui_result.error());
-  }
-
-  return window;
+  return init_glfw_window(state.viewport)
+      .and_then([](GLFWwindow *w) -> std::expected<GLFWwindow *, std::string> {
+        init_window_callbacks(w);
+        return w;
+      })
+      .and_then([](GLFWwindow *w) {
+        return init_imgui(w).transform([w] { return w; });
+      });
 }
 
 void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
