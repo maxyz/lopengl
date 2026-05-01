@@ -1,10 +1,9 @@
 #include <cmath>
 #include <expected>
-#include <functional>
 #include <glm/geometric.hpp>
 #include <iostream>
 #include <print>
-#include <vector>
+#include <utility>
 
 #include <glad/gl.h>
 
@@ -52,19 +51,42 @@ state_t state;
 
 
 
-using cb_t = std::function<void(input_t, float)>;
-using cbs_t = std::vector<cb_t>;
-using cleanup_t = std::function<void()>;
+struct SceneRenderer {
+  struct programs_t {
+    id_t view{};
+    id_t light{};
+  };
+  struct vaos_t {
+    id_t cube{};
+    id_t light{};
+  };
+  struct textures_t {
+    id_t diffuse{};
+    id_t specular{};
+  };
 
-struct hooks_t {
-  cbs_t callbacks = {};
-  cleanup_t cleanup = []() {};
+  programs_t ps{};
+  vaos_t vs{};
+  textures_t ts{};
+  id_t vbo{};
+  GLFWwindow *window{};
+
+  static std::expected<SceneRenderer, std::string> create(GLFWwindow *window);
+  void render(input_t input, float delta);
+
+  ~SceneRenderer();
+  SceneRenderer() = default;
+  SceneRenderer(const SceneRenderer &) = delete;
+  SceneRenderer &operator=(const SceneRenderer &) = delete;
+  SceneRenderer(SceneRenderer &&o) noexcept
+      : ps(std::exchange(o.ps, {})), vs(std::exchange(o.vs, {})),
+        ts(std::exchange(o.ts, {})), vbo(std::exchange(o.vbo, 0)),
+        window(std::exchange(o.window, nullptr)) {}
+  SceneRenderer &operator=(SceneRenderer &&) = delete;
 };
 
 void init_window_callbacks(GLFWwindow *window);
-std::expected<hooks_t, std::string> init_shaders(GLFWwindow *);
-
-void event_loop(GLFWwindow *window, cbs_t cbs);
+void event_loop(GLFWwindow *window, SceneRenderer &renderer);
 
 int main() {
   auto ctx = GLContext::create(WIDTH, HEIGHT, TITLE);
@@ -75,19 +97,14 @@ int main() {
 
   init_window_callbacks(ctx->window());
 
-  auto res = init_shaders(ctx->window());
-  if (!res) {
-    std::cerr << res.error() << "\n";
+  auto renderer = SceneRenderer::create(ctx->window());
+  if (!renderer) {
+    std::cerr << renderer.error() << "\n";
     return -1;
   }
-  event_loop(ctx->window(), res->callbacks);
-
-  res->cleanup();
+  event_loop(ctx->window(), *renderer);
   return 0;
 }
-
-
-
 
 
 
@@ -183,29 +200,9 @@ void scroll_callback(GLFWwindow *window, double x_offset, double y_offset) {
 
 
 
-struct buffers_t {
-  id_t cube_vao;
-  id_t light_vao;
-
-  cleanup_t cleanup = []() {};
-};
-
-buffers_t buffers();
 void process_events(input_t input, float delta);
 
-std::expected<hooks_t, std::string> init_shaders(GLFWwindow *window) {
-  struct programs_t {
-    id_t view;
-    id_t light;
-  };
-  struct vaos_t {
-    id_t cube;
-    id_t light;
-  };
-  struct textures_t {
-    id_t diffuse;
-    id_t specular;
-  };
+std::expected<SceneRenderer, std::string> SceneRenderer::create(GLFWwindow *window) {
   auto shader =
       Shader::build("shaders/16_positional.vert", "shaders/16_positional.frag");
   if (!shader) {
@@ -216,7 +213,6 @@ std::expected<hooks_t, std::string> init_shaders(GLFWwindow *window) {
   if (!light_shader) {
     return std::unexpected(light_shader.error());
   }
-  programs_t ps{.view = shader->ID, .light = light_shader->ID};
 
   auto load_texture_res = load_texture("textures/container2.png");
   if (!load_texture_res) {
@@ -227,130 +223,162 @@ std::expected<hooks_t, std::string> init_shaders(GLFWwindow *window) {
   if (!load_texture_specular_res) {
     return std::unexpected(load_texture_specular_res.error());
   }
-  textures_t ts = {
+
+  id_t cube_vao;
+  id_t vbo;
+  glGenVertexArrays(1, &cube_vao);
+  glGenBuffers(1, &vbo);
+
+  glBindVertexArray(cube_vao);
+
+  glBindBuffer(GL_ARRAY_BUFFER, vbo);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(cube_vertices), cube_vertices.data(), GL_STATIC_DRAW);
+
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(cube_vertex_t), reinterpret_cast<void *>(offsetof(cube_vertex_t, position)));
+  glEnableVertexAttribArray(0);
+  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(cube_vertex_t), reinterpret_cast<void *>(offsetof(cube_vertex_t, normal)));
+  glEnableVertexAttribArray(1);
+  glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(cube_vertex_t), reinterpret_cast<void *>(offsetof(cube_vertex_t, texcoord)));
+  glEnableVertexAttribArray(2);
+
+  id_t light_vao;
+  glGenVertexArrays(1, &light_vao);
+  glBindVertexArray(light_vao);
+  glBindBuffer(GL_ARRAY_BUFFER, vbo);
+
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(cube_vertex_t), reinterpret_cast<void *>(offsetof(cube_vertex_t, position)));
+  glEnableVertexAttribArray(0);
+
+  SceneRenderer r;
+  r.ps = {.view = shader->ID, .light = light_shader->ID};
+  r.vs = {.cube = cube_vao, .light = light_vao};
+  r.ts = {
       .diffuse = *load_texture_res,
       .specular = *load_texture_specular_res,
   };
-
-  auto vaos = buffers();
-  vaos_t vs = {.cube = vaos.cube_vao, .light = vaos.light_vao};
-
-  auto f = [ps, vs, ts](input_t input, float delta) {
-    auto now = glfwGetTime();
-    process_events(input, delta);
-
-    glUseProgram(ps.view);
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, ts.diffuse);
-    glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, ts.specular);
-    specular_map_t specular_map = {
-        .diffuse = 0,
-        .specular = 1,
-        .shininess = 64.f,
-    };
-
-    glm::mat4 model;
-
-    glm::mat4 view = state.camera.get_view_matrix();
-
-    glm::mat4 projection =
-        glm::perspective(glm::radians(state.camera.fov),
-                         static_cast<float>(state.viewport.width) /
-                             static_cast<float>(state.viewport.height),
-                         .1f, 100.f);
-
-    set_mat4(ps.view, "view", view);
-    set_mat4(ps.view, "projection", projection);
-    set_vec3(ps.view, "view_pos", state.camera.position);
-    set_positional_light(ps.view, "light", state.light);
-    set_specular_map(ps.view, "material", specular_map);
-
-    glBindVertexArray(vs.cube);
-
-    glUseProgram(ps.light);
-
-    set_mat4(ps.light, "view", view);
-    set_mat4(ps.light, "projection", projection);
-    set_positional_light(ps.light, "light", state.light);
-
-    glUseProgram(ps.view);
-    float angle;
-    for (unsigned int i = 0; i < 10; ++i) {
-      angle = 20.f * i;
-      angle = glfwGetTime() * (i % 3) * 25.f;
-      model = glm::translate(glm::mat4(1.f), example_cube_positions[i]);
-      model = glm::rotate(model, glm::radians(angle), glm::vec3(1.f, .3f, .5f));
-
-      set_mat4(ps.view, "model", model);
-      glDrawArrays(GL_TRIANGLES, 0, 36);
-    }
-
-    model = glm::mat4(1.f);
-    model = glm::translate(model, state.light.position);
-    model = glm::scale(model, glm::vec3(.2f));
-
-    glUseProgram(ps.light);
-    set_mat4(ps.light, "model", model);
-    glDrawArrays(GL_TRIANGLES, 0, 36);
-  };
-
-  auto imgui = [window](input_t input, float delta) {
-    ImGui_ImplOpenGL3_NewFrame();
-    ImGui_ImplGlfw_NewFrame();
-    ImGui::NewFrame();
-
-    ImGuiIO &io = ImGui::GetIO();
-    enum mode_t {
-      mode_CAM,
-      mode_GUI,
-    };
-    mode_t mode =
-        (glfwGetInputMode(window, GLFW_CURSOR) == GLFW_CURSOR_DISABLED)
-            ? mode_CAM
-            : mode_GUI;
-
-    if (mode == mode_CAM) {
-      io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;
-    } else if (mode == mode_GUI) {
-      io.ConfigFlags &= ~ImGuiConfigFlags_NoMouseCursorChange;
-    }
-
-    ImGui::SetNextWindowPos(ImVec2(6.0f, 6.0f), ImGuiCond_Once);
-    ImGui::Begin("Scene information", NULL, ImGuiWindowFlags_AlwaysAutoResize);
-    ImGui::PushItemWidth(150.0f);
-
-    ImGui::LabelText("Pos", "(%.2f, %.2f, %.2f)", state.camera.position.x,
-                     state.camera.position.y, state.camera.position.z);
-    double x, y;
-    glfwGetCursorPos(window, &x, &y);
-    ImGui::LabelText("Mouse", "(%.2f, %.2f)", x, y);
-    if (mode == mode_GUI) {
-      ImGui::SeparatorText("Light");
-      ImGui::ColorEdit3("Ambience", glm::value_ptr(state.light.ambient));
-      ImGui::ColorEdit3("Diffuse", glm::value_ptr(state.light.diffuse));
-      ImGui::ColorEdit3("Specular", glm::value_ptr(state.light.specular));
-      ImGui::DragFloat("c", &state.light.constant, .1f, 0.f, 10.f);
-      ImGui::SameLine();
-      ImGui::DragFloat("l", &state.light.linear, .001f, 0.f, 1.f);
-      ImGui::SameLine();
-      ImGui::DragFloat("q", &state.light.quadratic, .0001f, 0.f, 1.f);
-      ImGui::SameLine();
-      ImGui::Text("Attenuation");
-    }
-    ImGui::PopItemWidth();
-
-    ImGui::End();
-
-    ImGui::Render();
-    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-  };
+  r.vbo = vbo;
+  r.window = window;
 
   shader->use();
   shader->set_int("material.diffuse", 0);
 
-  cbs_t v{f, imgui};
-  return hooks_t{.callbacks = v, .cleanup = vaos.cleanup};
+  return r;
+}
+
+void SceneRenderer::render(input_t input, float delta) {
+  auto now = glfwGetTime();
+  process_events(input, delta);
+
+  glUseProgram(ps.view);
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, ts.diffuse);
+  glActiveTexture(GL_TEXTURE1);
+  glBindTexture(GL_TEXTURE_2D, ts.specular);
+  specular_map_t specular_map = {
+      .diffuse = 0,
+      .specular = 1,
+      .shininess = 64.f,
+  };
+
+  glm::mat4 model;
+
+  glm::mat4 view = state.camera.get_view_matrix();
+
+  glm::mat4 projection =
+      glm::perspective(glm::radians(state.camera.fov),
+                       static_cast<float>(state.viewport.width) /
+                           static_cast<float>(state.viewport.height),
+                       .1f, 100.f);
+
+  set_mat4(ps.view, "view", view);
+  set_mat4(ps.view, "projection", projection);
+  set_vec3(ps.view, "view_pos", state.camera.position);
+  set_positional_light(ps.view, "light", state.light);
+  set_specular_map(ps.view, "material", specular_map);
+
+  glBindVertexArray(vs.cube);
+
+  glUseProgram(ps.light);
+
+  set_mat4(ps.light, "view", view);
+  set_mat4(ps.light, "projection", projection);
+  set_positional_light(ps.light, "light", state.light);
+
+  glUseProgram(ps.view);
+  float angle;
+  for (unsigned int i = 0; i < 10; ++i) {
+    angle = 20.f * i;
+    angle = glfwGetTime() * (i % 3) * 25.f;
+    model = glm::translate(glm::mat4(1.f), example_cube_positions[i]);
+    model = glm::rotate(model, glm::radians(angle), glm::vec3(1.f, .3f, .5f));
+
+    set_mat4(ps.view, "model", model);
+    glDrawArrays(GL_TRIANGLES, 0, 36);
+  }
+
+  model = glm::mat4(1.f);
+  model = glm::translate(model, state.light.position);
+  model = glm::scale(model, glm::vec3(.2f));
+
+  glUseProgram(ps.light);
+  set_mat4(ps.light, "model", model);
+  glDrawArrays(GL_TRIANGLES, 0, 36);
+
+  ImGui_ImplOpenGL3_NewFrame();
+  ImGui_ImplGlfw_NewFrame();
+  ImGui::NewFrame();
+
+  ImGuiIO &io = ImGui::GetIO();
+  enum mode_t {
+    mode_CAM,
+    mode_GUI,
+  };
+  mode_t mode =
+      (glfwGetInputMode(window, GLFW_CURSOR) == GLFW_CURSOR_DISABLED)
+          ? mode_CAM
+          : mode_GUI;
+
+  if (mode == mode_CAM) {
+    io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;
+  } else if (mode == mode_GUI) {
+    io.ConfigFlags &= ~ImGuiConfigFlags_NoMouseCursorChange;
+  }
+
+  ImGui::SetNextWindowPos(ImVec2(6.0f, 6.0f), ImGuiCond_Once);
+  ImGui::Begin("Scene information", NULL, ImGuiWindowFlags_AlwaysAutoResize);
+  ImGui::PushItemWidth(150.0f);
+
+  ImGui::LabelText("Pos", "(%.2f, %.2f, %.2f)", state.camera.position.x,
+                   state.camera.position.y, state.camera.position.z);
+  double x, y;
+  glfwGetCursorPos(window, &x, &y);
+  ImGui::LabelText("Mouse", "(%.2f, %.2f)", x, y);
+  if (mode == mode_GUI) {
+    ImGui::SeparatorText("Light");
+    ImGui::ColorEdit3("Ambience", glm::value_ptr(state.light.ambient));
+    ImGui::ColorEdit3("Diffuse", glm::value_ptr(state.light.diffuse));
+    ImGui::ColorEdit3("Specular", glm::value_ptr(state.light.specular));
+    ImGui::DragFloat("c", &state.light.constant, .1f, 0.f, 10.f);
+    ImGui::SameLine();
+    ImGui::DragFloat("l", &state.light.linear, .001f, 0.f, 1.f);
+    ImGui::SameLine();
+    ImGui::DragFloat("q", &state.light.quadratic, .0001f, 0.f, 1.f);
+    ImGui::SameLine();
+    ImGui::Text("Attenuation");
+  }
+  ImGui::PopItemWidth();
+
+  ImGui::End();
+
+  ImGui::Render();
+  ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+}
+
+SceneRenderer::~SceneRenderer() {
+  if (!vbo) return;
+  glDeleteVertexArrays(1, &vs.cube);
+  glDeleteVertexArrays(1, &vs.light);
+  glDeleteBuffers(1, &vbo);
 }
 
 void process_events(input_t input, float delta) {
@@ -404,41 +432,6 @@ void process_events(input_t input, float delta) {
   }
 }
 
-buffers_t buffers() {
-  id_t cube_vao;
-  id_t vbo;
-  glGenVertexArrays(1, &cube_vao);
-  glGenBuffers(1, &vbo);
-
-  glBindVertexArray(cube_vao);
-
-  glBindBuffer(GL_ARRAY_BUFFER, vbo);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(cube_vertices), cube_vertices.data(), GL_STATIC_DRAW);
-
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(cube_vertex_t), reinterpret_cast<void *>(offsetof(cube_vertex_t, position)));
-  glEnableVertexAttribArray(0);
-  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(cube_vertex_t), reinterpret_cast<void *>(offsetof(cube_vertex_t, normal)));
-  glEnableVertexAttribArray(1);
-  glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(cube_vertex_t), reinterpret_cast<void *>(offsetof(cube_vertex_t, texcoord)));
-  glEnableVertexAttribArray(2);
-
-  id_t light_vao;
-  glGenVertexArrays(1, &light_vao);
-  glBindVertexArray(light_vao);
-  glBindBuffer(GL_ARRAY_BUFFER, vbo);
-
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(cube_vertex_t), reinterpret_cast<void *>(offsetof(cube_vertex_t, position)));
-  glEnableVertexAttribArray(0);
-
-  auto cleanup = [cube_vao, light_vao, vbo]() {
-    glDeleteVertexArrays(1, &cube_vao);
-    glDeleteVertexArrays(1, &light_vao);
-    glDeleteBuffers(1, &vbo);
-  };
-
-  return {.cube_vao = cube_vao, .light_vao = light_vao, .cleanup = cleanup};
-}
-
 void process_input(GLFWwindow *window, input_t &input);
 
 struct delta_t {
@@ -452,8 +445,7 @@ void update_delta(delta_t &delta) {
   delta.last = now;
 }
 
-void event_loop(GLFWwindow *window,
-                std::vector<std::function<void(input_t, float)>> cbs) {
+void event_loop(GLFWwindow *window, SceneRenderer &renderer) {
   input_t input{};
 
   delta_t delta{};
@@ -466,9 +458,7 @@ void event_loop(GLFWwindow *window,
     glClearColor(.2f, .3f, .3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    for (auto cb : cbs) {
-      cb(input, delta.delta);
-    }
+    renderer.render(input, delta.delta);
 
     glfwSwapBuffers(window);
     glfwPollEvents();

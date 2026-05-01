@@ -1,10 +1,9 @@
 #include <cmath>
 #include <expected>
-#include <functional>
 #include <glm/geometric.hpp>
 #include <iostream>
 #include <print>
-#include <vector>
+#include <utility>
 
 #include <glad/gl.h>
 
@@ -243,19 +242,47 @@ struct state_t {
 // Global state
 state_t state;
 
-using cb_t = std::function<void(input_t, float)>;
-using cbs_t = std::vector<cb_t>;
-using cleanup_t = std::function<void()>;
+struct SceneRenderer {
+  struct programs_t {
+    id_t view{};
+    id_t light{};
+  };
+  struct vaos_t {
+    id_t cube{};
+    id_t pyramid{};
+    id_t light{};
+  };
+  struct textures_t {
+    id_t diffuse{};
+    id_t specular{};
+  };
 
-struct hooks_t {
-  cbs_t callbacks = {};
-  cleanup_t cleanup = []() {};
+  programs_t ps{};
+  vaos_t vs{};
+  textures_t ts{};
+  id_t vbo{};
+  id_t pyramid_vbo{};
+  id_t pyramid_ebo{};
+  GLFWwindow *window{};
+
+  static std::expected<SceneRenderer, std::string> create(GLFWwindow *window);
+  void render(input_t input, float delta);
+
+  ~SceneRenderer();
+  SceneRenderer() = default;
+  SceneRenderer(const SceneRenderer &) = delete;
+  SceneRenderer &operator=(const SceneRenderer &) = delete;
+  SceneRenderer(SceneRenderer &&o) noexcept
+      : ps(std::exchange(o.ps, {})), vs(std::exchange(o.vs, {})),
+        ts(std::exchange(o.ts, {})), vbo(std::exchange(o.vbo, 0)),
+        pyramid_vbo(std::exchange(o.pyramid_vbo, 0)),
+        pyramid_ebo(std::exchange(o.pyramid_ebo, 0)),
+        window(std::exchange(o.window, nullptr)) {}
+  SceneRenderer &operator=(SceneRenderer &&) = delete;
 };
 
 void init_window_callbacks(GLFWwindow *window);
-std::expected<hooks_t, std::string> init_shaders(GLFWwindow *);
-
-void event_loop(GLFWwindow *window, cbs_t cbs);
+void event_loop(GLFWwindow *window, SceneRenderer &renderer);
 
 int main() {
   auto ctx = GLContext::create(WIDTH, HEIGHT, TITLE);
@@ -266,19 +293,14 @@ int main() {
 
   init_window_callbacks(ctx->window());
 
-  auto res = init_shaders(ctx->window());
-  if (!res) {
-    std::cerr << res.error() << "\n";
+  auto renderer = SceneRenderer::create(ctx->window());
+  if (!renderer) {
+    std::cerr << renderer.error() << "\n";
     return -1;
   }
-  event_loop(ctx->window(), res->callbacks);
-
-  res->cleanup();
+  event_loop(ctx->window(), *renderer);
   return 0;
 }
-
-
-
 
 
 
@@ -380,15 +402,6 @@ void scroll_callback(GLFWwindow *window, double x_offset, double y_offset) {
   state.camera.update_fov(static_cast<float>(y_offset));
 }
 
-struct buffers_t {
-  id_t cube_vao;
-  id_t light_vao;
-  id_t pyramid_vao;
-
-  cleanup_t cleanup = []() {};
-};
-
-buffers_t buffers();
 void process_events(input_t input, float delta);
 
 light_positional_t get_pos_light(size_t i) {
@@ -412,20 +425,7 @@ light_spot_t get_spot_light(size_t i) {
   return spot_light;
 }
 
-std::expected<hooks_t, std::string> init_shaders(GLFWwindow *window) {
-  struct programs_t {
-    id_t view;
-    id_t light;
-  };
-  struct vaos_t {
-    id_t cube;
-    id_t pyramid;
-    id_t light;
-  };
-  struct textures_t {
-    id_t diffuse;
-    id_t specular;
-  };
+std::expected<SceneRenderer, std::string> SceneRenderer::create(GLFWwindow *window) {
   auto shader =
       Shader::build("shaders/17_multiple.vert", "shaders/17_multiple.frag");
   if (!shader) {
@@ -436,7 +436,6 @@ std::expected<hooks_t, std::string> init_shaders(GLFWwindow *window) {
   if (!light_shader) {
     return std::unexpected(light_shader.error());
   }
-  programs_t ps{.view = shader->ID, .light = light_shader->ID};
 
   auto load_texture_res = load_texture("textures/container2.png");
   if (!load_texture_res) {
@@ -447,191 +446,7 @@ std::expected<hooks_t, std::string> init_shaders(GLFWwindow *window) {
   if (!load_texture_specular_res) {
     return std::unexpected(load_texture_specular_res.error());
   }
-  textures_t ts = {
-      .diffuse = *load_texture_res,
-      .specular = *load_texture_specular_res,
-  };
 
-  auto vaos = buffers();
-  vaos_t vs = {.cube = vaos.cube_vao,
-               .pyramid = vaos.pyramid_vao,
-               .light = vaos.light_vao};
-
-  auto f = [ps, vs, ts](input_t input, float delta) {
-    auto now = glfwGetTime();
-    process_events(input, delta);
-
-    glUseProgram(ps.view);
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, ts.diffuse);
-    glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, ts.specular);
-    specular_map_t specular_map = {
-        .diffuse = 0,
-        .specular = 1,
-        .shininess = 64.f,
-    };
-
-    glm::mat4 model;
-
-    glm::mat4 view = state.camera.get_view_matrix();
-
-    glm::mat4 projection =
-        glm::perspective(glm::radians(state.camera.fov),
-                         static_cast<float>(state.viewport.width) /
-                             static_cast<float>(state.viewport.height),
-                         .1f, 100.f);
-
-    glUseProgram(ps.view);
-    set_mat4(ps.view, "view", view);
-    set_mat4(ps.view, "projection", projection);
-    set_vec3(ps.view, "view_pos", state.camera.position);
-    set_specular_map(ps.view, "material", specular_map);
-
-    glUseProgram(ps.light);
-    set_mat4(ps.light, "view", view);
-    set_mat4(ps.light, "projection", projection);
-    glBindVertexArray(vs.light);
-
-    const preset_t &preset = presets[state.preset_index];
-    const light_directional_t &dir_light = preset.dir_light;
-    glUseProgram(ps.view);
-    set_directional_light(ps.view, "dir_light", dir_light);
-
-    // Set and draw positional lights
-    for (unsigned int i = 0; i < preset.pos_lights_pos.size(); ++i) {
-      light_positional_t pos_light = get_pos_light(i);
-      glUseProgram(ps.view);
-      set_positional_light(ps.view, std::format("pos_lights[{}]", i),
-                           pos_light);
-      glUseProgram(ps.light);
-      model = glm::mat4(1.f);
-      model = glm::translate(model, pos_light.position);
-      model = glm::scale(model, glm::vec3(.2f));
-
-      set_mat4(ps.light, "model", model);
-      set_positional_light(ps.light, std::format("pos_lights[{}]", i),
-                           pos_light);
-      glDrawArrays(GL_TRIANGLES, 0, 36);
-    }
-
-    glUseProgram(ps.light);
-    glBindVertexArray(vs.pyramid);
-
-    // Set and draw spot lights
-    for (unsigned int i = 0; i < preset.spot_lights_pos.size(); ++i) {
-      light_spot_t spot_light = get_spot_light(i);
-      glUseProgram(ps.view);
-      set_spot_light(ps.view, std::format("spot_lights[{}]", i), spot_light);
-
-      glUseProgram(ps.light);
-      model = glm::mat4(1.f);
-      model = glm::translate(model, spot_light.position);
-      glm::mat4 look_at_rotation =
-          glm::lookAt(glm::vec3(0.f), spot_light.direction, glm::vec3(0, 1, 0));
-      model = model * glm::inverse(look_at_rotation);
-      model = glm::scale(model, glm::vec3(.2f));
-
-      set_mat4(ps.light, "model", model);
-      set_spot_light(ps.light, "light", spot_light);
-      glDrawElements(GL_TRIANGLES, 18, GL_UNSIGNED_INT, 0);
-    }
-
-    glUseProgram(ps.view);
-    glBindVertexArray(vs.cube);
-    float angle;
-    for (unsigned int i = 0; i < 10; ++i) {
-      angle = 20.f * i;
-      angle = glfwGetTime() * (i % 3) * 25.f;
-      model = glm::translate(glm::mat4(1.f), example_cube_positions[i]);
-      model = glm::rotate(model, glm::radians(angle), glm::vec3(1.f, .3f, .5f));
-
-      set_mat4(ps.view, "model", model);
-      glDrawArrays(GL_TRIANGLES, 0, 36);
-    }
-  };
-
-  auto imgui = [window](input_t input, float delta) {
-    ImGui_ImplOpenGL3_NewFrame();
-    ImGui_ImplGlfw_NewFrame();
-    ImGui::NewFrame();
-
-    ImGuiIO &io = ImGui::GetIO();
-    enum mode_t {
-      mode_CAM,
-      mode_GUI,
-    };
-    mode_t mode =
-        (glfwGetInputMode(window, GLFW_CURSOR) == GLFW_CURSOR_DISABLED)
-            ? mode_CAM
-            : mode_GUI;
-
-    if (mode == mode_CAM) {
-      io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;
-    } else if (mode == mode_GUI) {
-      io.ConfigFlags &= ~ImGuiConfigFlags_NoMouseCursorChange;
-    }
-
-    ImGui::SetNextWindowPos(ImVec2(6.0f, 6.0f), ImGuiCond_Once);
-    ImGui::Begin("Scene information", NULL, ImGuiWindowFlags_AlwaysAutoResize);
-    ImGui::PushItemWidth(150.0f);
-
-    ImGui::LabelText("Pos", "(%.2f, %.2f, %.2f)", state.camera.position.x,
-                     state.camera.position.y, state.camera.position.z);
-    double x, y;
-    glfwGetCursorPos(window, &x, &y);
-    ImGui::LabelText("Mouse", "(%.2f, %.2f)", x, y);
-    if (mode == mode_GUI) {
-    }
-    ImGui::PopItemWidth();
-
-    ImGui::End();
-
-    ImGui::Render();
-    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-  };
-
-  shader->use();
-  shader->set_int("material.diffuse", 0);
-
-  cbs_t v{f, imgui};
-  return hooks_t{.callbacks = v, .cleanup = vaos.cleanup};
-}
-
-void process_events(input_t input, float delta) {
-  if (input.fov_inc) {
-    state.camera.update_fov(1.f);
-  }
-  if (input.fov_dec) {
-    state.camera.update_fov(-1.f);
-  }
-  if (input.cam_up) {
-    state.camera.process_movement(CameraMovement::UP, delta);
-  }
-  if (input.cam_down) {
-    state.camera.process_movement(CameraMovement::DOWN, delta);
-  }
-  if (input.cam_left) {
-    state.camera.process_movement(CameraMovement::LEFT, delta);
-  }
-  if (input.cam_right) {
-    state.camera.process_movement(CameraMovement::RIGHT, delta);
-  }
-  if (input.cam_forward) {
-    state.camera.process_movement(CameraMovement::FORWARD, delta);
-  }
-  if (input.cam_back) {
-    state.camera.process_movement(CameraMovement::BACKWARD, delta);
-  }
-  if (input.cam_yaw_left) {
-    state.camera.process_rotation(120 * -SPEED * delta, 0.f);
-  }
-  if (input.cam_yaw_right) {
-    state.camera.process_rotation(120 * SPEED * delta, 0.f);
-  }
-}
-
-buffers_t buffers() {
   id_t cube_vao;
   id_t vbo;
   glGenVertexArrays(1, &cube_vao);
@@ -684,22 +499,197 @@ buffers_t buffers() {
                         reinterpret_cast<void *>(0));
   glEnableVertexAttribArray(0);
 
-  auto cleanup = [cube_vao, light_vao, pyramid_vao, vbo, pyramid_vbo,
-                  pyramid_ebo]() {
-    glDeleteVertexArrays(1, &cube_vao);
-    glDeleteVertexArrays(1, &light_vao);
-    glDeleteVertexArrays(1, &pyramid_vao);
-    glDeleteBuffers(1, &vbo);
-    glDeleteBuffers(1, &pyramid_vbo);
-    glDeleteBuffers(1, &pyramid_ebo);
+  SceneRenderer r;
+  r.ps = {.view = shader->ID, .light = light_shader->ID};
+  r.vs = {.cube = cube_vao, .pyramid = pyramid_vao, .light = light_vao};
+  r.ts = {
+      .diffuse = *load_texture_res,
+      .specular = *load_texture_specular_res,
+  };
+  r.vbo = vbo;
+  r.pyramid_vbo = pyramid_vbo;
+  r.pyramid_ebo = pyramid_ebo;
+  r.window = window;
+
+  shader->use();
+  shader->set_int("material.diffuse", 0);
+
+  return r;
+}
+
+void SceneRenderer::render(input_t input, float delta) {
+  auto now = glfwGetTime();
+  process_events(input, delta);
+
+  glUseProgram(ps.view);
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, ts.diffuse);
+  glActiveTexture(GL_TEXTURE1);
+  glBindTexture(GL_TEXTURE_2D, ts.specular);
+  specular_map_t specular_map = {
+      .diffuse = 0,
+      .specular = 1,
+      .shininess = 64.f,
   };
 
-  return {
-      .cube_vao = cube_vao,
-      .light_vao = light_vao,
-      .pyramid_vao = pyramid_vao,
-      .cleanup = cleanup,
+  glm::mat4 model;
+
+  glm::mat4 view = state.camera.get_view_matrix();
+
+  glm::mat4 projection =
+      glm::perspective(glm::radians(state.camera.fov),
+                       static_cast<float>(state.viewport.width) /
+                           static_cast<float>(state.viewport.height),
+                       .1f, 100.f);
+
+  glUseProgram(ps.view);
+  set_mat4(ps.view, "view", view);
+  set_mat4(ps.view, "projection", projection);
+  set_vec3(ps.view, "view_pos", state.camera.position);
+  set_specular_map(ps.view, "material", specular_map);
+
+  glUseProgram(ps.light);
+  set_mat4(ps.light, "view", view);
+  set_mat4(ps.light, "projection", projection);
+  glBindVertexArray(vs.light);
+
+  const preset_t &preset = presets[state.preset_index];
+  const light_directional_t &dir_light = preset.dir_light;
+  glUseProgram(ps.view);
+  set_directional_light(ps.view, "dir_light", dir_light);
+
+  // Set and draw positional lights
+  for (unsigned int i = 0; i < preset.pos_lights_pos.size(); ++i) {
+    light_positional_t pos_light = get_pos_light(i);
+    glUseProgram(ps.view);
+    set_positional_light(ps.view, std::format("pos_lights[{}]", i),
+                         pos_light);
+    glUseProgram(ps.light);
+    model = glm::mat4(1.f);
+    model = glm::translate(model, pos_light.position);
+    model = glm::scale(model, glm::vec3(.2f));
+
+    set_mat4(ps.light, "model", model);
+    set_positional_light(ps.light, std::format("pos_lights[{}]", i),
+                         pos_light);
+    glDrawArrays(GL_TRIANGLES, 0, 36);
+  }
+
+  glUseProgram(ps.light);
+  glBindVertexArray(vs.pyramid);
+
+  // Set and draw spot lights
+  for (unsigned int i = 0; i < preset.spot_lights_pos.size(); ++i) {
+    light_spot_t spot_light = get_spot_light(i);
+    glUseProgram(ps.view);
+    set_spot_light(ps.view, std::format("spot_lights[{}]", i), spot_light);
+
+    glUseProgram(ps.light);
+    model = glm::mat4(1.f);
+    model = glm::translate(model, spot_light.position);
+    glm::mat4 look_at_rotation =
+        glm::lookAt(glm::vec3(0.f), spot_light.direction, glm::vec3(0, 1, 0));
+    model = model * glm::inverse(look_at_rotation);
+    model = glm::scale(model, glm::vec3(.2f));
+
+    set_mat4(ps.light, "model", model);
+    set_spot_light(ps.light, "light", spot_light);
+    glDrawElements(GL_TRIANGLES, 18, GL_UNSIGNED_INT, 0);
+  }
+
+  glUseProgram(ps.view);
+  glBindVertexArray(vs.cube);
+  float angle;
+  for (unsigned int i = 0; i < 10; ++i) {
+    angle = 20.f * i;
+    angle = glfwGetTime() * (i % 3) * 25.f;
+    model = glm::translate(glm::mat4(1.f), example_cube_positions[i]);
+    model = glm::rotate(model, glm::radians(angle), glm::vec3(1.f, .3f, .5f));
+
+    set_mat4(ps.view, "model", model);
+    glDrawArrays(GL_TRIANGLES, 0, 36);
+  }
+
+  ImGui_ImplOpenGL3_NewFrame();
+  ImGui_ImplGlfw_NewFrame();
+  ImGui::NewFrame();
+
+  ImGuiIO &io = ImGui::GetIO();
+  enum mode_t {
+    mode_CAM,
+    mode_GUI,
   };
+  mode_t mode =
+      (glfwGetInputMode(window, GLFW_CURSOR) == GLFW_CURSOR_DISABLED)
+          ? mode_CAM
+          : mode_GUI;
+
+  if (mode == mode_CAM) {
+    io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;
+  } else if (mode == mode_GUI) {
+    io.ConfigFlags &= ~ImGuiConfigFlags_NoMouseCursorChange;
+  }
+
+  ImGui::SetNextWindowPos(ImVec2(6.0f, 6.0f), ImGuiCond_Once);
+  ImGui::Begin("Scene information", NULL, ImGuiWindowFlags_AlwaysAutoResize);
+  ImGui::PushItemWidth(150.0f);
+
+  ImGui::LabelText("Pos", "(%.2f, %.2f, %.2f)", state.camera.position.x,
+                   state.camera.position.y, state.camera.position.z);
+  double x, y;
+  glfwGetCursorPos(window, &x, &y);
+  ImGui::LabelText("Mouse", "(%.2f, %.2f)", x, y);
+  if (mode == mode_GUI) {
+  }
+  ImGui::PopItemWidth();
+
+  ImGui::End();
+
+  ImGui::Render();
+  ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+}
+
+SceneRenderer::~SceneRenderer() {
+  if (!vbo) return;
+  glDeleteVertexArrays(1, &vs.cube);
+  glDeleteVertexArrays(1, &vs.light);
+  glDeleteVertexArrays(1, &vs.pyramid);
+  glDeleteBuffers(1, &vbo);
+  glDeleteBuffers(1, &pyramid_vbo);
+  glDeleteBuffers(1, &pyramid_ebo);
+}
+
+void process_events(input_t input, float delta) {
+  if (input.fov_inc) {
+    state.camera.update_fov(1.f);
+  }
+  if (input.fov_dec) {
+    state.camera.update_fov(-1.f);
+  }
+  if (input.cam_up) {
+    state.camera.process_movement(CameraMovement::UP, delta);
+  }
+  if (input.cam_down) {
+    state.camera.process_movement(CameraMovement::DOWN, delta);
+  }
+  if (input.cam_left) {
+    state.camera.process_movement(CameraMovement::LEFT, delta);
+  }
+  if (input.cam_right) {
+    state.camera.process_movement(CameraMovement::RIGHT, delta);
+  }
+  if (input.cam_forward) {
+    state.camera.process_movement(CameraMovement::FORWARD, delta);
+  }
+  if (input.cam_back) {
+    state.camera.process_movement(CameraMovement::BACKWARD, delta);
+  }
+  if (input.cam_yaw_left) {
+    state.camera.process_rotation(120 * -SPEED * delta, 0.f);
+  }
+  if (input.cam_yaw_right) {
+    state.camera.process_rotation(120 * SPEED * delta, 0.f);
+  }
 }
 
 void process_input(GLFWwindow *window, input_t &input);
@@ -715,8 +705,7 @@ void update_delta(delta_t &delta) {
   delta.last = now;
 }
 
-void event_loop(GLFWwindow *window,
-                std::vector<std::function<void(input_t, float)>> cbs) {
+void event_loop(GLFWwindow *window, SceneRenderer &renderer) {
   input_t input{};
 
   delta_t delta{};
@@ -731,9 +720,7 @@ void event_loop(GLFWwindow *window,
                  preset.clear_color.z, preset.clear_color.w);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    for (auto cb : cbs) {
-      cb(input, delta.delta);
-    }
+    renderer.render(input, delta.delta);
 
     glfwSwapBuffers(window);
     glfwPollEvents();

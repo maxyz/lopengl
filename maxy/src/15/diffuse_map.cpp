@@ -1,9 +1,8 @@
 #include <cmath>
 #include <expected>
-#include <functional>
 #include <glm/geometric.hpp>
 #include <iostream>
-#include <vector>
+#include <utility>
 
 #include <glad/gl.h>
 
@@ -43,19 +42,34 @@ state_t state;
 
 
 
-using cb_t = std::function<void(input_t, float)>;
-using cbs_t = std::vector<cb_t>;
-using cleanup_t = std::function<void()>;
+struct SceneRenderer {
+  id_t p{};
+  id_t light_id{};
+  id_t cube_vao{};
+  id_t light_vao{};
+  id_t texture{};
+  id_t vbo{};
+  GLFWwindow *window{};
 
-struct hooks_t {
-  cbs_t callbacks = {};
-  cleanup_t cleanup = []() {};
+  static std::expected<SceneRenderer, std::string> create(GLFWwindow *window);
+  void render(input_t input, float delta);
+
+  ~SceneRenderer();
+  SceneRenderer() = default;
+  SceneRenderer(const SceneRenderer &) = delete;
+  SceneRenderer &operator=(const SceneRenderer &) = delete;
+  SceneRenderer(SceneRenderer &&o) noexcept
+      : p(std::exchange(o.p, 0)), light_id(std::exchange(o.light_id, 0)),
+        cube_vao(std::exchange(o.cube_vao, 0)),
+        light_vao(std::exchange(o.light_vao, 0)),
+        texture(std::exchange(o.texture, 0)),
+        vbo(std::exchange(o.vbo, 0)),
+        window(std::exchange(o.window, nullptr)) {}
+  SceneRenderer &operator=(SceneRenderer &&) = delete;
 };
 
 void init_window_callbacks(GLFWwindow *window);
-std::expected<hooks_t, std::string> init_shaders();
-
-void event_loop(GLFWwindow *window, cbs_t cbs);
+void event_loop(GLFWwindow *window, SceneRenderer &renderer);
 
 int main() {
   auto ctx = GLContext::create(WIDTH, HEIGHT, TITLE);
@@ -66,14 +80,12 @@ int main() {
 
   init_window_callbacks(ctx->window());
 
-  auto res = init_shaders();
-  if (!res) {
-    std::cerr << res.error() << "\n";
+  auto renderer = SceneRenderer::create(ctx->window());
+  if (!renderer) {
+    std::cerr << renderer.error() << "\n";
     return -1;
   }
-  event_loop(ctx->window(), res->callbacks);
-
-  res->cleanup();
+  event_loop(ctx->window(), *renderer);
   return 0;
 }
 
@@ -116,18 +128,10 @@ void window_focus_callback(GLFWwindow *window, int focused) {
 
 
 
-struct buffers_t {
-  unsigned int cube_vao;
-  unsigned int light_vao;
-
-  cleanup_t cleanup = []() {};
-};
-
-buffers_t buffers();
 void process_events(input_t input, float delta);
 void strobe_light(light_t &light, double now);
 
-std::expected<hooks_t, std::string> init_shaders() {
+std::expected<SceneRenderer, std::string> SceneRenderer::create(GLFWwindow *window) {
   auto shader = Shader::build("shaders/15_view.vert", "shaders/15_view.frag");
   if (!shader) {
     return std::unexpected(shader.error());
@@ -137,102 +141,134 @@ std::expected<hooks_t, std::string> init_shaders() {
   if (!light_shader) {
     return std::unexpected(light_shader.error());
   }
-  auto p = shader->ID;
-  auto light_id = light_shader->ID;
   const std::string filename{"textures/container2.png"};
   auto load_texture_res = load_texture(filename);
   if (!load_texture_res) {
     return std::unexpected(load_texture_res.error());
   }
-  auto texture = *load_texture_res;
-  auto vaos = buffers();
-  auto cube_vao = vaos.cube_vao;
-  auto light_vao = vaos.light_vao;
 
-  auto f = [p, light_id, cube_vao, light_vao, texture](input_t input, float delta) {
-    auto now = glfwGetTime();
-    process_events(input, delta);
+  unsigned int cube_vao;
+  unsigned int vbo;
+  glGenVertexArrays(1, &cube_vao);
+  glGenBuffers(1, &vbo);
 
-    strobe_light(state.light, now);
+  glBindVertexArray(cube_vao);
 
-    glUseProgram(p);
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, texture);
-    diffuse_map_t diffuse_map = {
-        .diffuse = 0,
-        .specular = glm::vec3(.5f, .5f, .5f),
-        .shininess = 64.f,
-    };
+  glBindBuffer(GL_ARRAY_BUFFER, vbo);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(cube_vertices), cube_vertices.data(), GL_STATIC_DRAW);
 
-    glm::mat4 model;
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(cube_vertex_t), reinterpret_cast<void *>(offsetof(cube_vertex_t, position)));
+  glEnableVertexAttribArray(0);
+  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(cube_vertex_t), reinterpret_cast<void *>(offsetof(cube_vertex_t, normal)));
+  glEnableVertexAttribArray(1);
+  glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(cube_vertex_t), reinterpret_cast<void *>(offsetof(cube_vertex_t, texcoord)));
+  glEnableVertexAttribArray(2);
 
-    glm::mat4 view = state.camera.get_view_matrix();
+  unsigned int light_vao;
+  glGenVertexArrays(1, &light_vao);
+  glBindVertexArray(light_vao);
+  glBindBuffer(GL_ARRAY_BUFFER, vbo);
 
-    glm::mat4 projection =
-        glm::perspective(glm::radians(state.camera.fov),
-                         static_cast<float>(state.viewport.width) /
-                             static_cast<float>(state.viewport.height),
-                         .1f, 100.f);
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(cube_vertex_t), reinterpret_cast<void *>(offsetof(cube_vertex_t, position)));
+  glEnableVertexAttribArray(0);
 
-    set_mat4(p, "view", view);
-    set_mat4(p, "projection", projection);
-    set_vec3(p, "light_pos", state.light.position);
-    set_vec3(p, "view_pos", state.camera.position);
-    set_light(p, "light", state.light);
-    set_diffuse_map(p, "diffuse_map", diffuse_map);
-
-    glBindVertexArray(cube_vao);
-
-    glUseProgram(light_id);
-
-    set_mat4(light_id, "view", view);
-    set_mat4(light_id, "projection", projection);
-    set_light(light_id, "light", state.light);
-
-    float angle;
-    for (unsigned int i = 0; i < 10; ++i) {
-      angle = 20.f * i;
-      angle = glfwGetTime() * (i % 3) * 25.f;
-      model = glm::translate(glm::mat4(1.f), example_cube_positions[i]);
-      model = glm::rotate(model, glm::radians(angle), glm::vec3(1.f, .3f, .5f));
-
-      glUseProgram(p);
-      set_mat4(p, "model", model);
-      glDrawArrays(GL_TRIANGLES, 0, 36);
-    }
-
-    model = glm::mat4(1.f);
-    model = glm::translate(model, state.light.position);
-    model = glm::scale(model, glm::vec3(.2f));
-
-    glUseProgram(light_id);
-    set_mat4(light_id, "model", model);
-    glDrawArrays(GL_TRIANGLES, 0, 36);
-  };
-
-  auto imgui = [](input_t input, float delta) {
-    ImGui_ImplOpenGL3_NewFrame();
-    ImGui_ImplGlfw_NewFrame();
-    ImGui::NewFrame();
-    ImGui::SetNextWindowPos(ImVec2(6.0f, 6.0f), ImGuiCond_Once);
-    ImGui::Begin("Scene information", NULL, ImGuiWindowFlags_AlwaysAutoResize);
-    ImGui::PushItemWidth(150.0f);
-
-    ImGui::LabelText("Pos", "(%.2f, %.2f, %.2f)", state.camera.position.x,
-                     state.camera.position.y, state.camera.position.z);
-
-    ImGui::PopItemWidth();
-    ImGui::End();
-
-    ImGui::Render();
-    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-  };
+  SceneRenderer r;
+  r.p = shader->ID;
+  r.light_id = light_shader->ID;
+  r.texture = *load_texture_res;
+  r.cube_vao = cube_vao;
+  r.light_vao = light_vao;
+  r.vbo = vbo;
+  r.window = window;
 
   shader->use();
   shader->set_int("material.diffuse", 0);
 
-  cbs_t v{f, imgui};
-  return hooks_t{.callbacks = v, .cleanup = vaos.cleanup};
+  return r;
+}
+
+void SceneRenderer::render(input_t input, float delta) {
+  auto now = glfwGetTime();
+  process_events(input, delta);
+
+  strobe_light(state.light, now);
+
+  glUseProgram(p);
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, texture);
+  diffuse_map_t diffuse_map = {
+      .diffuse = 0,
+      .specular = glm::vec3(.5f, .5f, .5f),
+      .shininess = 64.f,
+  };
+
+  glm::mat4 model;
+
+  glm::mat4 view = state.camera.get_view_matrix();
+
+  glm::mat4 projection =
+      glm::perspective(glm::radians(state.camera.fov),
+                       static_cast<float>(state.viewport.width) /
+                           static_cast<float>(state.viewport.height),
+                       .1f, 100.f);
+
+  set_mat4(p, "view", view);
+  set_mat4(p, "projection", projection);
+  set_vec3(p, "light_pos", state.light.position);
+  set_vec3(p, "view_pos", state.camera.position);
+  set_light(p, "light", state.light);
+  set_diffuse_map(p, "diffuse_map", diffuse_map);
+
+  glBindVertexArray(cube_vao);
+
+  glUseProgram(light_id);
+
+  set_mat4(light_id, "view", view);
+  set_mat4(light_id, "projection", projection);
+  set_light(light_id, "light", state.light);
+
+  float angle;
+  for (unsigned int i = 0; i < 10; ++i) {
+    angle = 20.f * i;
+    angle = glfwGetTime() * (i % 3) * 25.f;
+    model = glm::translate(glm::mat4(1.f), example_cube_positions[i]);
+    model = glm::rotate(model, glm::radians(angle), glm::vec3(1.f, .3f, .5f));
+
+    glUseProgram(p);
+    set_mat4(p, "model", model);
+    glDrawArrays(GL_TRIANGLES, 0, 36);
+  }
+
+  model = glm::mat4(1.f);
+  model = glm::translate(model, state.light.position);
+  model = glm::scale(model, glm::vec3(.2f));
+
+  glUseProgram(light_id);
+  set_mat4(light_id, "model", model);
+  glDrawArrays(GL_TRIANGLES, 0, 36);
+
+  ImGui_ImplOpenGL3_NewFrame();
+  ImGui_ImplGlfw_NewFrame();
+  ImGui::NewFrame();
+  ImGui::SetNextWindowPos(ImVec2(6.0f, 6.0f), ImGuiCond_Once);
+  ImGui::Begin("Scene information", NULL, ImGuiWindowFlags_AlwaysAutoResize);
+  ImGui::PushItemWidth(150.0f);
+
+  ImGui::LabelText("Pos", "(%.2f, %.2f, %.2f)", state.camera.position.x,
+                   state.camera.position.y, state.camera.position.z);
+
+  ImGui::PopItemWidth();
+  ImGui::End();
+
+  ImGui::Render();
+  ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+}
+
+SceneRenderer::~SceneRenderer() {
+  if (!vbo) return;
+  glDeleteVertexArrays(1, &cube_vao);
+  glDeleteVertexArrays(1, &light_vao);
+  glDeleteBuffers(1, &vbo);
 }
 
 void process_events(input_t input, float delta) {
@@ -298,41 +334,6 @@ void strobe_light(light_t &light, double now) {
   light.ambient = light.diffuse * glm::vec3(.2f);
 }
 
-buffers_t buffers() {
-  unsigned int cube_vao;
-  unsigned int vbo;
-  glGenVertexArrays(1, &cube_vao);
-  glGenBuffers(1, &vbo);
-
-  glBindVertexArray(cube_vao);
-
-  glBindBuffer(GL_ARRAY_BUFFER, vbo);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(cube_vertices), cube_vertices.data(), GL_STATIC_DRAW);
-
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(cube_vertex_t), reinterpret_cast<void *>(offsetof(cube_vertex_t, position)));
-  glEnableVertexAttribArray(0);
-  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(cube_vertex_t), reinterpret_cast<void *>(offsetof(cube_vertex_t, normal)));
-  glEnableVertexAttribArray(1);
-  glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(cube_vertex_t), reinterpret_cast<void *>(offsetof(cube_vertex_t, texcoord)));
-  glEnableVertexAttribArray(2);
-
-  unsigned int light_vao;
-  glGenVertexArrays(1, &light_vao);
-  glBindVertexArray(light_vao);
-  glBindBuffer(GL_ARRAY_BUFFER, vbo);
-
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(cube_vertex_t), reinterpret_cast<void *>(offsetof(cube_vertex_t, position)));
-  glEnableVertexAttribArray(0);
-
-  auto cleanup = [cube_vao, light_vao, vbo]() {
-    glDeleteVertexArrays(1, &cube_vao);
-    glDeleteVertexArrays(1, &light_vao);
-    glDeleteBuffers(1, &vbo);
-  };
-
-  return {.cube_vao = cube_vao, .light_vao = light_vao, .cleanup = cleanup};
-}
-
 void process_input(GLFWwindow *window, input_t &input);
 
 struct delta_t {
@@ -346,8 +347,7 @@ void update_delta(delta_t &delta) {
   delta.last = now;
 }
 
-void event_loop(GLFWwindow *window,
-                std::vector<std::function<void(input_t, float)>> cbs) {
+void event_loop(GLFWwindow *window, SceneRenderer &renderer) {
   input_t input{};
 
   delta_t delta{};
@@ -360,9 +360,7 @@ void event_loop(GLFWwindow *window,
     glClearColor(.2f, .3f, .3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    for (auto cb : cbs) {
-      cb(input, delta.delta);
-    }
+    renderer.render(input, delta.delta);
 
     glfwSwapBuffers(window);
     glfwPollEvents();
