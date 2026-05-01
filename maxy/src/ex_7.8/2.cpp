@@ -71,7 +71,6 @@ void framebufferSizeCallback(GLFWwindow *window, int width, int height) {
   glViewport(0, 0, width, height);
 }
 
-const float h = std::sin(M_PI / 3);
 
 const float vertices[] = {
     .5f,  .5f,  0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, // top right

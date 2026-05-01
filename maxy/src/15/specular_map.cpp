@@ -182,7 +182,6 @@ void window_focus_callback(GLFWwindow *window, int focused) {
   }
 }
 
-const float h = std::sin(M_PI / 3);
 
 const float vertices[] = {
     // positions      // normals      // texture coords

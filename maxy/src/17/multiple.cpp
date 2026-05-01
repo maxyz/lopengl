@@ -325,7 +325,6 @@ void scroll_callback(GLFWwindow *window, double x_offset, double y_offset) {
   state.camera.update_fov(static_cast<float>(y_offset));
 }
 
-const float h = std::sin(M_PI / 3);
 
 const float vertices[] = {
     // positions      // normals      // texture coords
