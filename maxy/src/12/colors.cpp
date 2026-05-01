@@ -14,8 +14,8 @@
 #include <stb_image.h>
 
 #include "common/assets.hpp"
-#include "common/geometry.hpp"
 #include "common/camera.hpp"
+#include "common/geometry.hpp"
 #include "common/shader.hpp"
 
 const char *TITLE = "LOpenGL";
@@ -138,7 +138,6 @@ void window_focus_callback(GLFWwindow *window, int focused) {
   }
 }
 
-
 const float vertices[] = {
     -.5f, -.5f, -.5f, .0f, .0f, // back
     .5f,  -.5f, -.5f, 1.f, .0f, // back
@@ -183,7 +182,6 @@ const float vertices[] = {
     -.5f, .5f,  .5f,  .0f, .0f, // top 2
 
 };
-
 
 glm::vec3 light_position = glm::vec3(2.f, 1.f, -2.f);
 
@@ -325,7 +323,8 @@ buffers_t buffers() {
   glBindBuffer(GL_ARRAY_BUFFER, vbo);
   glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), reinterpret_cast<void *>(0));
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float),
+                        reinterpret_cast<void *>(0));
   glEnableVertexAttribArray(0);
   glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float),
                         reinterpret_cast<void *>(3 * sizeof(float)));
@@ -336,7 +335,8 @@ buffers_t buffers() {
   glBindVertexArray(light_vao);
   glBindBuffer(GL_ARRAY_BUFFER, vbo);
 
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), reinterpret_cast<void *>(0));
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float),
+                        reinterpret_cast<void *>(0));
   glEnableVertexAttribArray(0);
 
   auto cleanup = [cube_vao, light_vao, vbo]() {

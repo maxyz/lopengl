@@ -1,4 +1,3 @@
-#include <cmath>
 #include <expected>
 #include <functional>
 #include <iostream>
@@ -79,7 +78,6 @@ std::expected<GLFWwindow *, std::string> init_window() {
 void framebufferSizeCallback(GLFWwindow *window, int width, int height) {
   glViewport(0, 0, width, height);
 }
-
 
 const float vertices[] = {
     .5f,  .5f,  0.0f, 1.0f, 0.0f, 0.0f, 1.f, 1.f, // top right
@@ -169,7 +167,8 @@ unsigned int buffers() {
   glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices,
                GL_STATIC_DRAW);
 
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), reinterpret_cast<void *>(0));
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float),
+                        reinterpret_cast<void *>(0));
   glEnableVertexAttribArray(0);
   glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float),
                         reinterpret_cast<void *>(3 * sizeof(float)));

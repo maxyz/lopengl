@@ -1,8 +1,6 @@
-#include <cmath>
 #include <expected>
 #include <glm/geometric.hpp>
 #include <iostream>
-#include <print>
 #include <utility>
 
 #include <glad/gl.h>
@@ -110,8 +108,6 @@ struct state_t {
 // Global state
 state_t state;
 
-
-
 struct SceneRenderer {
   struct programs_t {
     id_t view{};
@@ -172,9 +168,6 @@ int main() {
   return 0;
 }
 
-
-
-
 void framebuffer_size_callback(GLFWwindow *window, int width, int height);
 void window_focus_callback(GLFWwindow *window, int focused);
 
@@ -191,8 +184,6 @@ void init_window_callbacks(GLFWwindow *window) {
   glfwSetCursorPosCallback(window, mouse_callback);
   glfwSetScrollCallback(window, scroll_callback);
 }
-
-
 
 void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
   state.viewport.width = width;
@@ -263,12 +254,10 @@ void scroll_callback(GLFWwindow *window, double x_offset, double y_offset) {
   state.camera.update_fov(static_cast<float>(y_offset));
 }
 
-
-
-
 void process_events(input_t input, float delta);
 
-std::expected<SceneRenderer, std::string> SceneRenderer::create(GLFWwindow *window) {
+std::expected<SceneRenderer, std::string>
+SceneRenderer::create(GLFWwindow *window) {
   auto shader =
       Shader::build("shaders/17_multiple.vert", "shaders/17_multiple.frag");
   if (!shader) {
@@ -298,13 +287,20 @@ std::expected<SceneRenderer, std::string> SceneRenderer::create(GLFWwindow *wind
   glBindVertexArray(cube_vao);
 
   glBindBuffer(GL_ARRAY_BUFFER, vbo);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(cube_vertices), cube_vertices.data(), GL_STATIC_DRAW);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(cube_vertices), cube_vertices.data(),
+               GL_STATIC_DRAW);
 
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(cube_vertex_t), reinterpret_cast<void *>(offsetof(cube_vertex_t, position)));
+  glVertexAttribPointer(
+      0, 3, GL_FLOAT, GL_FALSE, sizeof(cube_vertex_t),
+      reinterpret_cast<void *>(offsetof(cube_vertex_t, position)));
   glEnableVertexAttribArray(0);
-  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(cube_vertex_t), reinterpret_cast<void *>(offsetof(cube_vertex_t, normal)));
+  glVertexAttribPointer(
+      1, 3, GL_FLOAT, GL_FALSE, sizeof(cube_vertex_t),
+      reinterpret_cast<void *>(offsetof(cube_vertex_t, normal)));
   glEnableVertexAttribArray(1);
-  glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(cube_vertex_t), reinterpret_cast<void *>(offsetof(cube_vertex_t, texcoord)));
+  glVertexAttribPointer(
+      2, 2, GL_FLOAT, GL_FALSE, sizeof(cube_vertex_t),
+      reinterpret_cast<void *>(offsetof(cube_vertex_t, texcoord)));
   glEnableVertexAttribArray(2);
 
   id_t light_vao;
@@ -312,7 +308,9 @@ std::expected<SceneRenderer, std::string> SceneRenderer::create(GLFWwindow *wind
   glBindVertexArray(light_vao);
   glBindBuffer(GL_ARRAY_BUFFER, vbo);
 
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(cube_vertex_t), reinterpret_cast<void *>(offsetof(cube_vertex_t, position)));
+  glVertexAttribPointer(
+      0, 3, GL_FLOAT, GL_FALSE, sizeof(cube_vertex_t),
+      reinterpret_cast<void *>(offsetof(cube_vertex_t, position)));
   glEnableVertexAttribArray(0);
 
   id_t pyramid_vao;
@@ -329,7 +327,8 @@ std::expected<SceneRenderer, std::string> SceneRenderer::create(GLFWwindow *wind
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, pyramid_ebo);
   glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(pyramid_indices),
                pyramid_indices, GL_STATIC_DRAW);
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), reinterpret_cast<void *>(0));
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float),
+                        reinterpret_cast<void *>(0));
   glEnableVertexAttribArray(0);
 
   SceneRenderer r;
@@ -444,10 +443,9 @@ void SceneRenderer::render(input_t input, float delta) {
     mode_CAM,
     mode_GUI,
   };
-  mode_t mode =
-      (glfwGetInputMode(window, GLFW_CURSOR) == GLFW_CURSOR_DISABLED)
-          ? mode_CAM
-          : mode_GUI;
+  mode_t mode = (glfwGetInputMode(window, GLFW_CURSOR) == GLFW_CURSOR_DISABLED)
+                    ? mode_CAM
+                    : mode_GUI;
 
   if (mode == mode_CAM) {
     io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;
@@ -475,7 +473,8 @@ void SceneRenderer::render(input_t input, float delta) {
 }
 
 SceneRenderer::~SceneRenderer() {
-  if (!vbo) return;
+  if (!vbo)
+    return;
   glDeleteVertexArrays(1, &vs.cube);
   glDeleteVertexArrays(1, &vs.light);
   glDeleteVertexArrays(1, &vs.pyramid);

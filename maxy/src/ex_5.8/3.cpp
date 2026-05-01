@@ -196,7 +196,8 @@ std::vector<id_t> buffers() {
   glBindBuffer(GL_ARRAY_BUFFER, VBO);
   glBufferData(GL_ARRAY_BUFFER, sizeof(vertices_a), vertices_a, GL_STATIC_DRAW);
 
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), reinterpret_cast<void *>(0));
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float),
+                        reinterpret_cast<void *>(0));
   glEnableVertexAttribArray(0);
 
   glGenBuffers(1, &VBO);
@@ -206,7 +207,8 @@ std::vector<id_t> buffers() {
   glBindBuffer(GL_ARRAY_BUFFER, VBO);
   glBufferData(GL_ARRAY_BUFFER, sizeof(vertices_b), vertices_b, GL_STATIC_DRAW);
 
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), reinterpret_cast<void *>(0));
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float),
+                        reinterpret_cast<void *>(0));
   glEnableVertexAttribArray(0);
 
   glBindBuffer(GL_ARRAY_BUFFER, 0);

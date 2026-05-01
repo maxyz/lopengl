@@ -3,7 +3,6 @@
 #include <functional>
 #include <glm/geometric.hpp>
 #include <iostream>
-#include <print>
 #include <vector>
 
 #include <glad/gl.h>
@@ -15,8 +14,8 @@
 #include <stb_image.h>
 
 #include "common/assets.hpp"
-#include "common/geometry.hpp"
 #include "common/camera.hpp"
+#include "common/geometry.hpp"
 #include "common/light.hpp"
 #include "common/materials.hpp"
 #include "common/shader.hpp"
@@ -146,9 +145,6 @@ void window_focus_callback(GLFWwindow *window, int focused) {
     glfwSetCursorPosCallback(window, mouse_callback);
   }
 }
-
-
-
 
 light_t light = {.position = glm::vec3(2.f, 1.f, -2.f),
                  .ambient = glm::vec3(.2f, .2f, .2f),
@@ -327,13 +323,20 @@ buffers_t buffers() {
   glBindVertexArray(cube_vao);
 
   glBindBuffer(GL_ARRAY_BUFFER, vbo);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(cube_vertices), cube_vertices.data(), GL_STATIC_DRAW);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(cube_vertices), cube_vertices.data(),
+               GL_STATIC_DRAW);
 
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(cube_vertex_t), reinterpret_cast<void *>(offsetof(cube_vertex_t, position)));
+  glVertexAttribPointer(
+      0, 3, GL_FLOAT, GL_FALSE, sizeof(cube_vertex_t),
+      reinterpret_cast<void *>(offsetof(cube_vertex_t, position)));
   glEnableVertexAttribArray(0);
-  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(cube_vertex_t), reinterpret_cast<void *>(offsetof(cube_vertex_t, normal)));
+  glVertexAttribPointer(
+      1, 3, GL_FLOAT, GL_FALSE, sizeof(cube_vertex_t),
+      reinterpret_cast<void *>(offsetof(cube_vertex_t, normal)));
   glEnableVertexAttribArray(1);
-  glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(cube_vertex_t), reinterpret_cast<void *>(offsetof(cube_vertex_t, texcoord)));
+  glVertexAttribPointer(
+      2, 2, GL_FLOAT, GL_FALSE, sizeof(cube_vertex_t),
+      reinterpret_cast<void *>(offsetof(cube_vertex_t, texcoord)));
   glEnableVertexAttribArray(2);
 
   unsigned int light_vao;
@@ -341,7 +344,9 @@ buffers_t buffers() {
   glBindVertexArray(light_vao);
   glBindBuffer(GL_ARRAY_BUFFER, vbo);
 
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(cube_vertex_t), reinterpret_cast<void *>(offsetof(cube_vertex_t, position)));
+  glVertexAttribPointer(
+      0, 3, GL_FLOAT, GL_FALSE, sizeof(cube_vertex_t),
+      reinterpret_cast<void *>(offsetof(cube_vertex_t, position)));
   glEnableVertexAttribArray(0);
 
   auto cleanup = [cube_vao, light_vao, vbo]() {

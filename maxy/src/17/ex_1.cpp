@@ -1,8 +1,6 @@
-#include <cmath>
 #include <expected>
 #include <glm/geometric.hpp>
 #include <iostream>
-#include <print>
 #include <utility>
 
 #include <glad/gl.h>
@@ -302,9 +300,6 @@ int main() {
   return 0;
 }
 
-
-
-
 void framebuffer_size_callback(GLFWwindow *window, int width, int height);
 void window_focus_callback(GLFWwindow *window, int focused);
 
@@ -321,8 +316,6 @@ void init_window_callbacks(GLFWwindow *window) {
   glfwSetCursorPosCallback(window, mouse_callback);
   glfwSetScrollCallback(window, scroll_callback);
 }
-
-
 
 void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
   state.viewport.width = width;
@@ -425,7 +418,8 @@ light_spot_t get_spot_light(size_t i) {
   return spot_light;
 }
 
-std::expected<SceneRenderer, std::string> SceneRenderer::create(GLFWwindow *window) {
+std::expected<SceneRenderer, std::string>
+SceneRenderer::create(GLFWwindow *window) {
   auto shader =
       Shader::build("shaders/17_multiple.vert", "shaders/17_multiple.frag");
   if (!shader) {
@@ -562,16 +556,14 @@ void SceneRenderer::render(input_t input, float delta) {
   for (unsigned int i = 0; i < preset.pos_lights_pos.size(); ++i) {
     light_positional_t pos_light = get_pos_light(i);
     glUseProgram(ps.view);
-    set_positional_light(ps.view, std::format("pos_lights[{}]", i),
-                         pos_light);
+    set_positional_light(ps.view, std::format("pos_lights[{}]", i), pos_light);
     glUseProgram(ps.light);
     model = glm::mat4(1.f);
     model = glm::translate(model, pos_light.position);
     model = glm::scale(model, glm::vec3(.2f));
 
     set_mat4(ps.light, "model", model);
-    set_positional_light(ps.light, std::format("pos_lights[{}]", i),
-                         pos_light);
+    set_positional_light(ps.light, std::format("pos_lights[{}]", i), pos_light);
     glDrawArrays(GL_TRIANGLES, 0, 36);
   }
 
@@ -619,10 +611,9 @@ void SceneRenderer::render(input_t input, float delta) {
     mode_CAM,
     mode_GUI,
   };
-  mode_t mode =
-      (glfwGetInputMode(window, GLFW_CURSOR) == GLFW_CURSOR_DISABLED)
-          ? mode_CAM
-          : mode_GUI;
+  mode_t mode = (glfwGetInputMode(window, GLFW_CURSOR) == GLFW_CURSOR_DISABLED)
+                    ? mode_CAM
+                    : mode_GUI;
 
   if (mode == mode_CAM) {
     io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;
@@ -650,7 +641,8 @@ void SceneRenderer::render(input_t input, float delta) {
 }
 
 SceneRenderer::~SceneRenderer() {
-  if (!vbo) return;
+  if (!vbo)
+    return;
   glDeleteVertexArrays(1, &vs.cube);
   glDeleteVertexArrays(1, &vs.light);
   glDeleteVertexArrays(1, &vs.pyramid);

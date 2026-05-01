@@ -1,4 +1,3 @@
-#include <cmath>
 #include <expected>
 #include <glm/geometric.hpp>
 #include <iostream>
@@ -40,8 +39,6 @@ struct state_t {
 // Global state
 state_t state;
 
-
-
 struct SceneRenderer {
   id_t p{};
   id_t light_id{};
@@ -65,8 +62,8 @@ struct SceneRenderer {
         light_vao(std::exchange(o.light_vao, 0)),
         texture(std::exchange(o.texture, 0)),
         texture_specular(std::exchange(o.texture_specular, 0)),
-        vbo(std::exchange(o.vbo, 0)),
-        window(std::exchange(o.window, nullptr)) {}
+        vbo(std::exchange(o.vbo, 0)), window(std::exchange(o.window, nullptr)) {
+  }
   SceneRenderer &operator=(SceneRenderer &&) = delete;
 };
 
@@ -90,8 +87,6 @@ int main() {
   event_loop(ctx->window(), *renderer);
   return 0;
 }
-
-
 
 void key_callback(GLFWwindow *window, int key, int scancode, int action,
                   int mods);
@@ -127,12 +122,10 @@ void window_focus_callback(GLFWwindow *window, int focused) {
   }
 }
 
-
-
-
 void process_events(input_t input, float delta);
 
-std::expected<SceneRenderer, std::string> SceneRenderer::create(GLFWwindow *window) {
+std::expected<SceneRenderer, std::string>
+SceneRenderer::create(GLFWwindow *window) {
   auto shader = Shader::build("shaders/15_view_specular.vert",
                               "shaders/15_view_specular.frag");
   if (!shader) {
@@ -161,13 +154,20 @@ std::expected<SceneRenderer, std::string> SceneRenderer::create(GLFWwindow *wind
   glBindVertexArray(cube_vao);
 
   glBindBuffer(GL_ARRAY_BUFFER, vbo);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(cube_vertices), cube_vertices.data(), GL_STATIC_DRAW);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(cube_vertices), cube_vertices.data(),
+               GL_STATIC_DRAW);
 
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(cube_vertex_t), reinterpret_cast<void *>(offsetof(cube_vertex_t, position)));
+  glVertexAttribPointer(
+      0, 3, GL_FLOAT, GL_FALSE, sizeof(cube_vertex_t),
+      reinterpret_cast<void *>(offsetof(cube_vertex_t, position)));
   glEnableVertexAttribArray(0);
-  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(cube_vertex_t), reinterpret_cast<void *>(offsetof(cube_vertex_t, normal)));
+  glVertexAttribPointer(
+      1, 3, GL_FLOAT, GL_FALSE, sizeof(cube_vertex_t),
+      reinterpret_cast<void *>(offsetof(cube_vertex_t, normal)));
   glEnableVertexAttribArray(1);
-  glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(cube_vertex_t), reinterpret_cast<void *>(offsetof(cube_vertex_t, texcoord)));
+  glVertexAttribPointer(
+      2, 2, GL_FLOAT, GL_FALSE, sizeof(cube_vertex_t),
+      reinterpret_cast<void *>(offsetof(cube_vertex_t, texcoord)));
   glEnableVertexAttribArray(2);
 
   unsigned int light_vao;
@@ -175,7 +175,9 @@ std::expected<SceneRenderer, std::string> SceneRenderer::create(GLFWwindow *wind
   glBindVertexArray(light_vao);
   glBindBuffer(GL_ARRAY_BUFFER, vbo);
 
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(cube_vertex_t), reinterpret_cast<void *>(offsetof(cube_vertex_t, position)));
+  glVertexAttribPointer(
+      0, 3, GL_FLOAT, GL_FALSE, sizeof(cube_vertex_t),
+      reinterpret_cast<void *>(offsetof(cube_vertex_t, position)));
   glEnableVertexAttribArray(0);
 
   SceneRenderer r;
@@ -272,7 +274,8 @@ void SceneRenderer::render(input_t input, float delta) {
 }
 
 SceneRenderer::~SceneRenderer() {
-  if (!vbo) return;
+  if (!vbo)
+    return;
   glDeleteVertexArrays(1, &cube_vao);
   glDeleteVertexArrays(1, &light_vao);
   glDeleteBuffers(1, &vbo);
