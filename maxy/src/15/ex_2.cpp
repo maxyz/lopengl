@@ -19,6 +19,7 @@
 
 #include "common/assets.hpp"
 #include "common/geometry.hpp"
+#include "common/input.hpp"
 #include "common/camera.hpp"
 #include "common/light.hpp"
 #include "common/materials.hpp"
@@ -46,27 +47,9 @@ struct state_t {
 // Global state
 state_t state;
 
-enum event_t {
-  NONE = 0,
-  increase_fov = 1 << 0,
-  decrease_fov = 1 << 1,
-  camera_up = 1 << 2,
-  camera_down = 1 << 3,
-  camera_left = 1 << 4,
-  camera_right = 1 << 5,
-  camera_for = 1 << 6,
-  camera_back = 1 << 7,
-  camera_yaw_left = 1 << 8,
-  camera_yaw_right = 1 << 9,
-  light_up = 1 << 10,
-  light_down = 1 << 11,
-  light_left = 1 << 12,
-  light_right = 1 << 13,
-  light_for = 1 << 14,
-  light_back = 1 << 15,
-};
 
-using cb_t = std::function<void(uint64_t event, float delta)>;
+
+using cb_t = std::function<void(input_t, float)>;
 using cbs_t = std::vector<cb_t>;
 using cleanup_t = std::function<void()>;
 
@@ -263,7 +246,7 @@ struct buffers_t {
 };
 
 buffers_t buffers();
-void process_events(uint64_t e, float delta);
+void process_events(input_t input, float delta);
 
 std::expected<hooks_t, std::string> init_shaders(GLFWwindow *window) {
   auto shader = Shader::build("shaders/15_ex_2.vert", "shaders/15_ex_2.frag");
@@ -293,9 +276,9 @@ std::expected<hooks_t, std::string> init_shaders(GLFWwindow *window) {
   auto light_vao = vaos.light_vao;
 
   auto f = [p, light_id, cube_vao, light_vao, texture,
-            texture_specular](uint64_t e, float delta) {
+            texture_specular](input_t input, float delta) {
     auto now = glfwGetTime();
-    process_events(e, delta);
+    process_events(input, delta);
 
     glUseProgram(p);
     glActiveTexture(GL_TEXTURE0);
@@ -354,7 +337,7 @@ std::expected<hooks_t, std::string> init_shaders(GLFWwindow *window) {
     glDrawArrays(GL_TRIANGLES, 0, 36);
   };
 
-  auto imgui = [window](uint64_t e, float delta) {
+  auto imgui = [window](input_t input, float delta) {
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
@@ -394,59 +377,59 @@ std::expected<hooks_t, std::string> init_shaders(GLFWwindow *window) {
   return hooks_t{.callbacks = v, .cleanup = vaos.cleanup};
 }
 
-void process_events(uint64_t e, float delta) {
-  if (e & event_t::increase_fov) {
+void process_events(input_t input, float delta) {
+  if (input.fov_inc) {
     state.camera.update_fov(1.f);
   }
-  if (e & event_t::decrease_fov) {
+  if (input.fov_dec) {
     state.camera.update_fov(-1.f);
   }
-  if (e & event_t::camera_up) {
+  if (input.cam_up) {
     state.camera.process_movement(CameraMovement::UP, delta);
   }
-  if (e & event_t::camera_down) {
+  if (input.cam_down) {
     state.camera.process_movement(CameraMovement::DOWN, delta);
   }
-  if (e & event_t::camera_left) {
+  if (input.cam_left) {
     state.camera.process_movement(CameraMovement::LEFT, delta);
   }
-  if (e & event_t::camera_right) {
+  if (input.cam_right) {
     state.camera.process_movement(CameraMovement::RIGHT, delta);
   }
-  if (e & event_t::camera_for) {
+  if (input.cam_forward) {
     state.camera.process_movement(CameraMovement::FORWARD, delta);
   }
-  if (e & event_t::camera_back) {
+  if (input.cam_back) {
     state.camera.process_movement(CameraMovement::BACKWARD, delta);
   }
-  if (e & event_t::camera_yaw_left) {
+  if (input.cam_yaw_left) {
     state.camera.process_rotation(120 * -SPEED * delta, 0.f);
   }
-  if (e & event_t::camera_yaw_right) {
+  if (input.cam_yaw_right) {
     state.camera.process_rotation(120 * SPEED * delta, 0.f);
   }
-  if (e & event_t::light_up) {
+  if (input.light_up) {
     state.light.position += glm::vec3(0.f, 0.f, SPEED * delta);
   }
-  if (e & event_t::light_down) {
+  if (input.light_down) {
     state.light.position -= glm::vec3(0.f, 0.f, SPEED * delta);
   }
-  if (e & event_t::light_up) {
+  if (input.light_up) {
     state.light.position += glm::vec3(0.f, SPEED * delta, 0.f);
   }
-  if (e & event_t::light_down) {
+  if (input.light_down) {
     state.light.position -= glm::vec3(0.f, SPEED * delta, 0.f);
   }
-  if (e & event_t::light_left) {
+  if (input.light_left) {
     state.light.position -= glm::vec3(SPEED * delta, 0.f, 0.f);
   }
-  if (e & event_t::light_right) {
+  if (input.light_right) {
     state.light.position += glm::vec3(SPEED * delta, 0.f, 0.f);
   }
-  if (e & event_t::light_for) {
+  if (input.light_forward) {
     state.light.position -= glm::vec3(0.f, 0.f, SPEED * delta);
   }
-  if (e & event_t::light_back) {
+  if (input.light_back) {
     state.light.position += glm::vec3(0.f, 0.f, SPEED * delta);
   }
 }
@@ -486,7 +469,7 @@ buffers_t buffers() {
   return {.cube_vao = cube_vao, .light_vao = light_vao, .cleanup = cleanup};
 }
 
-void process_input(GLFWwindow *window, uint64_t &e);
+void process_input(GLFWwindow *window, input_t &input);
 
 struct delta_t {
   float last;  // Time of last frame
@@ -500,21 +483,21 @@ void update_delta(delta_t &delta) {
 }
 
 void event_loop(GLFWwindow *window,
-                std::vector<std::function<void(uint64_t, float)>> cbs) {
-  uint64_t e;
+                std::vector<std::function<void(input_t, float)>> cbs) {
+  input_t input{};
 
   delta_t delta{};
 
   while (!glfwWindowShouldClose(window)) {
     update_delta(delta);
 
-    e = event_t::NONE;
-    process_input(window, e);
+    input = {};
+    process_input(window, input);
     glClearColor(.2f, .3f, .3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     for (auto cb : cbs) {
-      cb(e, delta.delta);
+      cb(input, delta.delta);
     }
 
     glfwSwapBuffers(window);
@@ -522,56 +505,56 @@ void event_loop(GLFWwindow *window,
   }
 }
 
-void process_input(GLFWwindow *window, uint64_t &e) {
+void process_input(GLFWwindow *window, input_t &input) {
   if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
     glfwSetWindowShouldClose(window, true);
   }
   if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
-    e |= event_t::increase_fov;
+    input.fov_inc = true;
   }
   if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
-    e |= event_t::decrease_fov;
+    input.fov_dec = true;
   }
   if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS) {
-    e |= event_t::camera_up;
+    input.cam_up = true;
   }
   if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS) {
-    e |= event_t::camera_down;
+    input.cam_down = true;
   }
   if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-    e |= event_t::camera_left;
+    input.cam_left = true;
   }
   if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-    e |= event_t::camera_right;
+    input.cam_right = true;
   }
   if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-    e |= event_t::camera_for;
+    input.cam_forward = true;
   }
   if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-    e |= event_t::camera_back;
+    input.cam_back = true;
   }
   if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) {
-    e |= event_t::camera_yaw_left;
+    input.cam_yaw_left = true;
   }
   if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) {
-    e |= event_t::camera_yaw_right;
+    input.cam_yaw_right = true;
   }
   if (glfwGetKey(window, GLFW_KEY_I) == GLFW_PRESS) {
-    e |= event_t::light_for;
+    input.light_forward = true;
   }
   if (glfwGetKey(window, GLFW_KEY_K) == GLFW_PRESS) {
-    e |= event_t::light_back;
+    input.light_back = true;
   }
   if (glfwGetKey(window, GLFW_KEY_J) == GLFW_PRESS) {
-    e |= event_t::light_left;
+    input.light_left = true;
   }
   if (glfwGetKey(window, GLFW_KEY_L) == GLFW_PRESS) {
-    e |= event_t::light_right;
+    input.light_right = true;
   }
   if (glfwGetKey(window, GLFW_KEY_Y) == GLFW_PRESS) {
-    e |= event_t::light_up;
+    input.light_up = true;
   }
   if (glfwGetKey(window, GLFW_KEY_H) == GLFW_PRESS) {
-    e |= event_t::light_down;
+    input.light_down = true;
   }
 }
