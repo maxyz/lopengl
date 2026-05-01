@@ -14,6 +14,7 @@
 #include <stb_image.h>
 
 #include "common/assets.hpp"
+#include "common/geometry.hpp"
 #include "common/camera.hpp"
 #include "common/shader.hpp"
 
@@ -156,12 +157,6 @@ const float vertices[] = {
 
 };
 
-glm::vec3 cube_positions[] = {
-    glm::vec3(0.0f, 0.0f, 0.0f),    glm::vec3(2.0f, 5.0f, -15.0f),
-    glm::vec3(-1.5f, -2.2f, -2.5f), glm::vec3(-3.8f, -2.0f, -12.3f),
-    glm::vec3(2.4f, -0.4f, -3.5f),  glm::vec3(-1.7f, 3.0f, -7.5f),
-    glm::vec3(1.3f, -2.0f, -2.5f),  glm::vec3(1.5f, 2.0f, -2.5f),
-    glm::vec3(1.5f, 0.2f, -1.5f),   glm::vec3(-1.3f, 1.0f, -1.5f)};
 
 unsigned int buffers();
 glm::mat4 get_view_matrix(const Camera &camera);
@@ -249,7 +244,7 @@ std::expected<cbs_t, std::string> init_shaders() {
       angle = 20.f * i;
       if (i % 3 == 0)
         angle = glfwGetTime() * 25.f;
-      model = glm::translate(glm::mat4(1.f), cube_positions[i]);
+      model = glm::translate(glm::mat4(1.f), example_cube_positions[i]);
       model = glm::rotate(model, glm::radians(angle), glm::vec3(1.f, .3f, .5f));
       loc = glGetUniformLocation(p, "model");
       glUniformMatrix4fv(loc, 1, GL_FALSE, glm::value_ptr(model));

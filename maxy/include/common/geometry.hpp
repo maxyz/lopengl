@@ -56,6 +56,20 @@ inline const std::array<cube_vertex_t, 36> cube_vertices = {{
     {{-.5f,  .5f,  .5f}, { .0f,  1.f,  .0f}, {.0f, .0f}},
 }};
 
+// Example positions for scattering 10 cubes around a scene.
+inline const glm::vec3 example_cube_positions[] = {
+    {0.0f,   0.0f,   0.0f},
+    {2.0f,   5.0f, -15.0f},
+    {-1.5f, -2.2f,  -2.5f},
+    {-3.8f, -2.0f, -12.3f},
+    {2.4f,  -0.4f,  -3.5f},
+    {-1.7f,  3.0f,  -7.5f},
+    {1.3f,  -2.0f,  -2.5f},
+    {1.5f,   2.0f,  -2.5f},
+    {1.5f,   0.2f,  -1.5f},
+    {-1.3f,  1.0f,  -1.5f},
+};
+
 // Pyramid: apex at origin, square base at z = -1, positions only.
 // Stride = 3 * sizeof(float).
 inline constexpr float pyramid_vertices[] = {
