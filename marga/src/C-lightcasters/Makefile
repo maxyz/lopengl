@@ -1,4 +1,4 @@
-EXES = directional attenuation spotlight
+EXES = directional attenuation spotlight multi-light
 
 default_target: $(EXES)
 
@@ -18,6 +18,9 @@ texture.o: ../lib/texture.cpp ../lib/texture.h
 shader.o: ../lib/shader.cpp ../lib/shader.h
 	g++ $(CPPFLAGS) -c $< -o $@
 
+lights.o: ../lib/lights.cpp ../lib/lights.h
+	g++ $(CPPFLAGS) -c $< -o $@
+
 # This chapter's files
 directional: directional.cpp libGLAD.a shader.o texture.o ../lib/camera.h
 	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
@@ -28,5 +31,8 @@ attenuation: attenuation.cpp libGLAD.a shader.o texture.o ../lib/camera.h
 spotlight: spotlight.cpp libGLAD.a shader.o texture.o ../lib/camera.h
 	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
 
+multi-light: multi-light.cpp libGLAD.a shader.o texture.o lights.o ../lib/camera.h
+	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
+
 clean:
-	rm -f libGLAD.a gl.o stb_image.o stb_truetype.o shader.o texture.o write_text.o $(EXES)
+	rm -f libGLAD.a gl.o stb_image.o stb_truetype.o shader.o texture.o lights.o $(EXES)
