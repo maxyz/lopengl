@@ -18,14 +18,7 @@
 #include <backends/imgui_impl_opengl3.h>
 #include <imgui.h>
 
-#include "common/assets.hpp"
-#include "common/camera.hpp"
-#include "common/geometry.hpp"
-#include "common/gl_context.hpp"
-#include "common/input.hpp"
-#include "common/light.hpp"
-#include "common/materials.hpp"
-#include "common/shader.hpp"
+#include "common/common.hpp"
 
 const char *TITLE = "LOpenGL";
 const GLuint WIDTH = 1024;
