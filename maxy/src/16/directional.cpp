@@ -318,7 +318,7 @@ struct buffers_t {
 };
 
 buffers_t buffers();
-void process_event_t(uint64_t e, float delta);
+void process_events(uint64_t e, float delta);
 
 std::expected<hooks_t, std::string> init_shaders(GLFWwindow *window) {
   struct programs_t {
@@ -358,7 +358,7 @@ std::expected<hooks_t, std::string> init_shaders(GLFWwindow *window) {
 
   auto f = [ps, vs, ts](uint64_t e, float delta) {
     auto now = glfwGetTime();
-    process_event_t(e, delta);
+    process_events(e, delta);
 
     glUseProgram(ps.view);
     glActiveTexture(GL_TEXTURE0);
@@ -446,7 +446,7 @@ std::expected<hooks_t, std::string> init_shaders(GLFWwindow *window) {
   return hooks_t{.callbacks = v, .cleanup = vaos.cleanup};
 }
 
-void process_event_t(uint64_t e, float delta) {
+void process_events(uint64_t e, float delta) {
   if (e & event_t::increase_fov) {
     state.camera.update_fov(1.f);
   }
