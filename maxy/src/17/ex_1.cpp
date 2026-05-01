@@ -751,21 +751,6 @@ std::expected<hooks_t, std::string> init_shaders(GLFWwindow *window) {
     glfwGetCursorPos(window, &x, &y);
     ImGui::LabelText("Mouse", "(%.2f, %.2f)", x, y);
     if (mode == mode_GUI) {
-      // ImGui::SeparatorText("Light");
-      // ImGui::DragFloat3("Direction", glm::value_ptr(state.light.direction),
-      //                   .01f, -1.f, 1.f);
-      // ImGui::DragFloat("cutoff", &state.light.cutoff, 0.001, -1.f, 1.f);
-      // ImGui::DragFloat("outer", &state.light.outer_cutoff, 0.001, -1.f, 1.f);
-      // ImGui::ColorEdit3("Ambience", glm::value_ptr(state.light.ambient));
-      // ImGui::ColorEdit3("Diffuse", glm::value_ptr(state.light.diffuse));
-      // ImGui::ColorEdit3("Specular", glm::value_ptr(state.light.specular));
-      // ImGui::DragFloat("c", &state.light.constant, .1f, 0.f, 10.f);
-      // ImGui::SameLine();
-      // ImGui::DragFloat("l", &state.light.linear, .001f, 0.f, 1.f);
-      // ImGui::SameLine();
-      // ImGui::DragFloat("q", &state.light.quadratic, .0001f, 0.f, 1.f);
-      // ImGui::SameLine();
-      // ImGui::Text("Attenuation");
     }
     ImGui::PopItemWidth();
 
@@ -813,24 +798,6 @@ void process_events(uint64_t e, float delta) {
   if (e & event_t::camera_yaw_right) {
     state.camera.process_rotation(120 * SPEED * delta, 0.f);
   }
-  // if (e & event_t::light_up) {
-  //   state.light.position += glm::vec3(0.f, SPEED * delta, 0.f);
-  // }
-  // if (e & event_t::light_down) {
-  //   state.light.position -= glm::vec3(0.f, SPEED * delta, 0.f);
-  // }
-  // if (e & event_t::light_left) {
-  //   state.light.position -= glm::vec3(SPEED * delta, 0.f, 0.f);
-  // }
-  // if (e & event_t::light_right) {
-  //   state.light.position += glm::vec3(SPEED * delta, 0.f, 0.f);
-  // }
-  // if (e & event_t::light_for) {
-  //   state.light.position -= glm::vec3(0.f, 0.f, SPEED * delta);
-  // }
-  // if (e & event_t::light_back) {
-  //   state.light.position += glm::vec3(0.f, 0.f, SPEED * delta);
-  // }
 }
 
 buffers_t buffers() {

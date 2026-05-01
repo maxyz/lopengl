@@ -221,11 +221,6 @@ std::expected<cbs_t, std::string> init_shaders() {
 
     glm::mat4 model;
 
-    // float camX = sin(glfwGetTime()) * radius;
-    // float camZ = cos(glfwGetTime()) * radius;
-    // glm::vec3 circle = glm::vec3{camX, 0, camZ};
-
-    // glm::mat4 view = glm::translate(glm::mat4(1.f), camera_pos);
     glm::mat4 view = glm::lookAt(camera_pos, camera_pos + camera_front, UP);
 
     glm::mat4 projection = glm::perspective(
