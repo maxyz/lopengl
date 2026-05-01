@@ -37,4 +37,30 @@ include_directories(${CMAKE_SOURCE_DIR}/include)
 # Put all executables in the root of the build folder
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
+# Call once per chapter CMakeLists.txt to copy each shader file to the build
+# directory when (and only when) it changes, independent of which executable
+# triggered the build.
+function(chapter_shaders)
+  file(GLOB _sources CONFIGURE_DEPENDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/shaders/*.vert"
+    "${CMAKE_CURRENT_SOURCE_DIR}/shaders/*.frag"
+    "${CMAKE_CURRENT_SOURCE_DIR}/shaders/*.glsl"
+  )
+  get_filename_component(_chapter "${CMAKE_CURRENT_SOURCE_DIR}" NAME)
+  string(REPLACE "." "_" _chapter_safe "${_chapter}")
+  set(_outputs "")
+  foreach(_src ${_sources})
+    get_filename_component(_name "${_src}" NAME)
+    set(_dst "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/shaders/${_name}")
+    add_custom_command(
+      OUTPUT "${_dst}"
+      COMMAND ${CMAKE_COMMAND} -E copy_if_different "${_src}" "${_dst}"
+      DEPENDS "${_src}"
+      COMMENT "Shader: ${_name}"
+    )
+    list(APPEND _outputs "${_dst}")
+  endforeach()
+  add_custom_target(shaders_${_chapter_safe} ALL DEPENDS ${_outputs})
+endfunction()
+
 add_subdirectory(src)
