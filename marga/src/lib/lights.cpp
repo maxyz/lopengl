@@ -1,7 +1,7 @@
 #include "lights.h"
 
 Light::Light(glm::vec3 color, float ambient, float diffuse, float specular):
-        color(color), ambientStrength(ambient), diffuseStrength(diffuse), specularStrength(specular) {}
+        color(color), ambientStrength(ambient), diffuseStrength(diffuse), specularStrength(specular), active(true) {}
 
 Light::Light(float ambient, float diffuse):
         Light(glm::vec3( 1.0f,  1.0f,  1.0f), ambient, diffuse, 1.0) {}
@@ -11,6 +11,7 @@ void Light::setBasicValues(Shader lightShader, std::string name) {
     glm::vec3 ambientColor = diffuseColor * this->ambientStrength;
     glm::vec3 specularColor = this->color * this->specularStrength;
 
+    lightShader.setBool(std::format("{}.is_active", name), this->active);
     lightShader.setVec3f(std::format("{}.ambient", name), glm::value_ptr(ambientColor));
     lightShader.setVec3f(std::format("{}.diffuse", name), glm::value_ptr(diffuseColor));
     lightShader.setVec3f(std::format("{}.specular", name), glm::value_ptr(specularColor));
@@ -34,6 +35,7 @@ void DirectionalLight::setShaderValues(Shader lightShader, std::string name) {
 
 void DirectionalLight::showImGuiControls(std::string header) {
     if (ImGui::CollapsingHeader(header.c_str())) {
+        ImGui::Checkbox("Dir Light active", &this->active);
         ImGui::DragFloat3("Dir Light direction", glm::value_ptr(this->direction), 0.01f, -10.0f, 10.0f);
         ImGui::ColorEdit3("Dir Light Color", glm::value_ptr(this->color));
         ImGui::SliderFloat("Dir Light Ambience", &this->ambientStrength, -1.0f, 1.0f);
@@ -65,6 +67,7 @@ void PositionalLight::setShaderValues(Shader lightShader, std::string name) {
 
 void PositionalLight::showImGuiControls(std::string header) {
     if (ImGui::CollapsingHeader(header.c_str())) {
+            ImGui::Checkbox("Light active", &this->active);
             ImGui::ColorEdit3("Light Color", glm::value_ptr(this->color));
             ImGui::SliderFloat("Light Ambience", &this->ambientStrength, -1.0f, 1.0f);
             ImGui::SliderFloat("Light Diffuse", &this->diffuseStrength, -1.0f, 1.0f);
@@ -104,6 +107,7 @@ void SpotLight::setShaderValues(Shader lightShader, std::string name) {
 
 void SpotLight::showImGuiControls(std::string header) {
     if (ImGui::CollapsingHeader(header.c_str())) {
+            ImGui::Checkbox("Spot Light active", &this->active);
             ImGui::ColorEdit3("Spot Light Color", glm::value_ptr(this->color));
             ImGui::SliderFloat("Spot Light Ambience", &this->ambientStrength, -1.0f, 1.0f);
             ImGui::SliderFloat("Spot Light Diffuse", &this->diffuseStrength, -1.0f, 1.0f);

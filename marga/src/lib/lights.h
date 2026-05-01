@@ -16,6 +16,7 @@ public:
     float ambientStrength;
     float diffuseStrength;
     float specularStrength;
+    bool active;
 
     Light(glm::vec3 color, float ambient, float diffuse, float specular);
     Light(float ambient, float diffuse);

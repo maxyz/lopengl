@@ -12,6 +12,7 @@ uniform Material material;
 
 // Directional light (aka the sun)
 struct DirLight {
+    bool is_active;
     vec3 direction;
     vec3 ambient;
     vec3 diffuse;
@@ -23,6 +24,7 @@ vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir);
 
 // Positional light, with attenuation, there can be many of these
 struct PointLight {
+    bool is_active;
     vec3 position;
 
     float constant;
@@ -38,6 +40,7 @@ uniform PointLight pointLights[NR_POINT_LIGHTS];
 vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir); 
 
 struct SpotLight {
+    bool is_active;
     vec3 position;
     vec3 direction;
     vec3 ambient;
@@ -82,6 +85,7 @@ void main()
 // Directional light calculation
 vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir)
 {
+    if (!light.is_active) return vec3(0.0, 0.0, 0.0);
     vec3 lightDir = normalize(light.direction);
     // diffuse shading
     float diff = max(dot(normal, lightDir), 0.0);
@@ -98,6 +102,7 @@ vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir)
 // Positional light calculation, with attenuation
 vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir)
 {
+    if (!light.is_active) return vec3(0.0, 0.0, 0.0);
     vec3 lightDir = normalize(light.position - fragPos);
     // diffuse shading
     float diff = max(dot(normal, lightDir), 0.0);
@@ -118,6 +123,7 @@ vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir)
 // Spotlight calculation
 vec3 CalcSpotLight(SpotLight light, vec3 norm, vec3 fragPos, vec3 viewDir)
 {
+    if (!light.is_active) return vec3(0.0, 0.0, 0.0);
     vec3 lightDir = normalize(light.position - FragPos);
     // Calculate the impact of the light
     float diff = max(dot(norm, lightDir), 0.0);
