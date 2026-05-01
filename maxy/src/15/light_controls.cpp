@@ -19,6 +19,7 @@
 #include <imgui.h>
 
 #include "common/assets.hpp"
+#include "common/geometry.hpp"
 #include "common/camera.hpp"
 #include "common/light.hpp"
 #include "common/materials.hpp"
@@ -253,51 +254,6 @@ void scroll_callback(GLFWwindow *window, double x_offset, double y_offset) {
 }
 
 
-const float vertices[] = {
-    // positions      // normals      // texture coords
-    -.5f, -.5f, -.5f, .0f,  .0f,   -1.f, .0f, .0f, // back
-    .5f,  -.5f, -.5f, .0f,  .0f,   -1.f, 1.f, .0f, // back
-    .5f,  .5f,  -.5f, .0f,  .0f,   -1.f, 1.f, 1.f, // back
-    .5f,  .5f,  -.5f, .0f,  .0f,   -1.f, 1.f, 1.f, // back 2
-    -.5f, .5f,  -.5f, .0f,  .0f,   -1.f, .0f, 1.f, // back 2
-    -.5f, -.5f, -.5f, .0f,  .0f,   -1.f, .0f, .0f, // back 2
-
-    .5f,  -.5f, .5f,  .0f,  .0f,   1.f,  .0f, .0f, // front
-    -.5f, -.5f, .5f,  .0f,  .0f,   1.f,  1.f, .0f, // front
-    -.5f, .5f,  .5f,  .0f,  .0f,   1.f,  1.f, 1.f, // front
-    -.5f, .5f,  .5f,  .0f,  .0f,   1.f,  1.f, 1.f, // front 2
-    .5f,  .5f,  .5f,  .0f,  .0f,   1.f,  .0f, 1.f, // front 2
-    .5f,  -.5f, .5f,  .0f,  .0f,   1.f,  .0f, .0f, // front 2
-
-    -.5f, -.5f, .5f,  -1.f, .0f,   .0f,  .0f, .0f, // left
-    -.5f, -.5f, -.5f, -1.f, .0f,   .0f,  1.f, .0f, // left
-    -.5f, .5f,  -.5f, -1.f, .0f,   .0f,  1.f, 1.f, // left
-    -.5f, .5f,  -.5f, -1.f, .0f,   .0f,  1.f, 1.f, // left 2
-    -.5f, .5f,  .5f,  -1.f, .0f,   .0f,  .0f, 1.f, // left 2
-    -.5f, -.5f, .5f,  -1.f, .0f,   .0f,  .0f, .0f, // left 2
-
-    .5f,  -.5f, -.5f, 1.f,  .0f,   .0f,  .0f, .0f, // right
-    .5f,  -.5f, .5f,  1.f,  .0f,   .0f,  1.f, .0f, // right
-    .5f,  .5f,  .5f,  1.f,  .0f,   .0f,  1.f, 1.f, // right
-    .5f,  .5f,  .5f,  1.f,  .0f,   .0f,  1.f, 1.f, // right 2
-    .5f,  .5f,  -.5f, 1.f,  .0f,   .0f,  .0f, 1.f, // right 2
-    .5f,  -.5f, -.5f, 1.f,  .0f,   .0f,  .0f, .0f, // right 2
-
-    -.5f, -.5f, -.5f, .0f,  -1.0f, .0f,  .0f, .0f, // bottom
-    .5f,  -.5f, -.5f, .0f,  -1.0f, .0f,  1.f, .0f, // bottom
-    .5f,  -.5f, .5f,  .0f,  -1.0f, .0f,  1.f, 1.f, // bottom
-    .5f,  -.5f, .5f,  .0f,  -1.0f, .0f,  1.f, 1.f, // bottom 2
-    -.5f, -.5f, .5f,  .0f,  -1.0f, .0f,  .0f, 1.f, // bottom 2
-    -.5f, -.5f, -.5f, .0f,  -1.0f, .0f,  .0f, .0f, // bottom 2
-
-    -.5f, .5f,  .5f,  .0f,  1.0f,  .0f,  .0f, .0f, // top
-    .5f,  .5f,  .5f,  .0f,  1.0f,  .0f,  1.f, .0f, // top
-    .5f,  .5f,  -.5f, .0f,  1.0f,  .0f,  1.f, 1.f, // top
-    .5f,  .5f,  -.5f, .0f,  1.0f,  .0f,  1.f, 1.f, // top 2
-    -.5f, .5f,  -.5f, .0f,  1.0f,  .0f,  .0f, 1.f, // top 2
-    -.5f, .5f,  .5f,  .0f,  1.0f,  .0f,  .0f, .0f, // top 2
-
-};
 
 const glm::vec3 cube_positions[] = {
     glm::vec3(0.0f, 0.0f, 0.0f),    glm::vec3(2.0f, 5.0f, -15.0f),
@@ -512,15 +468,13 @@ buffers_t buffers() {
   glBindVertexArray(cube_vao);
 
   glBindBuffer(GL_ARRAY_BUFFER, vbo);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(cube_vertices), cube_vertices.data(), GL_STATIC_DRAW);
 
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)0);
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(cube_vertex_t), reinterpret_cast<void *>(offsetof(cube_vertex_t, position)));
   glEnableVertexAttribArray(0);
-  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float),
-                        (void *)(3 * (sizeof(float))));
+  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(cube_vertex_t), reinterpret_cast<void *>(offsetof(cube_vertex_t, normal)));
   glEnableVertexAttribArray(1);
-  glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float),
-                        (void *)(6 * (sizeof(float))));
+  glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(cube_vertex_t), reinterpret_cast<void *>(offsetof(cube_vertex_t, texcoord)));
   glEnableVertexAttribArray(2);
 
   unsigned int light_vao;
@@ -528,7 +482,7 @@ buffers_t buffers() {
   glBindVertexArray(light_vao);
   glBindBuffer(GL_ARRAY_BUFFER, vbo);
 
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)0);
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(cube_vertex_t), reinterpret_cast<void *>(offsetof(cube_vertex_t, position)));
   glEnableVertexAttribArray(0);
 
   auto cleanup = [cube_vao, light_vao, vbo]() {
