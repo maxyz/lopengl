@@ -67,4 +67,10 @@ public:
     void showImGuiControls(std::string header);
 };
 
+void SetLights(std::string name, glm::vec3 &backgroundColor, DirectionalLight &directionalLight, PositionalLight positionalLights[], SpotLight &spotLight);
+
+
+
+
+
 #endif

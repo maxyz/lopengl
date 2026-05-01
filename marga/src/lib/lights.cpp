@@ -115,3 +115,99 @@ void SpotLight::showImGuiControls(std::string header) {
             ImGui::InputFloat("Spot Outer Cut Off angle (in degrees)", &this->outerCutOff, 1.0f, 10.0f);
     }
 }
+
+/* Presets */
+void SetLights(std::string name, glm::vec3 &backgroundColor, DirectionalLight &directionalLight, PositionalLight positionalLights[], SpotLight &spotLight) {
+
+    glm::vec3 positionalColor;
+    float positionalAmbient;
+    float positionalDiffuse;
+    float positionalAttLin;
+    float positionalAttQua;
+
+
+    if (name == "Desert") {
+        backgroundColor = glm::vec3(226.0f/256.0f, 172.0f/256.0f, 91.0f/256.0f);
+        directionalLight.color = glm::vec3( 254.0f/256.0f, 180.0f/256.0f, 141.0f/256.0f);
+        directionalLight.ambientStrength = 0.5f;
+        directionalLight.diffuseStrength = 0.9f;
+        directionalLight.specularStrength = 1.0f;
+
+        positionalColor = glm::vec3( 0.98f,  0.88f,  0.55f);
+        positionalAmbient = 0.5f;
+        positionalDiffuse = 0.9f;
+        positionalAttLin = 0.09;
+        positionalAttQua = 0.032;
+
+        spotLight.diffuseStrength = 0.7f;
+        spotLight.ambientStrength = 0.2f;
+        spotLight.cutOff = 12.5f;
+        spotLight.outerCutOff = 15.0f;
+    } else if (name == "Factory") {
+        backgroundColor = glm::vec3(0.08f, 0.09f, 0.15f);
+        directionalLight.color = glm::vec3( 0.7f,  0.71f,  0.98f);
+        directionalLight.ambientStrength = 0.15f;
+        directionalLight.diffuseStrength = 0.45f;
+        directionalLight.specularStrength = 0.5f;
+
+        positionalColor = glm::vec3( 0.0f,  0.0f,  0.55f);
+        positionalAmbient = 0.15f;
+        positionalDiffuse = 0.5f;
+        positionalAttLin = 0.09;
+        positionalAttQua = 0.032;
+
+        spotLight.diffuseStrength = 1.0f;
+        spotLight.ambientStrength = 0.2f;
+        spotLight.cutOff = 12.5f;
+        spotLight.outerCutOff = 15.0f;
+
+    } else if (name == "Horror") {
+        backgroundColor = glm::vec3(0.09f, 0.08f, 0.11f);
+        directionalLight.color = glm::vec3( 38.0f/256.0f, 30.0f/256.0f, 96.0f/256.0f);
+        directionalLight.ambientStrength = 0.01f;
+        directionalLight.diffuseStrength = 0.1f;
+        directionalLight.specularStrength = 0.1f;
+
+        positionalColor = glm::vec3( 0.35f,  0.22f,  0.40f);
+        positionalAmbient = 0.15f;
+        positionalDiffuse = 0.5f;
+        positionalAttLin = 0.1;
+        positionalAttQua = 0.04;
+
+        spotLight.diffuseStrength = 0.5f;
+        spotLight.ambientStrength = 0.0f;
+        spotLight.cutOff = 5.0f;
+        spotLight.outerCutOff = 8.0f;
+    } else if (name == "BioLab") {
+        backgroundColor = glm::vec3(1.0f, 1.0f, 1.0f);
+        directionalLight.color = glm::vec3( 0.7f,  0.71f,  0.98f);
+        directionalLight.ambientStrength = 0.3f;
+        directionalLight.diffuseStrength = 0.6f;
+        directionalLight.specularStrength = 1.0f;
+
+        positionalColor = glm::vec3( 0.63f,  0.98f,  0.63f);;
+        positionalAmbient = 0.5f;
+        positionalDiffuse = 0.9f;
+        positionalAttLin = 0.03;
+        positionalAttQua = 0.03;
+
+        spotLight.diffuseStrength = 0.7f;
+        spotLight.ambientStrength = 0.2f;
+        spotLight.cutOff = 25.0f;
+        spotLight.outerCutOff = 30.0f;
+    }
+
+    for (int i = 0; i < 4; i++) {
+        positionalLights[i].color.r = positionalColor.r;
+        positionalLights[i].color.g = positionalColor.g;
+        positionalLights[i].color.b = positionalColor.b;
+        positionalLights[i].ambientStrength = positionalAmbient;
+        positionalLights[i].diffuseStrength = positionalDiffuse;
+        positionalLights[i].linear = positionalAttLin;
+        positionalLights[i].quadratic = positionalAttQua;
+    }
+
+
+}
+
+

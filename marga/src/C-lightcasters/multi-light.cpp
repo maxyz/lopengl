@@ -109,7 +109,6 @@ void processInput(GLFWwindow *window, float deltaTime, Camera &camera)
 
     if (direction != NONE)
         camera.ProcessKeyboard(direction, deltaTime);
-
 }
 
 int main()
@@ -240,6 +239,9 @@ int main()
     	PositionalLight(glm::vec3( 1.0f,  0.0f, -3.0f), glm::vec3( 0.0f,  1.0f,  0.0f), 0.2f, 0.5f)
     };  
 
+    // Starting Background
+    glm::vec3 backgroundColor = glm::vec3( 0.1f,  0.2f,  0.3f);
+
     // Setup Dear ImGui context
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
@@ -255,6 +257,7 @@ int main()
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init();
 
+
     // Render loop
     while(!glfwWindowShouldClose(window))
     {
@@ -266,7 +269,7 @@ int main()
         // input
         processInput(window, deltaTime, camera);
         // rendering commands here
-        glClearColor(0.1f, 0.1f, 0.2f, 1.0f);
+        glClearColor(backgroundColor.x, backgroundColor.y, backgroundColor.z, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         // ImGui dock
@@ -280,6 +283,7 @@ int main()
         ImGui::LabelText("Front","(%.2f, %.2f, %.2f)", camera.Front.x, camera.Front.y, camera.Front.z);
         // Only show the controls when the mouse is not captured by the camera
         if (glfwGetInputMode(window, GLFW_CURSOR) != GLFW_CURSOR_DISABLED) {
+            ImGui::ColorEdit3("Background", glm::value_ptr(backgroundColor));
             ImGui::SliderFloat("Shininess", &material.shininess, 0.0f, 256.0f);
 
             directionalLight.showImGuiControls("Directional Light");
@@ -287,6 +291,18 @@ int main()
                 positionalLights[i].showImGuiControls(std::format("Positional Light {}", i));
             }
             spotLight.showImGuiControls("Spot Light");
+
+            if (ImGui::Button("Desert"))
+                SetLights("Desert", backgroundColor, directionalLight, positionalLights, spotLight);
+            ImGui::SameLine();
+            if (ImGui::Button("Factory"))
+                SetLights("Factory", backgroundColor, directionalLight, positionalLights, spotLight);
+            ImGui::SameLine();
+            if (ImGui::Button("Horror"))
+                SetLights("Horror", backgroundColor, directionalLight, positionalLights, spotLight);
+            ImGui::SameLine();
+            if (ImGui::Button("BioLab"))
+                SetLights("BioLab", backgroundColor, directionalLight, positionalLights, spotLight);
         }
         ImGui::SeparatorText("");
         ImGui::Text("Press TAB to switch modes");
