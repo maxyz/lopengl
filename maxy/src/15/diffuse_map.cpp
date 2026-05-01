@@ -19,6 +19,7 @@
 
 #include "common/assets.hpp"
 #include "common/geometry.hpp"
+#include "common/gl_context.hpp"
 #include "common/input.hpp"
 #include "common/camera.hpp"
 #include "common/light.hpp"
@@ -58,41 +59,32 @@ struct hooks_t {
   cleanup_t cleanup = []() {};
 };
 
-std::expected<GLFWwindow *, std::string> init_window();
+void init_window_callbacks(GLFWwindow *window);
 std::expected<hooks_t, std::string> init_shaders();
-std::expected<void, std::string> init_textures();
 
 void event_loop(GLFWwindow *window, cbs_t cbs);
 
-void cleanup(cleanup_t);
-
 int main() {
-  auto window = init_window();
-  if (!window) {
-    std::cerr << window.error() << std::endl;
+  auto ctx = GLContext::create(WIDTH, HEIGHT, TITLE);
+  if (!ctx) {
+    std::cerr << ctx.error() << "\n";
     return -1;
   }
+
+  init_window_callbacks(ctx->window());
 
   auto res = init_shaders();
   if (!res) {
-    std::cerr << res.error() << std::endl;
+    std::cerr << res.error() << "\n";
     return -1;
   }
-  event_loop(*window, res->callbacks);
+  event_loop(ctx->window(), res->callbacks);
 
-  cleanup(res->cleanup);
+  res->cleanup();
   return 0;
 }
 
-void cleanup(cleanup_t cleanup_) {
-  cleanup_();
 
-  ImGui_ImplOpenGL3_Shutdown();
-  ImGui_ImplGlfw_Shutdown();
-  ImGui::DestroyContext();
-
-  glfwTerminate();
-}
 
 void key_callback(GLFWwindow *window, int key, int scancode, int action,
                   int mods);
@@ -102,50 +94,12 @@ void scroll_callback(GLFWwindow *window, double x_offset, double y_offset);
 void framebuffer_size_callback(GLFWwindow *window, int width, int height);
 void window_focus_callback(GLFWwindow *window, int focused);
 
-std::expected<GLFWwindow *, std::string> init_window() {
-  glfwInit();
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-
-  GLFWwindow *window = glfwCreateWindow(
-      state.viewport.width, state.viewport.height, TITLE, NULL, NULL);
-  if (window == NULL) {
-    glfwTerminate();
-    return std::unexpected("failed to create GLFW window");
-  }
-  glfwMakeContextCurrent(window);
-  int version = gladLoadGL(glfwGetProcAddress);
-  if (version == 0) {
-    glfwTerminate();
-    return std::unexpected("failed to init glad on top of glfw");
-  }
-  glViewport(0, 0, state.viewport.width, state.viewport.height);
-
-  IMGUI_CHECKVERSION();
-  ImGui::CreateContext();
-  ImGuiIO &io = ImGui::GetIO();
-  auto font_path = get_asset_path("fonts/NotoSans-Regular.ttf");
-  if (!font_path) {
-    glfwTerminate();
-    return std::unexpected("failed to obtain default font");
-  }
-  io.Fonts->AddFontFromFileTTF(font_path->c_str(), 20);
-  io.IniFilename = NULL;
-
-  ImGui::StyleColorsDark();
-  ImGui_ImplGlfw_InitForOpenGL(window, true);
-  ImGui_ImplOpenGL3_Init();
-
+void init_window_callbacks(GLFWwindow *window) {
   glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
-
+  glfwSetWindowFocusCallback(window, window_focus_callback);
   glfwSetKeyCallback(window, key_callback);
   glfwSetCursorPosCallback(window, mouse_callback);
   glfwSetScrollCallback(window, scroll_callback);
-  glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-
-  glEnable(GL_DEPTH_TEST);
-  return window;
 }
 
 void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
