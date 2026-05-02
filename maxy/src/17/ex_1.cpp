@@ -491,7 +491,6 @@ void SceneRenderer::render_scene() {
   glBindVertexArray(m_vs.cube);
   float angle;
   for (unsigned int i = 0; i < 10; ++i) {
-    angle = 20.f * i;
     angle = glfwGetTime() * (i % 3) * 25.f;
     model = glm::translate(glm::mat4(1.f), example_cube_positions[i]);
     model = glm::rotate(model, glm::radians(angle), glm::vec3(1.f, .3f, .5f));
