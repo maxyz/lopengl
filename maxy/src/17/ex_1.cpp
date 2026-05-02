@@ -21,207 +21,220 @@ const char *TITLE = "LOpenGL";
 const GLuint WIDTH = 1024;
 const GLuint HEIGHT = 768;
 
-struct attenuation_t {
-  float constant;
-  float linear;
-  float quadratic;
-};
-
 struct preset_t {
   std::string name;
   glm::vec4 clear_color;
   light_directional_t dir_light;
-  light_spot_t spot_light;
-  std::array<glm::vec3, 4> pos_lights_pos;
-  std::array<glm::vec3, 4> pos_lights_color;
-  attenuation_t pos_lights_attenuation;
-  std::array<glm::vec3, 2> spot_lights_pos;
-  std::array<glm::vec3, 2> spot_lights_dir;
+  std::array<light_positional_t, 4> pos_lights;
+  std::array<light_spot_t, 2> spot_lights;
 };
 
-const std::array<preset_t, 4> presets = {
+const std::array<preset_t, 4> presets = {{
     {
-        {
-            .name = "desert",
-            .clear_color = glm::vec4(.75f, .52f, .3f, 1.f),
-            .dir_light =
-                {
-                    .direction = glm::vec3(-.2f, -1.f, -.3f),
-                    .ambient = glm::vec3(.3f, 0.24f, .14f),
-                    .diffuse = glm::vec3(.7f, .42f, .26f),
-                    .specular = glm::vec3(.5f, .5f, .5f),
-                },
-            .spot_light =
-                {
-                    .ambient = glm::vec3(.0f, .0f, .0f),
-                    .diffuse = glm::vec3(.5f, .5f, .5f),
-                    .specular = glm::vec3(1.f, 1.f, 1.f),
-                    .cutoff = glm::cos(glm::radians(25.f)),
-                    .outer_cutoff = glm::cos(glm::radians(30.f)),
-                    .constant = 1.f,
-                    .linear = .09f,
-                    .quadratic = .032f,
-                },
-            .pos_lights_pos = {{
-                glm::vec3(.7f, .2f, 2.f),
-                glm::vec3(2.3f, -3.3f, -4.f),
-                glm::vec3(-4.f, 2.f, 12.f),
-                glm::vec3(0.f, 0.f, -3.f),
-            }},
-            .pos_lights_color = {{
-                glm::vec3(1.f, .6f, 0.f),
-                glm::vec3(1.f, 0.f, 0.f),
-                glm::vec3(1.f, 1.f, 0.f),
-                glm::vec3(.2f, .2f, 1.f),
-            }},
-            .pos_lights_attenuation = {.constant = 1.f,
-                                       .linear = .09f,
-                                       .quadratic = .032f},
-            .spot_lights_pos = {{
-                glm::vec3(1.f, 1.f, 0.f),
-                glm::vec3(-1.f, 1.f, 0.f),
-            }},
-            .spot_lights_dir = {{
-                glm::vec3(0.f, 0.f, -1.f),
-                glm::vec3(0.f, 0.f, -1.f),
-            }},
-        },
-        {
-            .name = "factory",
-            .clear_color = glm::vec4(.1f, .1f, .1f, 1.f),
-            .dir_light =
-                {
-                    .direction = glm::vec3(-.2f, -1.f, -.3f),
-                    .ambient = glm::vec3(.05f, 0.05f, .1f),
-                    .diffuse = glm::vec3(.2f, .2f, .7f),
-                    .specular = glm::vec3(.7f, .7f, .7f),
-                },
-            .spot_light =
-                {
-                    .ambient = glm::vec3(.0f, .0f, .0f),
-                    .diffuse = glm::vec3(1.f, 1.f, 1.f),
-                    .specular = glm::vec3(1.f, 1.f, 1.f),
-                    .cutoff = glm::cos(glm::radians(25.f)),
-                    .outer_cutoff = glm::cos(glm::radians(30.f)),
-                    .constant = 1.f,
-                    .linear = .09f,
-                    .quadratic = .032f,
-                },
-            .pos_lights_pos = {{
-                glm::vec3(.7f, .2f, 2.f),
-                glm::vec3(2.3f, -3.3f, -4.f),
-                glm::vec3(-4.f, 2.f, 12.f),
-                glm::vec3(0.f, 0.f, -3.f),
-            }},
-            .pos_lights_color = {{
-                glm::vec3(.2f, .2f, .6f),
-                glm::vec3(.3f, .3f, .7f),
-                glm::vec3(.0f, .0f, .3f),
-                glm::vec3(.4f, .4f, .4f),
-            }},
-            .pos_lights_attenuation = {.constant = 1.f,
-                                       .linear = .09f,
-                                       .quadratic = .032f},
-            .spot_lights_pos = {{
-                glm::vec3(1.f, 1.f, 0.f),
-                glm::vec3(-1.f, 1.f, 0.f),
-            }},
-            .spot_lights_dir = {{
-                glm::vec3(0.f, 0.f, -1.f),
-                glm::vec3(0.f, 0.f, -1.f),
-            }},
-        },
-        {
-            .name = "horror",
-            .clear_color = glm::vec4(.0f, .0f, .0f, 1.f),
-            .dir_light =
-                {
-                    .direction = glm::vec3(-.2f, -1.f, -.3f),
-                    .ambient = glm::vec3(.0f, 0.0f, .0f),
-                    .diffuse = glm::vec3(.05f, .05f, .05f),
-                    .specular = glm::vec3(.2f, .2f, .2f),
-                },
-            .spot_light =
-                {
-                    .ambient = glm::vec3(.0f, .0f, .0f),
-                    .diffuse = glm::vec3(1.f, 1.f, 1.f),
-                    .specular = glm::vec3(1.f, 1.f, 1.f),
-                    .cutoff = glm::cos(glm::radians(25.f)),
-                    .outer_cutoff = glm::cos(glm::radians(30.f)),
-                    .constant = 1.f,
-                    .linear = .09f,
-                    .quadratic = .032f,
-                },
-            .pos_lights_pos = {{
-                glm::vec3(.7f, .2f, 2.f),
-                glm::vec3(2.3f, -3.3f, -4.f),
-                glm::vec3(-4.f, 2.f, 12.f),
-                glm::vec3(0.f, 0.f, -3.f),
-            }},
-            .pos_lights_color = {{
-                glm::vec3(.1f, .1f, .1f),
-                glm::vec3(.1f, .1f, .1f),
-                glm::vec3(.1f, .1f, .1f),
-                glm::vec3(.3f, .1f, .1f),
-            }},
-            .pos_lights_attenuation = {.constant = 1.f,
-                                       .linear = .09f,
-                                       .quadratic = .032f},
-            .spot_lights_pos = {{
-                glm::vec3(1.f, 1.f, 0.f),
-                glm::vec3(-1.f, 1.f, 0.f),
-            }},
-            .spot_lights_dir = {{
-                glm::vec3(0.f, 0.f, -1.f),
-                glm::vec3(0.f, 0.f, -1.f),
-            }},
-        },
-        {
-            .name = "biochemical",
-            .clear_color = glm::vec4(.9f, .9f, .9f, 1.f),
-            .dir_light =
-                {
-                    .direction = glm::vec3(-.2f, -1.f, -.3f),
-                    .ambient = glm::vec3(.5f, 0.5f, .5f),
-                    .diffuse = glm::vec3(1.f, 1.f, 1.f),
-                    .specular = glm::vec3(1.f, 1.f, 1.f),
-                },
-            .spot_light =
-                {
-                    .ambient = glm::vec3(.0f, .0f, .0f),
-                    .diffuse = glm::vec3(.0f, 1.f, .0f),
-                    .specular = glm::vec3(.0f, 1.f, .0f),
-                    .cutoff = glm::cos(glm::radians(25.f)),
-                    .outer_cutoff = glm::cos(glm::radians(30.f)),
-                    .constant = 1.f,
-                    .linear = .07f,
-                    .quadratic = .017f,
-                },
-            .pos_lights_pos = {{
-                glm::vec3(.7f, .2f, 2.f),
-                glm::vec3(2.3f, -3.3f, -4.f),
-                glm::vec3(-4.f, 2.f, 12.f),
-                glm::vec3(0.f, 0.f, -3.f),
-            }},
-            .pos_lights_color = {{
-                glm::vec3(.4f, .7f, .1f),
-                glm::vec3(.4f, .7f, .1f),
-                glm::vec3(.4f, .7f, .1f),
-                glm::vec3(.4f, .7f, .1f),
-            }},
-            .pos_lights_attenuation = {.constant = 1.f,
-                                       .linear = .09f,
-                                       .quadratic = .032f},
-            .spot_lights_pos = {{
-                glm::vec3(1.f, 1.f, 0.f),
-                glm::vec3(-1.f, 1.f, 0.f),
-            }},
-            .spot_lights_dir = {{
-                glm::vec3(0.f, 0.f, -1.f),
-                glm::vec3(0.f, 0.f, -1.f),
-            }},
-        },
-    }};
+        .name = "desert",
+        .clear_color = glm::vec4(.75f, .52f, .3f, 1.f),
+        .dir_light =
+            {
+                .direction = glm::vec3(-.2f, -1.f, -.3f),
+                .ambient = glm::vec3(.3f, .24f, .14f),
+                .diffuse = glm::vec3(.7f, .42f, .26f),
+                .specular = glm::vec3(.5f, .5f, .5f),
+            },
+        .pos_lights = {{
+            {.position = glm::vec3(.7f, .2f, 2.f),
+             .ambient = glm::vec3(.1f, .06f, 0.f),
+             .diffuse = glm::vec3(1.f, .6f, 0.f),
+             .specular = glm::vec3(1.f, .6f, 0.f),
+             .constant = 1.f, .linear = .09f, .quadratic = .032f},
+            {.position = glm::vec3(2.3f, -3.3f, -4.f),
+             .ambient = glm::vec3(.1f, 0.f, 0.f),
+             .diffuse = glm::vec3(1.f, 0.f, 0.f),
+             .specular = glm::vec3(1.f, 0.f, 0.f),
+             .constant = 1.f, .linear = .09f, .quadratic = .032f},
+            {.position = glm::vec3(-4.f, 2.f, 12.f),
+             .ambient = glm::vec3(.1f, .1f, 0.f),
+             .diffuse = glm::vec3(1.f, 1.f, 0.f),
+             .specular = glm::vec3(1.f, 1.f, 0.f),
+             .constant = 1.f, .linear = .09f, .quadratic = .032f},
+            {.position = glm::vec3(0.f, 0.f, -3.f),
+             .ambient = glm::vec3(.02f, .02f, .1f),
+             .diffuse = glm::vec3(.2f, .2f, 1.f),
+             .specular = glm::vec3(.2f, .2f, 1.f),
+             .constant = 1.f, .linear = .09f, .quadratic = .032f},
+        }},
+        .spot_lights = {{
+            {.position = glm::vec3(1.f, 1.f, 0.f),
+             .direction = glm::vec3(0.f, 0.f, -1.f),
+             .ambient = glm::vec3(.0f, .0f, .0f),
+             .diffuse = glm::vec3(.5f, .5f, .5f),
+             .specular = glm::vec3(1.f, 1.f, 1.f),
+             .cutoff = glm::cos(glm::radians(25.f)),
+             .outer_cutoff = glm::cos(glm::radians(30.f)),
+             .constant = 1.f, .linear = .09f, .quadratic = .032f},
+            {.position = glm::vec3(-1.f, 1.f, 0.f),
+             .direction = glm::vec3(0.f, 0.f, -1.f),
+             .ambient = glm::vec3(.0f, .0f, .0f),
+             .diffuse = glm::vec3(.5f, .5f, .5f),
+             .specular = glm::vec3(1.f, 1.f, 1.f),
+             .cutoff = glm::cos(glm::radians(25.f)),
+             .outer_cutoff = glm::cos(glm::radians(30.f)),
+             .constant = 1.f, .linear = .09f, .quadratic = .032f},
+        }},
+    },
+    {
+        .name = "factory",
+        .clear_color = glm::vec4(.1f, .1f, .1f, 1.f),
+        .dir_light =
+            {
+                .direction = glm::vec3(-.2f, -1.f, -.3f),
+                .ambient = glm::vec3(.05f, .05f, .1f),
+                .diffuse = glm::vec3(.2f, .2f, .7f),
+                .specular = glm::vec3(.7f, .7f, .7f),
+            },
+        .pos_lights = {{
+            {.position = glm::vec3(.7f, .2f, 2.f),
+             .ambient = glm::vec3(.02f, .02f, .06f),
+             .diffuse = glm::vec3(.2f, .2f, .6f),
+             .specular = glm::vec3(.2f, .2f, .6f),
+             .constant = 1.f, .linear = .09f, .quadratic = .032f},
+            {.position = glm::vec3(2.3f, -3.3f, -4.f),
+             .ambient = glm::vec3(.03f, .03f, .07f),
+             .diffuse = glm::vec3(.3f, .3f, .7f),
+             .specular = glm::vec3(.3f, .3f, .7f),
+             .constant = 1.f, .linear = .09f, .quadratic = .032f},
+            {.position = glm::vec3(-4.f, 2.f, 12.f),
+             .ambient = glm::vec3(.0f, .0f, .03f),
+             .diffuse = glm::vec3(.0f, .0f, .3f),
+             .specular = glm::vec3(.0f, .0f, .3f),
+             .constant = 1.f, .linear = .09f, .quadratic = .032f},
+            {.position = glm::vec3(0.f, 0.f, -3.f),
+             .ambient = glm::vec3(.04f, .04f, .04f),
+             .diffuse = glm::vec3(.4f, .4f, .4f),
+             .specular = glm::vec3(.4f, .4f, .4f),
+             .constant = 1.f, .linear = .09f, .quadratic = .032f},
+        }},
+        .spot_lights = {{
+            {.position = glm::vec3(1.f, 1.f, 0.f),
+             .direction = glm::vec3(0.f, 0.f, -1.f),
+             .ambient = glm::vec3(.0f, .0f, .0f),
+             .diffuse = glm::vec3(1.f, 1.f, 1.f),
+             .specular = glm::vec3(1.f, 1.f, 1.f),
+             .cutoff = glm::cos(glm::radians(25.f)),
+             .outer_cutoff = glm::cos(glm::radians(30.f)),
+             .constant = 1.f, .linear = .09f, .quadratic = .032f},
+            {.position = glm::vec3(-1.f, 1.f, 0.f),
+             .direction = glm::vec3(0.f, 0.f, -1.f),
+             .ambient = glm::vec3(.0f, .0f, .0f),
+             .diffuse = glm::vec3(1.f, 1.f, 1.f),
+             .specular = glm::vec3(1.f, 1.f, 1.f),
+             .cutoff = glm::cos(glm::radians(25.f)),
+             .outer_cutoff = glm::cos(glm::radians(30.f)),
+             .constant = 1.f, .linear = .09f, .quadratic = .032f},
+        }},
+    },
+    {
+        .name = "horror",
+        .clear_color = glm::vec4(.0f, .0f, .0f, 1.f),
+        .dir_light =
+            {
+                .direction = glm::vec3(-.2f, -1.f, -.3f),
+                .ambient = glm::vec3(.0f, .0f, .0f),
+                .diffuse = glm::vec3(.05f, .05f, .05f),
+                .specular = glm::vec3(.2f, .2f, .2f),
+            },
+        .pos_lights = {{
+            {.position = glm::vec3(.7f, .2f, 2.f),
+             .ambient = glm::vec3(.01f, .01f, .01f),
+             .diffuse = glm::vec3(.1f, .1f, .1f),
+             .specular = glm::vec3(.1f, .1f, .1f),
+             .constant = 1.f, .linear = .09f, .quadratic = .032f},
+            {.position = glm::vec3(2.3f, -3.3f, -4.f),
+             .ambient = glm::vec3(.01f, .01f, .01f),
+             .diffuse = glm::vec3(.1f, .1f, .1f),
+             .specular = glm::vec3(.1f, .1f, .1f),
+             .constant = 1.f, .linear = .09f, .quadratic = .032f},
+            {.position = glm::vec3(-4.f, 2.f, 12.f),
+             .ambient = glm::vec3(.01f, .01f, .01f),
+             .diffuse = glm::vec3(.1f, .1f, .1f),
+             .specular = glm::vec3(.1f, .1f, .1f),
+             .constant = 1.f, .linear = .09f, .quadratic = .032f},
+            {.position = glm::vec3(0.f, 0.f, -3.f),
+             .ambient = glm::vec3(.03f, .01f, .01f),
+             .diffuse = glm::vec3(.3f, .1f, .1f),
+             .specular = glm::vec3(.3f, .1f, .1f),
+             .constant = 1.f, .linear = .09f, .quadratic = .032f},
+        }},
+        .spot_lights = {{
+            {.position = glm::vec3(1.f, 1.f, 0.f),
+             .direction = glm::vec3(0.f, 0.f, -1.f),
+             .ambient = glm::vec3(.0f, .0f, .0f),
+             .diffuse = glm::vec3(1.f, 1.f, 1.f),
+             .specular = glm::vec3(1.f, 1.f, 1.f),
+             .cutoff = glm::cos(glm::radians(25.f)),
+             .outer_cutoff = glm::cos(glm::radians(30.f)),
+             .constant = 1.f, .linear = .09f, .quadratic = .032f},
+            {.position = glm::vec3(-1.f, 1.f, 0.f),
+             .direction = glm::vec3(0.f, 0.f, -1.f),
+             .ambient = glm::vec3(.0f, .0f, .0f),
+             .diffuse = glm::vec3(1.f, 1.f, 1.f),
+             .specular = glm::vec3(1.f, 1.f, 1.f),
+             .cutoff = glm::cos(glm::radians(25.f)),
+             .outer_cutoff = glm::cos(glm::radians(30.f)),
+             .constant = 1.f, .linear = .09f, .quadratic = .032f},
+        }},
+    },
+    {
+        .name = "biochemical",
+        .clear_color = glm::vec4(.9f, .9f, .9f, 1.f),
+        .dir_light =
+            {
+                .direction = glm::vec3(-.2f, -1.f, -.3f),
+                .ambient = glm::vec3(.5f, .5f, .5f),
+                .diffuse = glm::vec3(1.f, 1.f, 1.f),
+                .specular = glm::vec3(1.f, 1.f, 1.f),
+            },
+        .pos_lights = {{
+            {.position = glm::vec3(.7f, .2f, 2.f),
+             .ambient = glm::vec3(.04f, .07f, .01f),
+             .diffuse = glm::vec3(.4f, .7f, .1f),
+             .specular = glm::vec3(.4f, .7f, .1f),
+             .constant = 1.f, .linear = .09f, .quadratic = .032f},
+            {.position = glm::vec3(2.3f, -3.3f, -4.f),
+             .ambient = glm::vec3(.04f, .07f, .01f),
+             .diffuse = glm::vec3(.4f, .7f, .1f),
+             .specular = glm::vec3(.4f, .7f, .1f),
+             .constant = 1.f, .linear = .09f, .quadratic = .032f},
+            {.position = glm::vec3(-4.f, 2.f, 12.f),
+             .ambient = glm::vec3(.04f, .07f, .01f),
+             .diffuse = glm::vec3(.4f, .7f, .1f),
+             .specular = glm::vec3(.4f, .7f, .1f),
+             .constant = 1.f, .linear = .09f, .quadratic = .032f},
+            {.position = glm::vec3(0.f, 0.f, -3.f),
+             .ambient = glm::vec3(.04f, .07f, .01f),
+             .diffuse = glm::vec3(.4f, .7f, .1f),
+             .specular = glm::vec3(.4f, .7f, .1f),
+             .constant = 1.f, .linear = .09f, .quadratic = .032f},
+        }},
+        .spot_lights = {{
+            {.position = glm::vec3(1.f, 1.f, 0.f),
+             .direction = glm::vec3(0.f, 0.f, -1.f),
+             .ambient = glm::vec3(.0f, .0f, .0f),
+             .diffuse = glm::vec3(.0f, 1.f, .0f),
+             .specular = glm::vec3(.0f, 1.f, .0f),
+             .cutoff = glm::cos(glm::radians(25.f)),
+             .outer_cutoff = glm::cos(glm::radians(30.f)),
+             .constant = 1.f, .linear = .07f, .quadratic = .017f},
+            {.position = glm::vec3(-1.f, 1.f, 0.f),
+             .direction = glm::vec3(0.f, 0.f, -1.f),
+             .ambient = glm::vec3(.0f, .0f, .0f),
+             .diffuse = glm::vec3(.0f, 1.f, .0f),
+             .specular = glm::vec3(.0f, 1.f, .0f),
+             .cutoff = glm::cos(glm::radians(25.f)),
+             .outer_cutoff = glm::cos(glm::radians(30.f)),
+             .constant = 1.f, .linear = .07f, .quadratic = .017f},
+        }},
+    },
+}};
 
 struct state_t {
   window_state_t ws = {.viewport = {.width = WIDTH, .height = HEIGHT}};
@@ -296,26 +309,6 @@ int main() {
   return 0;
 }
 
-light_positional_t get_pos_light(size_t i) {
-  const preset_t &preset = presets[state.preset_index];
-  return {
-      .position = preset.pos_lights_pos[i],
-      .ambient = preset.pos_lights_color[i] * .1f,
-      .diffuse = preset.pos_lights_color[i],
-      .specular = preset.pos_lights_color[i],
-      .constant = preset.pos_lights_attenuation.constant,
-      .linear = preset.pos_lights_attenuation.linear,
-      .quadratic = preset.pos_lights_attenuation.quadratic,
-  };
-}
-
-light_spot_t get_spot_light(size_t i) {
-  const preset_t &preset = presets[state.preset_index];
-  light_spot_t spot_light = preset.spot_light;
-  spot_light.position = preset.spot_lights_pos[i];
-  spot_light.direction = preset.spot_lights_dir[i];
-  return spot_light;
-}
 
 std::expected<SceneRenderer, std::string>
 SceneRenderer::create(GLFWwindow *window) {
@@ -449,8 +442,8 @@ void SceneRenderer::render_scene() {
   set_directional_light(m_ps.view, "dir_light", dir_light);
 
   // Set and draw positional lights
-  for (unsigned int i = 0; i < preset.pos_lights_pos.size(); ++i) {
-    light_positional_t pos_light = get_pos_light(i);
+  for (unsigned int i = 0; i < preset.pos_lights.size(); ++i) {
+    const light_positional_t &pos_light = preset.pos_lights[i];
     glUseProgram(m_ps.view);
     set_positional_light(m_ps.view, std::format("pos_lights[{}]", i),
                          pos_light);
@@ -469,8 +462,8 @@ void SceneRenderer::render_scene() {
   glBindVertexArray(m_vs.pyramid);
 
   // Set and draw spot lights
-  for (unsigned int i = 0; i < preset.spot_lights_pos.size(); ++i) {
-    light_spot_t spot_light = get_spot_light(i);
+  for (unsigned int i = 0; i < preset.spot_lights.size(); ++i) {
+    const light_spot_t &spot_light = preset.spot_lights[i];
     glUseProgram(m_ps.view);
     set_spot_light(m_ps.view, std::format("spot_lights[{}]", i), spot_light);
 
