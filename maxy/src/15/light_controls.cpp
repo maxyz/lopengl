@@ -68,7 +68,7 @@ struct SceneRenderer {
 };
 
 void init_window_callbacks(GLFWwindow *window);
-void event_loop(GLFWwindow *window, SceneRenderer &renderer);
+void process_input(GLFWwindow *window, input_t &input);
 
 int main() {
   auto ctx = GLContext::create(WIDTH, HEIGHT, TITLE);
@@ -84,7 +84,7 @@ int main() {
     std::cerr << renderer.error() << "\n";
     return -1;
   }
-  event_loop(ctx->window(), *renderer);
+  event_loop(ctx->window(), *renderer, process_input);
   return 0;
 }
 
@@ -249,6 +249,8 @@ SceneRenderer::create(GLFWwindow *window) {
 }
 
 void SceneRenderer::render(input_t input, float delta) {
+  glClearColor(.2f, .3f, .3f, 1.0f);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   auto now = glfwGetTime();
   process_events(input, delta);
 
@@ -402,39 +404,6 @@ void process_events(input_t input, float delta) {
   }
   if (input.light_back) {
     state.light.position += glm::vec3(0.f, 0.f, SPEED * delta);
-  }
-}
-
-void process_input(GLFWwindow *window, input_t &input);
-
-struct delta_t {
-  float last;  // Time of last frame
-  float delta; // Time between current frame and last frame
-};
-
-void update_delta(delta_t &delta) {
-  float now = glfwGetTime();
-  delta.delta = now - delta.last;
-  delta.last = now;
-}
-
-void event_loop(GLFWwindow *window, SceneRenderer &renderer) {
-  input_t input{};
-
-  delta_t delta{};
-
-  while (!glfwWindowShouldClose(window)) {
-    update_delta(delta);
-
-    input = {};
-    process_input(window, input);
-    glClearColor(.2f, .3f, .3f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    renderer.render(input, delta.delta);
-
-    glfwSwapBuffers(window);
-    glfwPollEvents();
   }
 }
 
