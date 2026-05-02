@@ -8,6 +8,7 @@
 #include "common/input.hpp"        // IWYU pragma: export
 #include "common/light.hpp"        // IWYU pragma: export
 #include "common/materials.hpp"    // IWYU pragma: export
+#include "common/mesh.hpp"         // IWYU pragma: export
 #include "common/shader.hpp"       // IWYU pragma: export
 #include "common/types.hpp"        // IWYU pragma: export
 #include "common/window_state.hpp" // IWYU pragma: export
