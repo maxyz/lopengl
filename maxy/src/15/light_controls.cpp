@@ -31,32 +31,40 @@ struct state_t {
 // Global state
 state_t state;
 
-struct SceneRenderer {
-  id_t p{};
-  id_t light_id{};
-  id_t cube_vao{};
-  id_t light_vao{};
-  id_t texture{};
-  id_t texture_specular{};
-  id_t m_vbo{};
-  GLFWwindow *m_window{};
-
+class SceneRenderer {
+public:
   static std::expected<SceneRenderer, std::string> create(GLFWwindow *window);
-  void render(input_t input, float delta);
 
-  ~SceneRenderer();
-  SceneRenderer() = default;
   SceneRenderer(const SceneRenderer &) = delete;
   SceneRenderer &operator=(const SceneRenderer &) = delete;
   SceneRenderer(SceneRenderer &&o) noexcept
-      : p(std::exchange(o.p, 0)), light_id(std::exchange(o.light_id, 0)),
-        cube_vao(std::exchange(o.cube_vao, 0)),
-        light_vao(std::exchange(o.light_vao, 0)),
-        texture(std::exchange(o.texture, 0)),
-        texture_specular(std::exchange(o.texture_specular, 0)),
+      : m_p(std::exchange(o.m_p, 0)), m_light_id(std::exchange(o.m_light_id, 0)),
+        m_cube_vao(std::exchange(o.m_cube_vao, 0)),
+        m_light_vao(std::exchange(o.m_light_vao, 0)),
+        m_texture(std::exchange(o.m_texture, 0)),
+        m_texture_specular(std::exchange(o.m_texture_specular, 0)),
         m_vbo(std::exchange(o.m_vbo, 0)),
         m_window(std::exchange(o.m_window, nullptr)) {}
   SceneRenderer &operator=(SceneRenderer &&) = delete;
+
+  ~SceneRenderer();
+
+  void render(input_t input, float delta);
+
+private:
+  id_t m_p{};
+  id_t m_light_id{};
+  id_t m_cube_vao{};
+  id_t m_light_vao{};
+  id_t m_texture{};
+  id_t m_texture_specular{};
+  id_t m_vbo{};
+  GLFWwindow *m_window{};
+
+  SceneRenderer() = default;
+
+  void render_scene();
+  void render_imgui();
 };
 
 void process_input(GLFWwindow *window, input_t &input);
@@ -138,12 +146,12 @@ SceneRenderer::create(GLFWwindow *window) {
   glEnableVertexAttribArray(0);
 
   SceneRenderer r;
-  r.p = shader->ID;
-  r.light_id = light_shader->ID;
-  r.texture = *load_texture_res;
-  r.texture_specular = *load_texture_specular_res;
-  r.cube_vao = cube_vao;
-  r.light_vao = light_vao;
+  r.m_p = shader->ID;
+  r.m_light_id = light_shader->ID;
+  r.m_texture = *load_texture_res;
+  r.m_texture_specular = *load_texture_specular_res;
+  r.m_cube_vao = cube_vao;
+  r.m_light_vao = light_vao;
   r.m_vbo = vbo;
   r.m_window = window;
 
@@ -156,14 +164,17 @@ SceneRenderer::create(GLFWwindow *window) {
 void SceneRenderer::render(input_t input, float delta) {
   glClearColor(.2f, .3f, .3f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-  auto now = glfwGetTime();
   process_events(input, delta);
+  render_scene();
+  render_imgui();
+}
 
-  glUseProgram(p);
+void SceneRenderer::render_scene() {
+  glUseProgram(m_p);
   glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D, texture);
+  glBindTexture(GL_TEXTURE_2D, m_texture);
   glActiveTexture(GL_TEXTURE1);
-  glBindTexture(GL_TEXTURE_2D, texture_specular);
+  glBindTexture(GL_TEXTURE_2D, m_texture_specular);
   specular_map_t specular_map = {
       .diffuse = 0,
       .specular = 1,
@@ -180,20 +191,20 @@ void SceneRenderer::render(input_t input, float delta) {
                            static_cast<float>(state.ws.viewport.height),
                        .1f, 100.f);
 
-  set_mat4(p, "view", view);
-  set_mat4(p, "projection", projection);
-  set_vec3(p, "light_pos", state.light.position);
-  set_vec3(p, "view_pos", state.ws.camera.position);
-  set_light(p, "light", state.light);
-  set_specular_map(p, "specular_map", specular_map);
+  set_mat4(m_p, "view", view);
+  set_mat4(m_p, "projection", projection);
+  set_vec3(m_p, "light_pos", state.light.position);
+  set_vec3(m_p, "view_pos", state.ws.camera.position);
+  set_light(m_p, "light", state.light);
+  set_specular_map(m_p, "specular_map", specular_map);
 
-  glBindVertexArray(cube_vao);
+  glBindVertexArray(m_cube_vao);
 
-  glUseProgram(light_id);
+  glUseProgram(m_light_id);
 
-  set_mat4(light_id, "view", view);
-  set_mat4(light_id, "projection", projection);
-  set_light(light_id, "light", state.light);
+  set_mat4(m_light_id, "view", view);
+  set_mat4(m_light_id, "projection", projection);
+  set_light(m_light_id, "light", state.light);
 
   float angle;
   for (unsigned int i = 0; i < 10; ++i) {
@@ -202,8 +213,8 @@ void SceneRenderer::render(input_t input, float delta) {
     model = glm::translate(glm::mat4(1.f), example_cube_positions[i]);
     model = glm::rotate(model, glm::radians(angle), glm::vec3(1.f, .3f, .5f));
 
-    glUseProgram(p);
-    set_mat4(p, "model", model);
+    glUseProgram(m_p);
+    set_mat4(m_p, "model", model);
     glDrawArrays(GL_TRIANGLES, 0, 36);
   }
 
@@ -211,10 +222,12 @@ void SceneRenderer::render(input_t input, float delta) {
   model = glm::translate(model, state.light.position);
   model = glm::scale(model, glm::vec3(.2f));
 
-  glUseProgram(light_id);
-  set_mat4(light_id, "model", model);
+  glUseProgram(m_light_id);
+  set_mat4(m_light_id, "model", model);
   glDrawArrays(GL_TRIANGLES, 0, 36);
+}
 
+void SceneRenderer::render_imgui() {
   ImGui_ImplOpenGL3_NewFrame();
   ImGui_ImplGlfw_NewFrame();
   ImGui::NewFrame();
@@ -250,8 +263,8 @@ void SceneRenderer::render(input_t input, float delta) {
 SceneRenderer::~SceneRenderer() {
   if (!m_vbo)
     return;
-  glDeleteVertexArrays(1, &cube_vao);
-  glDeleteVertexArrays(1, &light_vao);
+  glDeleteVertexArrays(1, &m_cube_vao);
+  glDeleteVertexArrays(1, &m_light_vao);
   glDeleteBuffers(1, &m_vbo);
 }
 

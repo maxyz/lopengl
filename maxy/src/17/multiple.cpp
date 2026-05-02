@@ -97,7 +97,25 @@ struct state_t {
 // Global state
 state_t state;
 
-struct SceneRenderer {
+class SceneRenderer {
+public:
+  static std::expected<SceneRenderer, std::string> create(GLFWwindow *window);
+
+  SceneRenderer(const SceneRenderer &) = delete;
+  SceneRenderer &operator=(const SceneRenderer &) = delete;
+  SceneRenderer(SceneRenderer &&o) noexcept
+      : m_ps(std::exchange(o.m_ps, {})), m_vs(std::exchange(o.m_vs, {})),
+        m_ts(std::exchange(o.m_ts, {})), m_vbo(std::exchange(o.m_vbo, 0)),
+        m_pyramid_vbo(std::exchange(o.m_pyramid_vbo, 0)),
+        m_pyramid_ebo(std::exchange(o.m_pyramid_ebo, 0)),
+        m_window(std::exchange(o.m_window, nullptr)) {}
+  SceneRenderer &operator=(SceneRenderer &&) = delete;
+
+  ~SceneRenderer();
+
+  void render(input_t input, float delta);
+
+private:
   struct programs_t {
     id_t view{};
     id_t light{};
@@ -120,20 +138,10 @@ struct SceneRenderer {
   id_t m_pyramid_ebo{};
   GLFWwindow *m_window{};
 
-  static std::expected<SceneRenderer, std::string> create(GLFWwindow *window);
-  void render(input_t input, float delta);
-
-  ~SceneRenderer();
   SceneRenderer() = default;
-  SceneRenderer(const SceneRenderer &) = delete;
-  SceneRenderer &operator=(const SceneRenderer &) = delete;
-  SceneRenderer(SceneRenderer &&o) noexcept
-      : m_ps(std::exchange(o.m_ps, {})), m_vs(std::exchange(o.m_vs, {})),
-        m_ts(std::exchange(o.m_ts, {})), m_vbo(std::exchange(o.m_vbo, 0)),
-        m_pyramid_vbo(std::exchange(o.m_pyramid_vbo, 0)),
-        m_pyramid_ebo(std::exchange(o.m_pyramid_ebo, 0)),
-        m_window(std::exchange(o.m_window, nullptr)) {}
-  SceneRenderer &operator=(SceneRenderer &&) = delete;
+
+  void render_scene();
+  void render_imgui();
 };
 
 void process_input(GLFWwindow *window, input_t &input);
@@ -254,9 +262,12 @@ SceneRenderer::create(GLFWwindow *window) {
 void SceneRenderer::render(input_t input, float delta) {
   glClearColor(.2f, .3f, .3f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-  auto now = glfwGetTime();
   process_events(input, delta);
+  render_scene();
+  render_imgui();
+}
 
+void SceneRenderer::render_scene() {
   glUseProgram(m_ps.view);
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, m_ts.diffuse);
@@ -311,7 +322,6 @@ void SceneRenderer::render(input_t input, float delta) {
   set_mat4(m_ps.light, "projection", projection);
 
   glBindVertexArray(m_vs.light);
-  // Draw positional lights
   for (unsigned int i = 0; i < state.pos_lights.size(); ++i) {
     model = glm::mat4(1.f);
     model = glm::translate(model, state.pos_lights[i].position);
@@ -324,7 +334,6 @@ void SceneRenderer::render(input_t input, float delta) {
   }
 
   glBindVertexArray(m_vs.pyramid);
-  // Draw spot lights as pyramids
   for (unsigned int i = 0; i < state.spot_lights.size(); ++i) {
     model = glm::mat4(1.f);
     model = glm::translate(model, state.spot_lights[i].position);
@@ -337,7 +346,9 @@ void SceneRenderer::render(input_t input, float delta) {
     set_spot_light(m_ps.light, "light", state.spot_lights[i]);
     glDrawElements(GL_TRIANGLES, 18, GL_UNSIGNED_INT, 0);
   }
+}
 
+void SceneRenderer::render_imgui() {
   ImGui_ImplOpenGL3_NewFrame();
   ImGui_ImplGlfw_NewFrame();
   ImGui::NewFrame();
@@ -367,8 +378,6 @@ void SceneRenderer::render(input_t input, float delta) {
   double x, y;
   glfwGetCursorPos(m_window, &x, &y);
   ImGui::LabelText("Mouse", "(%.2f, %.2f)", x, y);
-  if (mode == mode_GUI) {
-  }
   ImGui::PopItemWidth();
 
   ImGui::End();

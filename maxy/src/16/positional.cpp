@@ -36,7 +36,23 @@ struct state_t {
 // Global state
 state_t state;
 
-struct SceneRenderer {
+class SceneRenderer {
+public:
+  static std::expected<SceneRenderer, std::string> create(GLFWwindow *window);
+
+  SceneRenderer(const SceneRenderer &) = delete;
+  SceneRenderer &operator=(const SceneRenderer &) = delete;
+  SceneRenderer(SceneRenderer &&o) noexcept
+      : m_ps(std::exchange(o.m_ps, {})), m_vs(std::exchange(o.m_vs, {})),
+        m_ts(std::exchange(o.m_ts, {})), m_vbo(std::exchange(o.m_vbo, 0)),
+        m_window(std::exchange(o.m_window, nullptr)) {}
+  SceneRenderer &operator=(SceneRenderer &&) = delete;
+
+  ~SceneRenderer();
+
+  void render(input_t input, float delta);
+
+private:
   struct programs_t {
     id_t view{};
     id_t light{};
@@ -56,18 +72,10 @@ struct SceneRenderer {
   id_t m_vbo{};
   GLFWwindow *m_window{};
 
-  static std::expected<SceneRenderer, std::string> create(GLFWwindow *window);
-  void render(input_t input, float delta);
-
-  ~SceneRenderer();
   SceneRenderer() = default;
-  SceneRenderer(const SceneRenderer &) = delete;
-  SceneRenderer &operator=(const SceneRenderer &) = delete;
-  SceneRenderer(SceneRenderer &&o) noexcept
-      : m_ps(std::exchange(o.m_ps, {})), m_vs(std::exchange(o.m_vs, {})),
-        m_ts(std::exchange(o.m_ts, {})), m_vbo(std::exchange(o.m_vbo, 0)),
-        m_window(std::exchange(o.m_window, nullptr)) {}
-  SceneRenderer &operator=(SceneRenderer &&) = delete;
+
+  void render_scene();
+  void render_imgui();
 };
 
 void process_input(GLFWwindow *window, input_t &input);
@@ -168,9 +176,12 @@ SceneRenderer::create(GLFWwindow *window) {
 void SceneRenderer::render(input_t input, float delta) {
   glClearColor(.2f, .3f, .3f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-  auto now = glfwGetTime();
   process_events(input, delta);
+  render_scene();
+  render_imgui();
+}
 
+void SceneRenderer::render_scene() {
   glUseProgram(m_ps.view);
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, m_ts.diffuse);
@@ -225,7 +236,9 @@ void SceneRenderer::render(input_t input, float delta) {
   glUseProgram(m_ps.light);
   set_mat4(m_ps.light, "model", model);
   glDrawArrays(GL_TRIANGLES, 0, 36);
+}
 
+void SceneRenderer::render_imgui() {
   ImGui_ImplOpenGL3_NewFrame();
   ImGui_ImplGlfw_NewFrame();
   ImGui::NewFrame();
