@@ -372,39 +372,7 @@ void event_loop(GLFWwindow *window, SceneRenderer &renderer) {
 }
 
 void process_input(GLFWwindow *window, input_t &input) {
-  if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
-    glfwSetWindowShouldClose(window, true);
-  }
-  if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
-    input.fov_inc = true;
-  }
-  if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
-    input.fov_dec = true;
-  }
-  if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS) {
-    input.cam_up = true;
-  }
-  if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS) {
-    input.cam_down = true;
-  }
-  if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-    input.cam_left = true;
-  }
-  if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-    input.cam_right = true;
-  }
-  if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-    input.cam_forward = true;
-  }
-  if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-    input.cam_back = true;
-  }
-  if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) {
-    input.cam_yaw_left = true;
-  }
-  if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) {
-    input.cam_yaw_right = true;
-  }
+  process_common_input(window, input);
   if (glfwGetKey(window, GLFW_KEY_I) == GLFW_PRESS) {
     input.light_forward = true;
   }
