@@ -4,8 +4,6 @@
 
 #include <glm/glm.hpp>
 
-#include "common/shader.hpp"
-
 struct material_t {
   glm::vec3 ambient;
   glm::vec3 diffuse;

@@ -4,8 +4,6 @@
 
 #include <glm/glm.hpp>
 
-#include "common/shader.hpp"
-
 struct light_t {
   glm::vec3 position;
 

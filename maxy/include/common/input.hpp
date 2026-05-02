@@ -33,11 +33,11 @@ inline void process_common_input(GLFWwindow *window, input_t &input) {
   if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
     input.cam_right = true;
   if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS)
-    input.cam_up = true;
-  if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS)
-    input.cam_down = true;
-  if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
     input.cam_yaw_left = true;
-  if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
+  if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS)
     input.cam_yaw_right = true;
+  if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
+    input.cam_down = true;
+  if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
+    input.cam_up = true;
 }
