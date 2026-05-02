@@ -54,7 +54,7 @@ function(chapter_shaders)
     set(_dst "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/shaders/${_name}")
     add_custom_command(
       OUTPUT "${_dst}"
-      COMMAND ${CMAKE_COMMAND} -E copy_if_different "${_src}" "${_dst}"
+      COMMAND ${CMAKE_COMMAND} -E copy "${_src}" "${_dst}"
       DEPENDS "${_src}"
       COMMENT "Shader: ${_name}"
     )
