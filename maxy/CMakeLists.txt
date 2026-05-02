@@ -22,6 +22,10 @@ set(LIBS ${LIBS} glfw)
 
 find_package(glm REQUIRED)
 
+find_package(assimp REQUIRED)
+set(LIBS ${LIBS} assimp)
+include_directories(${ASSIMP_INCLUDE_DIR})
+
 find_package(PkgConfig REQUIRED)
 
 pkg_check_modules(STB REQUIRED IMPORTED_TARGET stb)
