@@ -164,8 +164,6 @@ int main() {
   return 0;
 }
 
-void process_events(input_t input, float delta);
-
 std::expected<SceneRenderer, std::string>
 SceneRenderer::create(GLFWwindow *window) {
   auto shader =
@@ -262,7 +260,7 @@ SceneRenderer::create(GLFWwindow *window) {
 void SceneRenderer::render(input_t input, float delta) {
   glClearColor(.2f, .3f, .3f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-  process_events(input, delta);
+  process_camera_events(state.ws, input, delta);
   render_scene();
   render_imgui();
 }
@@ -397,38 +395,6 @@ SceneRenderer::~SceneRenderer() {
   glDeleteBuffers(1, &m_pyramid_ebo);
 }
 
-void process_events(input_t input, float delta) {
-  if (input.fov_inc) {
-    state.ws.camera.update_fov(1.f);
-  }
-  if (input.fov_dec) {
-    state.ws.camera.update_fov(-1.f);
-  }
-  if (input.cam_up) {
-    state.ws.camera.process_movement(CameraMovement::UP, delta);
-  }
-  if (input.cam_down) {
-    state.ws.camera.process_movement(CameraMovement::DOWN, delta);
-  }
-  if (input.cam_left) {
-    state.ws.camera.process_movement(CameraMovement::LEFT, delta);
-  }
-  if (input.cam_right) {
-    state.ws.camera.process_movement(CameraMovement::RIGHT, delta);
-  }
-  if (input.cam_forward) {
-    state.ws.camera.process_movement(CameraMovement::FORWARD, delta);
-  }
-  if (input.cam_back) {
-    state.ws.camera.process_movement(CameraMovement::BACKWARD, delta);
-  }
-  if (input.cam_yaw_left) {
-    state.ws.camera.process_rotation(120 * -SPEED * delta, 0.f);
-  }
-  if (input.cam_yaw_right) {
-    state.ws.camera.process_rotation(120 * SPEED * delta, 0.f);
-  }
-}
 
 void process_input(GLFWwindow *window, input_t &input) {
   process_common_input(window, input);
