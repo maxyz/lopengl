@@ -21,11 +21,6 @@ const char *TITLE = "LOpenGL";
 const GLuint WIDTH = 1024;
 const GLuint HEIGHT = 768;
 
-struct view_t {
-  float width = WIDTH;
-  float height = HEIGHT;
-};
-
 struct attenuation_t {
   float constant;
   float linear;
@@ -229,14 +224,8 @@ const std::array<preset_t, 4> presets = {
     }};
 
 struct state_t {
-  view_t viewport = {
-      .width = WIDTH,
-      .height = HEIGHT,
-  };
-  Camera camera = Camera(glm::vec3(0.f, 0.f, 3.f));
-  size_t preset_index = 0;
-  bool mouse_new_focus = true;
-};
+  window_state_t ws = {.viewport = {.width = WIDTH, .height = HEIGHT}};
+  size_t preset_index = 0;};
 // Global state
 state_t state;
 
@@ -287,7 +276,6 @@ private:
   void render_imgui();
 };
 
-void init_window_callbacks(GLFWwindow *window);
 void process_input(GLFWwindow *window, input_t &input);
 
 int main() {
@@ -297,7 +285,7 @@ int main() {
     return -1;
   }
 
-  init_window_callbacks(ctx->window());
+  init_window_callbacks(ctx->window(), state.ws);
 
   auto renderer = SceneRenderer::create(ctx->window());
   if (!renderer) {
@@ -306,101 +294,6 @@ int main() {
   }
   event_loop(ctx->window(), *renderer, process_input);
   return 0;
-}
-
-void framebuffer_size_callback(GLFWwindow *window, int width, int height);
-void window_focus_callback(GLFWwindow *window, int focused);
-
-void key_callback(GLFWwindow *window, int key, int scancode, int action,
-                  int mods);
-void mouse_callback(GLFWwindow *window, double x_pos, double y_pos);
-void scroll_callback(GLFWwindow *window, double x_offset, double y_offset);
-
-void init_window_callbacks(GLFWwindow *window) {
-  glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
-  glfwSetWindowFocusCallback(window, window_focus_callback);
-
-  glfwSetKeyCallback(window, key_callback);
-  glfwSetCursorPosCallback(window, mouse_callback);
-  glfwSetScrollCallback(window, scroll_callback);
-}
-
-void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
-  state.viewport.width = width;
-  state.viewport.height = height;
-  glViewport(0, 0, width, height);
-}
-
-void window_focus_callback(GLFWwindow *window, int focused) {
-  if (!focused) {
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-  } else {
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-    state.mouse_new_focus = true;
-  }
-}
-
-void key_callback(GLFWwindow *window, int key, int scancode, int action,
-                  int mods) {
-  ImGuiIO &io = ImGui::GetIO();
-  if (io.WantCaptureKeyboard) {
-    return;
-  }
-
-  if ((key == GLFW_KEY_GRAVE_ACCENT) &&
-      (action == GLFW_PRESS || action == GLFW_REPEAT)) {
-    auto input_mode = glfwGetInputMode(window, GLFW_CURSOR);
-    if (glfwGetInputMode(window, GLFW_CURSOR) == GLFW_CURSOR_DISABLED) {
-      glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-    } else {
-      glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-      state.mouse_new_focus = true;
-    }
-  }
-
-  if ((key == GLFW_KEY_P) && (action == GLFW_PRESS || action == GLFW_REPEAT)) {
-    if (mods & GLFW_MOD_SHIFT) {
-      state.preset_index =
-          (presets.size() + state.preset_index - 1) % presets.size();
-    } else {
-      state.preset_index = (state.preset_index + 1) % presets.size();
-    }
-  }
-}
-
-const float MOUSE_SENSITIVITY = .1f;
-
-void mouse_callback(GLFWwindow *window, double x_pos, double y_pos) {
-  static float x = state.viewport.width / 2;
-  static float y = state.viewport.height / 2;
-
-  ImGuiIO &io = ImGui::GetIO();
-  auto input_mode = glfwGetInputMode(window, GLFW_CURSOR);
-  if ((input_mode == GLFW_CURSOR_NORMAL) ||
-      ((input_mode == GLFW_CURSOR_DISABLED) && io.WantCaptureMouse)) {
-    return;
-  }
-
-  if (state.mouse_new_focus) {
-    x = x_pos;
-    y = y_pos;
-    state.mouse_new_focus = false;
-  }
-
-  float x_offset = x_pos - x;
-  float y_offset = y - y_pos;
-  x = x_pos;
-  y = y_pos;
-  state.camera.process_rotation(x_offset, y_offset);
-}
-
-void scroll_callback(GLFWwindow *window, double x_offset, double y_offset) {
-  ImGuiIO &io = ImGui::GetIO();
-  if (io.WantCaptureMouse) {
-    return;
-  }
-
-  state.camera.update_fov(static_cast<float>(y_offset));
 }
 
 void process_events(input_t input, float delta);
@@ -533,18 +426,18 @@ void SceneRenderer::render_scene() {
 
   glm::mat4 model;
 
-  glm::mat4 view = state.camera.get_view_matrix();
+  glm::mat4 view = state.ws.camera.get_view_matrix();
 
   glm::mat4 projection =
-      glm::perspective(glm::radians(state.camera.fov),
-                       static_cast<float>(state.viewport.width) /
-                           static_cast<float>(state.viewport.height),
+      glm::perspective(glm::radians(state.ws.camera.fov),
+                       static_cast<float>(state.ws.viewport.width) /
+                           static_cast<float>(state.ws.viewport.height),
                        .1f, 100.f);
 
   glUseProgram(m_ps.view);
   set_mat4(m_ps.view, "view", view);
   set_mat4(m_ps.view, "projection", projection);
-  set_vec3(m_ps.view, "view_pos", state.camera.position);
+  set_vec3(m_ps.view, "view_pos", state.ws.camera.position);
   set_specular_map(m_ps.view, "material", specular_map);
 
   glUseProgram(m_ps.light);
@@ -635,8 +528,8 @@ void SceneRenderer::render_imgui() {
   ImGui::Begin("Scene information", NULL, ImGuiWindowFlags_AlwaysAutoResize);
   ImGui::PushItemWidth(150.0f);
 
-  ImGui::LabelText("Pos", "(%.2f, %.2f, %.2f)", state.camera.position.x,
-                   state.camera.position.y, state.camera.position.z);
+  ImGui::LabelText("Pos", "(%.2f, %.2f, %.2f)", state.ws.camera.position.x,
+                   state.ws.camera.position.y, state.ws.camera.position.z);
   double x, y;
   glfwGetCursorPos(m_window, &x, &y);
   ImGui::LabelText("Mouse", "(%.2f, %.2f)", x, y);
@@ -676,34 +569,34 @@ SceneRenderer::~SceneRenderer() {
 
 void process_events(input_t input, float delta) {
   if (input.fov_inc) {
-    state.camera.update_fov(1.f);
+    state.ws.camera.update_fov(1.f);
   }
   if (input.fov_dec) {
-    state.camera.update_fov(-1.f);
+    state.ws.camera.update_fov(-1.f);
   }
   if (input.cam_up) {
-    state.camera.process_movement(CameraMovement::UP, delta);
+    state.ws.camera.process_movement(CameraMovement::UP, delta);
   }
   if (input.cam_down) {
-    state.camera.process_movement(CameraMovement::DOWN, delta);
+    state.ws.camera.process_movement(CameraMovement::DOWN, delta);
   }
   if (input.cam_left) {
-    state.camera.process_movement(CameraMovement::LEFT, delta);
+    state.ws.camera.process_movement(CameraMovement::LEFT, delta);
   }
   if (input.cam_right) {
-    state.camera.process_movement(CameraMovement::RIGHT, delta);
+    state.ws.camera.process_movement(CameraMovement::RIGHT, delta);
   }
   if (input.cam_forward) {
-    state.camera.process_movement(CameraMovement::FORWARD, delta);
+    state.ws.camera.process_movement(CameraMovement::FORWARD, delta);
   }
   if (input.cam_back) {
-    state.camera.process_movement(CameraMovement::BACKWARD, delta);
+    state.ws.camera.process_movement(CameraMovement::BACKWARD, delta);
   }
   if (input.cam_yaw_left) {
-    state.camera.process_rotation(120 * -SPEED * delta, 0.f);
+    state.ws.camera.process_rotation(120 * -SPEED * delta, 0.f);
   }
   if (input.cam_yaw_right) {
-    state.camera.process_rotation(120 * SPEED * delta, 0.f);
+    state.ws.camera.process_rotation(120 * SPEED * delta, 0.f);
   }
 }
 
