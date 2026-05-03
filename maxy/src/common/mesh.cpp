@@ -29,24 +29,28 @@ void Mesh::setup_mesh() {
 
 constexpr size_t first_texture_number = 1;
 
-void Mesh::draw(Shader &shader) {
-  size_t diffuse_number = first_texture_number;
-  size_t specular_number = first_texture_number;
-  for (size_t i = 0; i < textures.size(); ++i) {
-    glActiveTexture(GL_TEXTURE0 + i); // activate texture unit first
-    std::string number;
-    std::string name = textures[i].type;
-    if (name == texture_type_diffuse)
-      number = std::to_string(diffuse_number++);
-    else if (name == texture_type_specular)
-      number = std::to_string(specular_number++);
+static std::string material_uniform_name(std::string_view type,
+                                         size_t &diffuse_count,
+                                         size_t &specular_count) {
+  if (type == texture_type_diffuse)
+    return std::format("material.{}{}", type, diffuse_count++);
+  if (type == texture_type_specular)
+    return std::format("material.{}{}", type, specular_count++);
+  return std::format("material.{}", type);
+}
 
-    shader.set_int(std::format("material.{}{}", name, number), i);
+void Mesh::draw(Shader &shader) {
+  size_t diffuse_count = first_texture_number;
+  size_t specular_count = first_texture_number;
+  for (size_t i = 0; i < textures.size(); ++i) {
+    glActiveTexture(GL_TEXTURE0 + i);
+    shader.set_int(
+        material_uniform_name(textures[i].type, diffuse_count, specular_count),
+        i);
     glBindTexture(GL_TEXTURE_2D, textures[i].id);
   }
   glActiveTexture(GL_TEXTURE0);
 
-  // draw mesh
   glBindVertexArray(m_vao);
   glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
   glBindVertexArray(0);

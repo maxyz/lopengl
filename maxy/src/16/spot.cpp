@@ -304,22 +304,22 @@ SceneRenderer::~SceneRenderer() {
 
 void process_events(input_t input, float delta) {
   process_camera_events(state.ws, input, delta);
-  if (input.light_up) {
+  if (input.light.up) {
     state.light.position += glm::vec3(0.f, camera_speed * delta, 0.f);
   }
-  if (input.light_down) {
+  if (input.light.down) {
     state.light.position -= glm::vec3(0.f, camera_speed * delta, 0.f);
   }
-  if (input.light_left) {
+  if (input.light.left) {
     state.light.position -= glm::vec3(camera_speed * delta, 0.f, 0.f);
   }
-  if (input.light_right) {
+  if (input.light.right) {
     state.light.position += glm::vec3(camera_speed * delta, 0.f, 0.f);
   }
-  if (input.light_forward) {
+  if (input.light.forward) {
     state.light.position -= glm::vec3(0.f, 0.f, camera_speed * delta);
   }
-  if (input.light_back) {
+  if (input.light.back) {
     state.light.position += glm::vec3(0.f, 0.f, camera_speed * delta);
   }
 }
@@ -327,21 +327,21 @@ void process_events(input_t input, float delta) {
 void process_input(GLFWwindow *window, input_t &input) {
   process_common_input(window, input);
   if (glfwGetKey(window, GLFW_KEY_I) == GLFW_PRESS) {
-    input.light_forward = true;
+    input.light.forward = true;
   }
   if (glfwGetKey(window, GLFW_KEY_K) == GLFW_PRESS) {
-    input.light_back = true;
+    input.light.back = true;
   }
   if (glfwGetKey(window, GLFW_KEY_J) == GLFW_PRESS) {
-    input.light_left = true;
+    input.light.left = true;
   }
   if (glfwGetKey(window, GLFW_KEY_L) == GLFW_PRESS) {
-    input.light_right = true;
+    input.light.right = true;
   }
   if (glfwGetKey(window, GLFW_KEY_Y) == GLFW_PRESS) {
-    input.light_up = true;
+    input.light.up = true;
   }
   if (glfwGetKey(window, GLFW_KEY_H) == GLFW_PRESS) {
-    input.light_down = true;
+    input.light.down = true;
   }
 }

@@ -24,17 +24,17 @@ inline void process_camera_events(window_state_t &ws, input_t input,
     ws.camera.update_fov(1.f);
   if (input.fov_dec)
     ws.camera.update_fov(-1.f);
-  if (input.cam_up)
+  if (input.camera.up)
     ws.camera.process_movement(CameraMovement::UP, delta);
-  if (input.cam_down)
+  if (input.camera.down)
     ws.camera.process_movement(CameraMovement::DOWN, delta);
-  if (input.cam_left)
+  if (input.camera.left)
     ws.camera.process_movement(CameraMovement::LEFT, delta);
-  if (input.cam_right)
+  if (input.camera.right)
     ws.camera.process_movement(CameraMovement::RIGHT, delta);
-  if (input.cam_forward)
+  if (input.camera.forward)
     ws.camera.process_movement(CameraMovement::FORWARD, delta);
-  if (input.cam_back)
+  if (input.camera.back)
     ws.camera.process_movement(CameraMovement::BACKWARD, delta);
   if (input.cam_yaw_left)
     ws.camera.process_rotation(keyboard_yaw_speed * -camera_speed * delta, 0.f);
