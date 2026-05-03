@@ -560,18 +560,11 @@ void SceneRenderer::render_imgui() {
   ImGui::NewFrame();
 
   ImGuiIO &io = ImGui::GetIO();
-  enum mode_t {
-    mode_CAM,
-    mode_GUI,
-  };
-  mode_t mode =
-      (glfwGetInputMode(m_window, GLFW_CURSOR) == GLFW_CURSOR_DISABLED)
-          ? mode_CAM
-          : mode_GUI;
+  bool cam_mode = glfwGetInputMode(m_window, GLFW_CURSOR) == GLFW_CURSOR_DISABLED;
 
-  if (mode == mode_CAM) {
+  if (cam_mode) {
     io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;
-  } else if (mode == mode_GUI) {
+  } else {
     io.ConfigFlags &= ~ImGuiConfigFlags_NoMouseCursorChange;
   }
 
@@ -584,8 +577,6 @@ void SceneRenderer::render_imgui() {
   double x, y;
   glfwGetCursorPos(m_window, &x, &y);
   ImGui::LabelText("Mouse", "(%.2f, %.2f)", x, y);
-  if (mode == mode_GUI) {
-  }
   ImGui::PopItemWidth();
 
   ImGui::End();
