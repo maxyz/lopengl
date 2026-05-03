@@ -49,13 +49,13 @@ static std::expected<void, std::string> init_imgui(GLFWwindow *w) {
 std::expected<GLContext, std::string> GLContext::create(int width, int height,
                                                         const char *title) {
   return init_glfw(width, height, title)
-      .and_then([](GLFWwindow *w) {
-        return init_imgui(w)
-            .transform_error([](std::string e) {
-              glfwTerminate();
-              return e;
-            })
-            .transform([w] { return w; });
+      .and_then([](GLFWwindow *w) -> std::expected<GLFWwindow *, std::string> {
+        auto result = init_imgui(w);
+        if (!result) {
+          glfwTerminate();
+          return std::unexpected(std::move(result.error()));
+        }
+        return w;
       })
       .transform([](GLFWwindow *w) {
         GLContext ctx;

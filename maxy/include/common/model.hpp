@@ -1,5 +1,6 @@
 #pragma once
 
+#include <expected>
 #include <string>
 #include <vector>
 
@@ -10,18 +11,20 @@
 
 class Model {
 public:
-  Model(const std::string &path) { load_model(path); }
+  static std::expected<Model, std::string> load(const std::string &path);
   void draw(Shader &shader);
 
 private:
-  // model data
+  Model() = default;
   std::vector<Mesh> m_meshes;
   std::string m_directory;
 
-  void load_model(const std::string &path);
-  void process_node(aiNode *node, const aiScene *scene);
-  Mesh process_mesh(aiMesh *mesh, const aiScene *scene);
-  std::vector<Texture> load_material_textures(aiMaterial *material,
-                                              aiTextureType type,
-                                              std::string name);
+  std::expected<void, std::string> load_model(const std::string &path);
+  std::expected<void, std::string> process_node(aiNode *node,
+                                                const aiScene *scene);
+  std::expected<Mesh, std::string> process_mesh(aiMesh *mesh,
+                                                const aiScene *scene);
+  std::expected<std::vector<Texture>, std::string>
+  load_material_textures(aiMaterial *material, aiTextureType type,
+                         std::string name);
 };
