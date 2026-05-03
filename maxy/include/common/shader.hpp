@@ -12,20 +12,25 @@
 
 class Shader {
 public:
-  // the program ID
-  id_t ID;
+  Shader() = default;
+  explicit Shader(id_t program_id) : m_program_id(program_id) {}
 
-  // constructor reads and builds the shader
   using build_res = std::expected<Shader, std::string>;
   static build_res build(std::string_view vertexPath,
                          std::string_view fragmentPath);
-  // use/activate the shader
+
+  id_t program_id() const { return m_program_id; }
+
   void use();
-  // utility uniform functions
   void set_bool(const std::string &name, bool value) const;
   void set_int(const std::string &name, int value) const;
   void set_float(const std::string &name, float value) const;
   void set_vec3(const std::string &name, const glm::vec3 &value) const;
+  void set_vec4(const std::string &name, const glm::vec4 &value) const;
+  void set_mat4(const std::string &name, const glm::mat4 &value) const;
+
+private:
+  id_t m_program_id{};
 };
 
 using compile_shader_res = std::expected<id_t, std::string>;

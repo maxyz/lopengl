@@ -153,7 +153,7 @@ SceneRenderer::create(GLFWwindow *window) {
   glEnableVertexAttribArray(0);
 
   SceneRenderer r;
-  r.m_programs = {.view = shader->ID, .light = light_shader->ID};
+  r.m_programs = {.view = shader->program_id(), .light = light_shader->program_id()};
   r.m_vaos = {.cube = cube_vao, .light = light_vao};
   r.m_textures = {
       .diffuse = *load_texture_res,

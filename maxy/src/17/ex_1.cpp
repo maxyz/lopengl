@@ -462,7 +462,7 @@ SceneRenderer SceneRenderer::setup_gl(GLFWwindow *window, Shader shader,
   shader.set_int("material.diffuse", 0);
 
   SceneRenderer r;
-  r.m_programs = {.view = shader.ID, .light = light_shader.ID};
+  r.m_programs = {.view = shader.program_id(), .light = light_shader.program_id()};
   r.m_vaos = {.cube = cube_vao, .pyramid = pyramid_vao, .light = light_vao};
   r.m_textures = {.diffuse = diffuse, .specular = specular};
   r.m_vbo = vbo;

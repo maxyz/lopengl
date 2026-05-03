@@ -98,7 +98,7 @@ std::expected<std::vector<cb_t>, std::string> init_shaders() {
     return std::unexpected(res.error());
   }
   auto shader = *res;
-  auto p = shader.ID;
+  auto p = shader.program_id();
   auto vao = buffers();
 
   auto update_offset = [p](event_t e) {

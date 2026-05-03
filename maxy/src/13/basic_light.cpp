@@ -159,8 +159,8 @@ std::expected<hooks_t, std::string> init_shaders() {
   if (!light_shader) {
     return std::unexpected(light_shader.error());
   }
-  auto p = shader->ID;
-  auto light_id = light_shader->ID;
+  auto p = shader->program_id();
+  auto light_id = light_shader->program_id();
   const std::string filename{"textures/container.jpg"};
   auto texture_ = load_texture(filename);
   if (!texture_) {

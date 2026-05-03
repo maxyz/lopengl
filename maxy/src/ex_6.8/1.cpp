@@ -88,7 +88,7 @@ std::expected<std::vector<std::function<void()>>, std::string> init_shaders() {
     return std::unexpected(res.error());
   }
   auto shader = *res;
-  auto p = shader.ID;
+  auto p = shader.program_id();
   auto vao = buffers();
 
   auto f = [p, vao]() {
