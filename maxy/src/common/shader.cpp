@@ -44,7 +44,7 @@ Shader::build_res Shader::build(std::string_view vertexPath,
 void Shader::use() { glUseProgram(ID); }
 
 void Shader::set_bool(const std::string &name, bool value) const {
-  glUniform1i(glGetUniformLocation(ID, name.c_str()), (int)value);
+  glUniform1i(glGetUniformLocation(ID, name.c_str()), static_cast<int>(value));
 }
 void Shader::set_int(const std::string &name, int value) const {
   glUniform1i(glGetUniformLocation(ID, name.c_str()), value);
@@ -66,11 +66,11 @@ compile_shader_res compile_shader(const GLenum type, const char *source) {
 
   id_t shader;
   shader = glCreateShader(type);
-  glShaderSource(shader, 1, &source, NULL);
+  glShaderSource(shader, 1, &source, nullptr);
   glCompileShader(shader);
   glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
   if (!success) {
-    glGetShaderInfoLog(shader, shader_info_log_size, NULL, info_log);
+    glGetShaderInfoLog(shader, shader_info_log_size, nullptr, info_log);
     auto error = std::format("error shader {}, compilation failed\n{}",
                              type_to_view(type), info_log);
     return std::unexpected(error);
@@ -90,7 +90,7 @@ std::expected<id_t, std::string> link_shaders(std::vector<id_t> shaders) {
   glLinkProgram(program);
   glGetProgramiv(program, GL_LINK_STATUS, &success);
   if (!success) {
-    glGetProgramInfoLog(program, shader_info_log_size, NULL, info_log);
+    glGetProgramInfoLog(program, shader_info_log_size, nullptr, info_log);
     auto error = std::format("error shader link failed\n{}", info_log);
     return std::unexpected(error);
   }
