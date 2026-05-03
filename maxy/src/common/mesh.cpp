@@ -28,18 +28,18 @@ void Mesh::setup_mesh() {
 }
 
 void Mesh::draw(Shader &shader) {
-  id_t diffuse_no = 1;
-  id_t specular_no = 1;
+  size_t diffuse_number = 1;
+  size_t specular_number = 1;
   for (size_t i = 0; i < textures.size(); ++i) {
     glActiveTexture(GL_TEXTURE0 + i); // activate texture unit first
     std::string number;
     std::string name = textures[i].type;
     if (name == "texture_diffuse")
-      number = std::to_string(diffuse_no++);
+      number = std::to_string(diffuse_number++);
     else if (name == "texture_specular")
-      number = std::to_string(specular_no++);
+      number = std::to_string(specular_number++);
 
-    shader.set_float(std::format("material.{}{}", name, number), i);
+    shader.set_int(std::format("material.{}{}", name, number), i);
     glBindTexture(GL_TEXTURE_2D, textures[i].id);
   }
   glActiveTexture(GL_TEXTURE0);

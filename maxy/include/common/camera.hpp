@@ -15,9 +15,9 @@ enum CameraMovement {
   DOWN,
 };
 
-const float SPEED = 2.5f;
-const float SENSITIVITY = 0.1f;
-const float FOV = 45.f;
+constexpr float camera_speed = 2.5f;
+constexpr float camera_sensitivity = 0.1f;
+constexpr float camera_fov = 45.f;
 
 class Camera {
 public:
@@ -28,9 +28,9 @@ public:
   glm::vec3 world_up;
   float yaw;
   float pitch;
-  float fov = FOV;
-  float speed = SPEED;
-  float sensitivity = SENSITIVITY;
+  float fov = camera_fov;
+  float speed = camera_speed;
+  float sensitivity = camera_sensitivity;
 
   Camera(glm::vec3 position = glm::vec3(0.f, 0.f, 0.f), float yaw = -90.f,
          float pitch = 0.f)
@@ -48,16 +48,16 @@ public:
 
   void process_movement(CameraMovement direction, float delta) {
     float velocity = speed * delta;
-    glm::vec3 f = front;
+    glm::vec3 forward_direction = front;
     if (!m_fly) {
-      f = glm::cross(world_up, right);
+      forward_direction = glm::cross(world_up, right);
     }
     switch (direction) {
     case FORWARD:
-      position += f * velocity;
+      position += forward_direction * velocity;
       break;
     case BACKWARD:
-      position -= f * velocity;
+      position -= forward_direction * velocity;
       break;
     case LEFT:
       position -= right * velocity;

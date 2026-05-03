@@ -16,7 +16,7 @@ using image_data_ptr = std::unique_ptr<stbi_uc[], STBImageDeleter>;
 
 struct Image {
   image_data_ptr data;
-  int width, height, nr_channels;
+  int width, height, channel_count;
 };
 
 std::expected<std::string, std::string>

@@ -284,22 +284,22 @@ unsigned int buffers() {
 
 void process_input(GLFWwindow *window, uint64_t &e);
 
-struct delta_t {
-  float last;  // Time of last frame
-  float delta; // Time between current frame and last frame
+struct frame_time_t {
+  float last_time; // Time of last frame
+  float delta;     // Time between current frame and last frame
 };
 
-void update_delta(delta_t &delta) {
+void update_delta(frame_time_t &delta) {
   float now = glfwGetTime();
-  delta.delta = now - delta.last;
-  delta.last = now;
+  delta.delta = now - delta.last_time;
+  delta.last_time = now;
 }
 
 void event_loop(GLFWwindow *window,
                 std::vector<std::function<void(uint64_t, float)>> cbs) {
   uint64_t e;
 
-  delta_t delta{};
+  frame_time_t delta{};
 
   while (!glfwWindowShouldClose(window)) {
     update_delta(delta);

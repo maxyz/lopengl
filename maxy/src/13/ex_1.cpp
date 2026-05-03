@@ -217,28 +217,28 @@ std::expected<hooks_t, std::string> init_shaders() {
       camera.process_rotation(1.f, delta);
     }
     if (e & event_t::light_up) {
-      light_position += glm::vec3(0.f, 0.f, SPEED * delta);
+      light_position += glm::vec3(0.f, 0.f, camera_speed * delta);
     }
     if (e & event_t::light_down) {
-      light_position -= glm::vec3(0.f, 0.f, SPEED * delta);
+      light_position -= glm::vec3(0.f, 0.f, camera_speed * delta);
     }
     if (e & event_t::light_up) {
-      light_position += glm::vec3(0.f, SPEED * delta, 0.f);
+      light_position += glm::vec3(0.f, camera_speed * delta, 0.f);
     }
     if (e & event_t::light_down) {
-      light_position -= glm::vec3(0.f, SPEED * delta, 0.f);
+      light_position -= glm::vec3(0.f, camera_speed * delta, 0.f);
     }
     if (e & event_t::light_left) {
-      light_position -= glm::vec3(SPEED * delta, 0.f, 0.f);
+      light_position -= glm::vec3(camera_speed * delta, 0.f, 0.f);
     }
     if (e & event_t::light_right) {
-      light_position += glm::vec3(SPEED * delta, 0.f, 0.f);
+      light_position += glm::vec3(camera_speed * delta, 0.f, 0.f);
     }
     if (e & event_t::light_for) {
-      light_position -= glm::vec3(0.f, 0.f, SPEED * delta);
+      light_position -= glm::vec3(0.f, 0.f, camera_speed * delta);
     }
     if (e & event_t::light_back) {
-      light_position += glm::vec3(0.f, 0.f, SPEED * delta);
+      light_position += glm::vec3(0.f, 0.f, camera_speed * delta);
     }
     glm::vec3 light_rot = light_position + glm::vec3(sin(now), 0.f, cos(now));
     glUseProgram(p);
@@ -345,22 +345,22 @@ buffers_t buffers() {
 
 void process_input(GLFWwindow *window, uint64_t &e);
 
-struct delta_t {
-  float last;  // Time of last frame
-  float delta; // Time between current frame and last frame
+struct frame_time_t {
+  float last_time; // Time of last frame
+  float delta;     // Time between current frame and last frame
 };
 
-void update_delta(delta_t &delta) {
+void update_delta(frame_time_t &delta) {
   float now = glfwGetTime();
-  delta.delta = now - delta.last;
-  delta.last = now;
+  delta.delta = now - delta.last_time;
+  delta.last_time = now;
 }
 
 void event_loop(GLFWwindow *window,
                 std::vector<std::function<void(uint64_t, float)>> cbs) {
   uint64_t e;
 
-  delta_t delta{};
+  frame_time_t delta{};
 
   while (!glfwWindowShouldClose(window)) {
     update_delta(delta);

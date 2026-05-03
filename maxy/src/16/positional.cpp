@@ -301,22 +301,22 @@ SceneRenderer::~SceneRenderer() {
 void process_events(input_t input, float delta) {
   process_camera_events(state.ws, input, delta);
   if (input.light_up) {
-    state.light.position += glm::vec3(0.f, SPEED * delta, 0.f);
+    state.light.position += glm::vec3(0.f, camera_speed * delta, 0.f);
   }
   if (input.light_down) {
-    state.light.position -= glm::vec3(0.f, SPEED * delta, 0.f);
+    state.light.position -= glm::vec3(0.f, camera_speed * delta, 0.f);
   }
   if (input.light_left) {
-    state.light.position -= glm::vec3(SPEED * delta, 0.f, 0.f);
+    state.light.position -= glm::vec3(camera_speed * delta, 0.f, 0.f);
   }
   if (input.light_right) {
-    state.light.position += glm::vec3(SPEED * delta, 0.f, 0.f);
+    state.light.position += glm::vec3(camera_speed * delta, 0.f, 0.f);
   }
   if (input.light_forward) {
-    state.light.position -= glm::vec3(0.f, 0.f, SPEED * delta);
+    state.light.position -= glm::vec3(0.f, 0.f, camera_speed * delta);
   }
   if (input.light_back) {
-    state.light.position += glm::vec3(0.f, 0.f, SPEED * delta);
+    state.light.position += glm::vec3(0.f, 0.f, camera_speed * delta);
   }
 }
 

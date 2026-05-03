@@ -7,44 +7,39 @@
 using read_file_res = std::expected<std::string, std::string>;
 read_file_res read_file(const std::filesystem::path &path);
 
+static compile_shader_res compile_file(std::string_view path, GLenum type) {
+  return read_file(std::filesystem::path(path))
+      .and_then([type](const std::string &code) {
+        return compile_shader(type, code.c_str());
+      })
+      .transform_error([path](std::string e) {
+        return std::format("error compiling {}\n{}", path, e);
+      });
+}
+
+static std::expected<std::pair<id_t, id_t>, std::string>
+with_fragment(id_t v_shader, std::string_view fragmentPath) {
+  return compile_file(fragmentPath, GL_FRAGMENT_SHADER)
+      .transform([v_shader](id_t f_shader) {
+        return std::pair{v_shader, f_shader};
+      });
+}
+
+static Shader::build_res link_and_clean(std::pair<id_t, id_t> shaders) {
+  auto [v, f] = shaders;
+  return link_shaders({v, f}).transform([v, f](id_t program) {
+    glDeleteShader(v);
+    glDeleteShader(f);
+    return Shader{program};
+  });
+}
+
 Shader::build_res Shader::build(std::string_view vertexPath,
                                 std::string_view fragmentPath) {
-  std::filesystem::path vPath(vertexPath);
-  auto vCode = read_file(vPath);
-  if (!vCode.has_value()) {
-    return std::unexpected(vCode.error());
-  }
-  std::filesystem::path fPath(fragmentPath);
-  auto fCode = read_file(fPath);
-  if (!fCode.has_value()) {
-    return std::unexpected(fCode.error());
-  }
-
-  const char *vShaderCode = vCode.value().c_str();
-  const char *fShaderCode = fCode.value().c_str();
-
-  // 2. compile shaders
-  auto v_res = compile_shader(GL_VERTEX_SHADER, vShaderCode);
-  if (!v_res.has_value()) {
-    return std::unexpected(
-        std::format("error compiling {}\n{}", vertexPath, v_res.error()));
-  }
-  auto f_res = compile_shader(GL_FRAGMENT_SHADER, fShaderCode);
-  if (!f_res.has_value()) {
-    return std::unexpected(
-        std::format("error compiling {}: {}", fragmentPath, f_res.error()));
-  }
-
-  auto p_res = link_shaders({v_res.value(), f_res.value()});
-  if (!p_res.has_value()) {
-    return std::unexpected(p_res.error());
-  }
-  // delete shaders; they're linked into our program and no longer necessary
-  glDeleteShader(v_res.value());
-  glDeleteShader(f_res.value());
-
-  return Shader{p_res.value()};
-};
+  return compile_file(vertexPath, GL_VERTEX_SHADER)
+      .and_then([fragmentPath](id_t v) { return with_fragment(v, fragmentPath); })
+      .and_then(link_and_clean);
+}
 
 void Shader::use() { glUseProgram(ID); }
 
@@ -86,19 +81,14 @@ std::expected<id_t, std::string> link_shaders(std::vector<id_t> shaders) {
   char info_log[512];
 
   id_t program;
-  // std::cerr << "glCreateProgram" << std::endl;
   program = glCreateProgram();
   for (auto shader : shaders) {
-    // std::cerr << "glAttachShader " << shader << std::endl;
     glAttachShader(program, shader);
   }
   glLinkProgram(program);
-  // std::cerr << "glGetProgramiv" << std::endl;
   glGetProgramiv(program, GL_LINK_STATUS, &success);
   if (!success) {
-    // std::cerr << "glGetProgramInfoLog" << std::endl;
     glGetProgramInfoLog(program, 512, NULL, info_log);
-    // std::cerr << "format" << std::endl;
     auto error = std::format("error shader link failed\n{}", info_log);
     return std::unexpected(error);
   }

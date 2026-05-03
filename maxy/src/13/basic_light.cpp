@@ -14,8 +14,8 @@
 #include <stb_image.h>
 
 #include "common/assets.hpp"
-#include "common/geometry.hpp"
 #include "common/camera.hpp"
+#include "common/geometry.hpp"
 #include "common/shader.hpp"
 
 const char *TITLE = "LOpenGL";
@@ -137,9 +137,6 @@ void window_focus_callback(GLFWwindow *window, int focused) {
     glfwSetCursorPosCallback(window, mouse_callback);
   }
 }
-
-
-
 
 glm::vec3 light_position = glm::vec3(2.f, 1.f, -2.f);
 
@@ -279,13 +276,20 @@ buffers_t buffers() {
   glBindVertexArray(cube_vao);
 
   glBindBuffer(GL_ARRAY_BUFFER, vbo);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(cube_vertices), cube_vertices.data(), GL_STATIC_DRAW);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(cube_vertices), cube_vertices.data(),
+               GL_STATIC_DRAW);
 
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(cube_vertex_t), reinterpret_cast<void *>(offsetof(cube_vertex_t, position)));
+  glVertexAttribPointer(
+      0, 3, GL_FLOAT, GL_FALSE, sizeof(cube_vertex_t),
+      reinterpret_cast<void *>(offsetof(cube_vertex_t, position)));
   glEnableVertexAttribArray(0);
-  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(cube_vertex_t), reinterpret_cast<void *>(offsetof(cube_vertex_t, normal)));
+  glVertexAttribPointer(
+      1, 3, GL_FLOAT, GL_FALSE, sizeof(cube_vertex_t),
+      reinterpret_cast<void *>(offsetof(cube_vertex_t, normal)));
   glEnableVertexAttribArray(1);
-  glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(cube_vertex_t), reinterpret_cast<void *>(offsetof(cube_vertex_t, texcoord)));
+  glVertexAttribPointer(
+      2, 2, GL_FLOAT, GL_FALSE, sizeof(cube_vertex_t),
+      reinterpret_cast<void *>(offsetof(cube_vertex_t, texcoord)));
   glEnableVertexAttribArray(2);
 
   unsigned int light_vao;
@@ -293,7 +297,9 @@ buffers_t buffers() {
   glBindVertexArray(light_vao);
   glBindBuffer(GL_ARRAY_BUFFER, vbo);
 
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(cube_vertex_t), reinterpret_cast<void *>(offsetof(cube_vertex_t, position)));
+  glVertexAttribPointer(
+      0, 3, GL_FLOAT, GL_FALSE, sizeof(cube_vertex_t),
+      reinterpret_cast<void *>(offsetof(cube_vertex_t, position)));
   glEnableVertexAttribArray(0);
 
   auto cleanup = [cube_vao, light_vao, vbo]() {
@@ -307,22 +313,22 @@ buffers_t buffers() {
 
 void process_input(GLFWwindow *window, uint64_t &e);
 
-struct delta_t {
-  float last;  // Time of last frame
-  float delta; // Time between current frame and last frame
+struct frame_time_t {
+  float last_time; // Time of last frame
+  float delta;     // Time between current frame and last frame
 };
 
-void update_delta(delta_t &delta) {
+void update_delta(frame_time_t &delta) {
   float now = glfwGetTime();
-  delta.delta = now - delta.last;
-  delta.last = now;
+  delta.delta = now - delta.last_time;
+  delta.last_time = now;
 }
 
 void event_loop(GLFWwindow *window,
                 std::vector<std::function<void(uint64_t, float)>> cbs) {
   uint64_t e;
 
-  delta_t delta{};
+  frame_time_t delta{};
 
   while (!glfwWindowShouldClose(window)) {
     update_delta(delta);

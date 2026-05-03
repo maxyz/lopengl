@@ -5,19 +5,19 @@
 #include "common/input.hpp"
 #include "common/window_state.hpp"
 
-struct delta_t {
-  float last{};
+struct frame_time_t {
+  float last_time{};
   float delta{};
 };
 
-inline void update_delta(delta_t &d) {
+inline void update_delta(frame_time_t &d) {
   float now = static_cast<float>(glfwGetTime());
-  d.delta = now - d.last;
-  d.last = now;
+  d.delta = now - d.last_time;
+  d.last_time = now;
 }
 
 inline void process_camera_events(window_state_t &ws, input_t input,
-                                   float delta) {
+                                  float delta) {
   if (input.fov_inc)
     ws.camera.update_fov(1.f);
   if (input.fov_dec)
@@ -35,15 +35,15 @@ inline void process_camera_events(window_state_t &ws, input_t input,
   if (input.cam_back)
     ws.camera.process_movement(CameraMovement::BACKWARD, delta);
   if (input.cam_yaw_left)
-    ws.camera.process_rotation(120 * -SPEED * delta, 0.f);
+    ws.camera.process_rotation(120 * -camera_speed * delta, 0.f);
   if (input.cam_yaw_right)
-    ws.camera.process_rotation(120 * SPEED * delta, 0.f);
+    ws.camera.process_rotation(120 * camera_speed * delta, 0.f);
 }
 
 template <typename Renderer, typename InputFn>
 void event_loop(GLFWwindow *window, Renderer &renderer, InputFn process_input) {
   input_t input{};
-  delta_t delta{};
+  frame_time_t delta{};
 
   while (!glfwWindowShouldClose(window)) {
     update_delta(delta);

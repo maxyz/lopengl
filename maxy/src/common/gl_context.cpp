@@ -14,20 +14,20 @@ static std::expected<GLFWwindow *, std::string> init_glfw(int width, int height,
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-  GLFWwindow *w = glfwCreateWindow(width, height, title, nullptr, nullptr);
-  if (!w) {
+  GLFWwindow *window = glfwCreateWindow(width, height, title, nullptr, nullptr);
+  if (!window) {
     glfwTerminate();
     return std::unexpected("failed to create GLFW window");
   }
-  glfwMakeContextCurrent(w);
+  glfwMakeContextCurrent(window);
   if (gladLoadGL(glfwGetProcAddress) == 0) {
     glfwTerminate();
     return std::unexpected("failed to init glad");
   }
   glViewport(0, 0, width, height);
   glEnable(GL_DEPTH_TEST);
-  glfwSetInputMode(w, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-  return w;
+  glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+  return window;
 }
 
 static std::expected<void, std::string> init_imgui(GLFWwindow *w) {
