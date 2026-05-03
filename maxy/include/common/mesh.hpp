@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <string_view>
 
 #include <glm/glm.hpp>
 #include <vector>
@@ -18,6 +19,9 @@ struct Texture {
   id_t id;
   std::string type;
 };
+
+constexpr std::string_view texture_type_diffuse = "texture_diffuse";
+constexpr std::string_view texture_type_specular = "texture_specular";
 
 class Mesh {
 public:

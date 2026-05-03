@@ -36,9 +36,9 @@ void Mesh::draw(Shader &shader) {
     glActiveTexture(GL_TEXTURE0 + i); // activate texture unit first
     std::string number;
     std::string name = textures[i].type;
-    if (name == "texture_diffuse")
+    if (name == texture_type_diffuse)
       number = std::to_string(diffuse_number++);
-    else if (name == "texture_specular")
+    else if (name == texture_type_specular)
       number = std::to_string(specular_number++);
 
     shader.set_int(std::format("material.{}{}", name, number), i);
