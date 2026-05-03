@@ -18,6 +18,10 @@ enum CameraMovement {
 constexpr float camera_speed = 2.5f;
 constexpr float camera_sensitivity = 0.1f;
 constexpr float camera_fov = 45.f;
+constexpr float camera_default_yaw = -90.f;
+constexpr float camera_pitch_limit = 89.f;
+constexpr float camera_min_fov = 1.f;
+constexpr float camera_max_fov = 90.f;
 
 class Camera {
 public:
@@ -32,8 +36,8 @@ public:
   float speed = camera_speed;
   float sensitivity = camera_sensitivity;
 
-  Camera(glm::vec3 position = glm::vec3(0.f, 0.f, 0.f), float yaw = -90.f,
-         float pitch = 0.f)
+  Camera(glm::vec3 position = glm::vec3(0.f, 0.f, 0.f),
+         float yaw = camera_default_yaw, float pitch = 0.f)
       : position(position), yaw(yaw), pitch(pitch),
         world_up(glm::vec3(0.f, 1.f, 0.f)) {
     update_vectors();
@@ -83,12 +87,12 @@ public:
     pitch += y_offset;
 
     if (constraint_pitch) {
-      pitch = std::clamp(pitch, -89.f, 89.f);
+      pitch = std::clamp(pitch, -camera_pitch_limit, camera_pitch_limit);
     }
     update_vectors();
   }
 
-  void update_fov(float delta) { fov = std::clamp(fov + delta, 1.f, 90.f); }
+  void update_fov(float delta) { fov = std::clamp(fov + delta, camera_min_fov, camera_max_fov); }
 
 private:
   bool m_fly = true;

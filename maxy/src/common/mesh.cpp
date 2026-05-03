@@ -27,9 +27,11 @@ void Mesh::setup_mesh() {
   glBindVertexArray(0);
 }
 
+constexpr size_t first_texture_number = 1;
+
 void Mesh::draw(Shader &shader) {
-  size_t diffuse_number = 1;
-  size_t specular_number = 1;
+  size_t diffuse_number = first_texture_number;
+  size_t specular_number = first_texture_number;
   for (size_t i = 0; i < textures.size(); ++i) {
     glActiveTexture(GL_TEXTURE0 + i); // activate texture unit first
     std::string number;

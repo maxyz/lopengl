@@ -58,9 +58,11 @@ void Shader::set_vec3(const std::string &name, const glm::vec3 &value) const {
 
 const std::string_view type_to_view(const GLenum type);
 
+constexpr int shader_info_log_size = 512;
+
 compile_shader_res compile_shader(const GLenum type, const char *source) {
   int success;
-  char info_log[512];
+  char info_log[shader_info_log_size];
 
   id_t shader;
   shader = glCreateShader(type);
@@ -68,7 +70,7 @@ compile_shader_res compile_shader(const GLenum type, const char *source) {
   glCompileShader(shader);
   glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
   if (!success) {
-    glGetShaderInfoLog(shader, 512, NULL, info_log);
+    glGetShaderInfoLog(shader, shader_info_log_size, NULL, info_log);
     auto error = std::format("error shader {}, compilation failed\n{}",
                              type_to_view(type), info_log);
     return std::unexpected(error);
@@ -78,7 +80,7 @@ compile_shader_res compile_shader(const GLenum type, const char *source) {
 
 std::expected<id_t, std::string> link_shaders(std::vector<id_t> shaders) {
   int success;
-  char info_log[512];
+  char info_log[shader_info_log_size];
 
   id_t program;
   program = glCreateProgram();
@@ -88,7 +90,7 @@ std::expected<id_t, std::string> link_shaders(std::vector<id_t> shaders) {
   glLinkProgram(program);
   glGetProgramiv(program, GL_LINK_STATUS, &success);
   if (!success) {
-    glGetProgramInfoLog(program, 512, NULL, info_log);
+    glGetProgramInfoLog(program, shader_info_log_size, NULL, info_log);
     auto error = std::format("error shader link failed\n{}", info_log);
     return std::unexpected(error);
   }

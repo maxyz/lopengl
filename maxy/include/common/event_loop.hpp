@@ -16,6 +16,8 @@ inline void update_delta(frame_time_t &d) {
   d.last_time = now;
 }
 
+constexpr float keyboard_yaw_speed = 120.f;
+
 inline void process_camera_events(window_state_t &ws, input_t input,
                                   float delta) {
   if (input.fov_inc)
@@ -35,9 +37,9 @@ inline void process_camera_events(window_state_t &ws, input_t input,
   if (input.cam_back)
     ws.camera.process_movement(CameraMovement::BACKWARD, delta);
   if (input.cam_yaw_left)
-    ws.camera.process_rotation(120 * -camera_speed * delta, 0.f);
+    ws.camera.process_rotation(keyboard_yaw_speed * -camera_speed * delta, 0.f);
   if (input.cam_yaw_right)
-    ws.camera.process_rotation(120 * camera_speed * delta, 0.f);
+    ws.camera.process_rotation(keyboard_yaw_speed * camera_speed * delta, 0.f);
 }
 
 template <typename Renderer, typename InputFn>
