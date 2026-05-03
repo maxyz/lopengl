@@ -1,6 +1,7 @@
 #include <format>
 
 #include "common/light.hpp"
+#include "common/shader.hpp"
 
 void set_light(id_t id, const std::string &name, const light_t &value) {
   set_vec3(id, std::format("{}.position", name), value.position);

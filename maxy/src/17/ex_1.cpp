@@ -285,6 +285,9 @@ private:
 
   SceneRenderer() = default;
 
+  static SceneRenderer setup_gl(GLFWwindow *window, Shader shader,
+                                 Shader light_shader, id_t diffuse,
+                                 id_t specular);
   void render_scene();
   void render_imgui();
 };
@@ -312,38 +315,56 @@ int main() {
 
 std::expected<SceneRenderer, std::string>
 SceneRenderer::create(GLFWwindow *window) {
-  auto shader =
-      Shader::build("shaders/17_multiple.vert", "shaders/17_multiple.frag");
-  if (!shader) {
-    return std::unexpected(shader.error());
-  }
-  auto light_shader =
-      Shader::build("shaders/17_light.vert", "shaders/17_light.frag");
-  if (!light_shader) {
-    return std::unexpected(light_shader.error());
-  }
+  struct build_t {
+    Shader shader;
+    Shader light_shader;
+    id_t diffuse{};
+    id_t specular{};
+  };
 
-  auto load_texture_res = load_texture("textures/container2.png");
-  if (!load_texture_res) {
-    return std::unexpected(load_texture_res.error());
-  }
-  auto load_texture_specular_res =
-      load_texture("textures/container2_specular.png");
-  if (!load_texture_specular_res) {
-    return std::unexpected(load_texture_specular_res.error());
-  }
+  return Shader::build("shaders/17_multiple.vert", "shaders/17_multiple.frag")
+      .transform([](Shader s) {
+        return build_t{.shader = std::move(s)};
+      })
+      .and_then([](build_t b) {
+        return Shader::build("shaders/17_light.vert", "shaders/17_light.frag")
+            .transform([b = std::move(b)](Shader ls) mutable {
+              b.light_shader = std::move(ls);
+              return b;
+            });
+      })
+      .and_then([](build_t b) {
+        return load_texture("textures/container2.png")
+            .transform([b = std::move(b)](id_t d) mutable {
+              b.diffuse = d;
+              return b;
+            });
+      })
+      .and_then([](build_t b) {
+        return load_texture("textures/container2_specular.png")
+            .transform([b = std::move(b)](id_t s) mutable {
+              b.specular = s;
+              return b;
+            });
+      })
+      .transform([&](build_t b) {
+        return setup_gl(window, std::move(b.shader), std::move(b.light_shader),
+                        b.diffuse, b.specular);
+      });
+}
 
+SceneRenderer SceneRenderer::setup_gl(GLFWwindow *window, Shader shader,
+                                       Shader light_shader, id_t diffuse,
+                                       id_t specular) {
   id_t cube_vao;
   id_t vbo;
   glGenVertexArrays(1, &cube_vao);
   glGenBuffers(1, &vbo);
 
   glBindVertexArray(cube_vao);
-
   glBindBuffer(GL_ARRAY_BUFFER, vbo);
   glBufferData(GL_ARRAY_BUFFER, sizeof(cube_vertices), cube_vertices.data(),
                GL_STATIC_DRAW);
-
   glVertexAttribPointer(
       0, 3, GL_FLOAT, GL_FALSE, sizeof(cube_vertex_t),
       reinterpret_cast<void *>(offsetof(cube_vertex_t, position)));
@@ -361,7 +382,6 @@ SceneRenderer::create(GLFWwindow *window) {
   glGenVertexArrays(1, &light_vao);
   glBindVertexArray(light_vao);
   glBindBuffer(GL_ARRAY_BUFFER, vbo);
-
   glVertexAttribPointer(
       0, 3, GL_FLOAT, GL_FALSE, sizeof(cube_vertex_t),
       reinterpret_cast<void *>(offsetof(cube_vertex_t, position)));
@@ -374,7 +394,6 @@ SceneRenderer::create(GLFWwindow *window) {
   glGenBuffers(1, &pyramid_vbo);
   glGenBuffers(1, &pyramid_ebo);
   glBindVertexArray(pyramid_vao);
-
   glBindBuffer(GL_ARRAY_BUFFER, pyramid_vbo);
   glBufferData(GL_ARRAY_BUFFER, sizeof(pyramid_vertices), pyramid_vertices,
                GL_STATIC_DRAW);
@@ -385,40 +404,23 @@ SceneRenderer::create(GLFWwindow *window) {
                         reinterpret_cast<void *>(0));
   glEnableVertexAttribArray(0);
 
+  shader.use();
+  shader.set_int("material.diffuse", 0);
+
   SceneRenderer r;
-  r.m_ps = {.view = shader->ID, .light = light_shader->ID};
+  r.m_ps = {.view = shader.ID, .light = light_shader.ID};
   r.m_vs = {.cube = cube_vao, .pyramid = pyramid_vao, .light = light_vao};
-  r.m_ts = {
-      .diffuse = *load_texture_res,
-      .specular = *load_texture_specular_res,
-  };
+  r.m_ts = {.diffuse = diffuse, .specular = specular};
   r.m_vbo = vbo;
   r.m_pyramid_vbo = pyramid_vbo;
   r.m_pyramid_ebo = pyramid_ebo;
   r.m_window = window;
-
-  shader->use();
-  shader->set_int("material.diffuse", 0);
-
   return r;
 }
 
 void SceneRenderer::render_scene() {
-  glUseProgram(m_ps.view);
-  glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D, m_ts.diffuse);
-  glActiveTexture(GL_TEXTURE1);
-  glBindTexture(GL_TEXTURE_2D, m_ts.specular);
-  specular_map_t specular_map = {
-      .diffuse = 0,
-      .specular = 1,
-      .shininess = 64.f,
-  };
-
-  glm::mat4 model;
-
+  const preset_t &preset = presets[state.preset_index];
   glm::mat4 view = state.ws.camera.get_view_matrix();
-
   glm::mat4 projection =
       glm::perspective(glm::radians(state.ws.camera.fov),
                        static_cast<float>(state.ws.viewport.width) /
@@ -426,55 +428,47 @@ void SceneRenderer::render_scene() {
                        .1f, 100.f);
 
   glUseProgram(m_ps.view);
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, m_ts.diffuse);
+  glActiveTexture(GL_TEXTURE1);
+  glBindTexture(GL_TEXTURE_2D, m_ts.specular);
   set_mat4(m_ps.view, "view", view);
   set_mat4(m_ps.view, "projection", projection);
   set_vec3(m_ps.view, "view_pos", state.ws.camera.position);
-  set_specular_map(m_ps.view, "material", specular_map);
+  set_specular_map(m_ps.view, "material",
+                   {.diffuse = 0, .specular = 1, .shininess = 64.f});
+  set_directional_light(m_ps.view, "dir_light", preset.dir_light);
+  for (unsigned int i = 0; i < preset.pos_lights.size(); ++i)
+    set_positional_light(m_ps.view, std::format("pos_lights[{}]", i),
+                         preset.pos_lights[i]);
+  for (unsigned int i = 0; i < preset.spot_lights.size(); ++i)
+    set_spot_light(m_ps.view, std::format("spot_lights[{}]", i),
+                   preset.spot_lights[i]);
 
   glUseProgram(m_ps.light);
   set_mat4(m_ps.light, "view", view);
   set_mat4(m_ps.light, "projection", projection);
+
   glBindVertexArray(m_vs.light);
-
-  const preset_t &preset = presets[state.preset_index];
-  const light_directional_t &dir_light = preset.dir_light;
-  glUseProgram(m_ps.view);
-  set_directional_light(m_ps.view, "dir_light", dir_light);
-
-  // Set and draw positional lights
   for (unsigned int i = 0; i < preset.pos_lights.size(); ++i) {
     const light_positional_t &pos_light = preset.pos_lights[i];
-    glUseProgram(m_ps.view);
-    set_positional_light(m_ps.view, std::format("pos_lights[{}]", i),
-                         pos_light);
-    glUseProgram(m_ps.light);
-    model = glm::mat4(1.f);
-    model = glm::translate(model, pos_light.position);
-    model = glm::scale(model, glm::vec3(.2f));
-
+    glm::mat4 model = glm::scale(
+        glm::translate(glm::mat4(1.f), pos_light.position), glm::vec3(.2f));
     set_mat4(m_ps.light, "model", model);
     set_positional_light(m_ps.light, std::format("pos_lights[{}]", i),
                          pos_light);
     glDrawArrays(GL_TRIANGLES, 0, 36);
   }
 
-  glUseProgram(m_ps.light);
   glBindVertexArray(m_vs.pyramid);
-
-  // Set and draw spot lights
   for (unsigned int i = 0; i < preset.spot_lights.size(); ++i) {
     const light_spot_t &spot_light = preset.spot_lights[i];
-    glUseProgram(m_ps.view);
-    set_spot_light(m_ps.view, std::format("spot_lights[{}]", i), spot_light);
-
-    glUseProgram(m_ps.light);
-    model = glm::mat4(1.f);
-    model = glm::translate(model, spot_light.position);
-    glm::mat4 look_at_rotation =
+    glm::mat4 look_at =
         glm::lookAt(glm::vec3(0.f), spot_light.direction, glm::vec3(0, 1, 0));
-    model = model * glm::inverse(look_at_rotation);
-    model = glm::scale(model, glm::vec3(.2f));
-
+    glm::mat4 model = glm::scale(
+        glm::translate(glm::mat4(1.f), spot_light.position) *
+            glm::inverse(look_at),
+        glm::vec3(.2f));
     set_mat4(m_ps.light, "model", model);
     set_spot_light(m_ps.light, "light", spot_light);
     glDrawElements(GL_TRIANGLES, 18, GL_UNSIGNED_INT, 0);
@@ -482,12 +476,11 @@ void SceneRenderer::render_scene() {
 
   glUseProgram(m_ps.view);
   glBindVertexArray(m_vs.cube);
-  float angle;
   for (unsigned int i = 0; i < 10; ++i) {
-    angle = glfwGetTime() * (i % 3) * 25.f;
-    model = glm::translate(glm::mat4(1.f), example_cube_positions[i]);
-    model = glm::rotate(model, glm::radians(angle), glm::vec3(1.f, .3f, .5f));
-
+    float angle = glfwGetTime() * (i % 3) * 25.f;
+    glm::mat4 model = glm::rotate(
+        glm::translate(glm::mat4(1.f), example_cube_positions[i]),
+        glm::radians(angle), glm::vec3(1.f, .3f, .5f));
     set_mat4(m_ps.view, "model", model);
     glDrawArrays(GL_TRIANGLES, 0, 36);
   }
