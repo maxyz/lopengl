@@ -3,6 +3,7 @@
 
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
+#include <assimp/scene.h>
 
 #include "common/assets.hpp"
 #include "common/mesh.hpp"
@@ -12,6 +13,23 @@ namespace fs = std::filesystem;
 
 std::vector<Texture> Model::m_textures_loaded;
 
+struct ModelLoader {
+  std::vector<Mesh> meshes;
+  fs::path directory;
+  std::vector<Texture> &textures_loaded;
+
+  explicit ModelLoader(std::vector<Texture> &cache) : textures_loaded(cache) {}
+
+  std::expected<void, std::string> load(const std::string &path);
+  std::expected<void, std::string> process_node(aiNode *node,
+                                                const aiScene *scene);
+  std::expected<Mesh, std::string> process_mesh(aiMesh *mesh,
+                                                const aiScene *scene);
+  std::expected<std::vector<Texture>, std::string>
+  load_material_textures(aiMaterial *material, aiTextureType type,
+                         std::string_view name);
+};
+
 void Model::draw(Shader &shader) {
   for (auto &mesh : m_meshes) {
     mesh.draw(shader);
@@ -19,14 +37,17 @@ void Model::draw(Shader &shader) {
 }
 
 std::expected<Model, std::string> Model::load(const std::string &path) {
-  Model model;
-  return model.load_model(path).transform(
-      [&model] { return std::move(model); });
+  ModelLoader loader{m_textures_loaded};
+  return loader.load(path).transform([&loader] {
+    Model model;
+    model.m_meshes = std::move(loader.meshes);
+    return model;
+  });
 }
 
-std::expected<void, std::string> Model::load_model(const std::string &path) {
+std::expected<void, std::string> ModelLoader::load(const std::string &path) {
   Assimp::Importer importer;
-  m_directory = fs::path(path).parent_path();
+  directory = fs::path(path).parent_path();
   auto filepath = get_asset_path(path);
   if (!filepath) {
     return std::unexpected(filepath.error());
@@ -41,8 +62,8 @@ std::expected<void, std::string> Model::load_model(const std::string &path) {
   return process_node(scene->mRootNode, scene);
 }
 
-std::expected<void, std::string> Model::process_node(aiNode *node,
-                                                     const aiScene *scene) {
+std::expected<void, std::string> ModelLoader::process_node(aiNode *node,
+                                                           const aiScene *scene) {
   for (size_t i = 0; i < node->mNumMeshes; ++i) {
     aiMesh *mesh = scene->mMeshes[node->mMeshes[i]];
     auto processed_mesh = process_mesh(mesh, scene);
@@ -50,9 +71,9 @@ std::expected<void, std::string> Model::process_node(aiNode *node,
       return std::unexpected(
           std::format("mesh[{}]: {}", i, processed_mesh.error()));
     }
-    m_meshes.push_back(std::move(*processed_mesh));
+    meshes.push_back(std::move(*processed_mesh));
   }
-  for (size_t i = 0; i < node->mNumChildren; i++) {
+  for (size_t i = 0; i < node->mNumChildren; ++i) {
     auto result = process_node(node->mChildren[i], scene);
     if (!result) {
       return std::unexpected(std::format("node[{}]: {}", i, result.error()));
@@ -61,8 +82,8 @@ std::expected<void, std::string> Model::process_node(aiNode *node,
   return {};
 }
 
-std::expected<Mesh, std::string> Model::process_mesh(aiMesh *mesh,
-                                                     const aiScene *scene) {
+std::expected<Mesh, std::string> ModelLoader::process_mesh(aiMesh *mesh,
+                                                           const aiScene *scene) {
   std::vector<Vertex> vertices;
   std::vector<unsigned int> indices;
   std::vector<Texture> textures;
@@ -96,8 +117,8 @@ std::expected<Mesh, std::string> Model::process_mesh(aiMesh *mesh,
           std::format("diffuse_maps: {}", diffuse_maps.error()));
     }
     textures.insert(textures.end(), diffuse_maps->begin(), diffuse_maps->end());
-    auto specular_maps = load_material_textures(
-        material, aiTextureType_SPECULAR, "texture_specular");
+    auto specular_maps = load_material_textures(material, aiTextureType_SPECULAR,
+                                                "texture_specular");
     if (!specular_maps) {
       return std::unexpected(
           std::format("specular_maps: {}", specular_maps.error()));
@@ -109,15 +130,15 @@ std::expected<Mesh, std::string> Model::process_mesh(aiMesh *mesh,
 }
 
 std::expected<std::vector<Texture>, std::string>
-Model::load_material_textures(aiMaterial *material, aiTextureType type,
-                              std::string_view name) {
+ModelLoader::load_material_textures(aiMaterial *material, aiTextureType type,
+                                    std::string_view name) {
   std::vector<Texture> textures;
   for (size_t i = 0; i < material->GetTextureCount(type); ++i) {
     aiString str;
     material->GetTexture(type, i, &str);
 
     bool skip = false;
-    for (const Texture &cached : m_textures_loaded) {
+    for (const Texture &cached : textures_loaded) {
       if (cached.path == str.C_Str()) {
         textures.push_back(cached);
         skip = true;
@@ -126,15 +147,15 @@ Model::load_material_textures(aiMaterial *material, aiTextureType type,
     }
 
     if (!skip) {
-      auto id = load_texture(str.C_Str(), m_directory.string());
+      auto id = load_texture(str.C_Str(), directory.string());
       if (!id) {
         return std::unexpected(
             std::format("image {}: {}", str.C_Str(), id.error()));
       }
-      m_textures_loaded.push_back({.id = *id,
-                                   .type = std::string(name),
-                                   .path = str.C_Str()});
-      textures.push_back(m_textures_loaded.back());
+      textures_loaded.push_back({.id = *id,
+                                 .type = std::string(name),
+                                 .path = str.C_Str()});
+      textures.push_back(textures_loaded.back());
     }
   }
   return textures;
