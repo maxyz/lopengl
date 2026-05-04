@@ -38,8 +38,9 @@ public:
   void draw(Shader &shader);
 
 private:
-  // render data
-  id_t m_vao, m_vbo, m_ebo;
+  id_t m_vertex_array{};
+  id_t m_vertex_buffer{};
+  id_t m_element_buffer{};
 
   void setup_mesh();
 };

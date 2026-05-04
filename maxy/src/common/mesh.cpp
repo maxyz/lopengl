@@ -3,14 +3,14 @@
 #include <format>
 
 void Mesh::setup_mesh() {
-  glGenVertexArrays(1, &m_vao);
-  glGenBuffers(1, &m_vbo);
-  glGenBuffers(1, &m_ebo);
-  glBindVertexArray(m_vao);
-  glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
+  glGenVertexArrays(1, &m_vertex_array);
+  glGenBuffers(1, &m_vertex_buffer);
+  glGenBuffers(1, &m_element_buffer);
+  glBindVertexArray(m_vertex_array);
+  glBindBuffer(GL_ARRAY_BUFFER, m_vertex_buffer);
   glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), &vertices[0],
                GL_STATIC_DRAW);
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_ebo);
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_element_buffer);
   glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int),
                &indices[0], GL_STATIC_DRAW);
   // vertex positions
@@ -51,7 +51,7 @@ void Mesh::draw(Shader &shader) {
   }
   glActiveTexture(GL_TEXTURE0);
 
-  glBindVertexArray(m_vao);
+  glBindVertexArray(m_vertex_array);
   glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
   glBindVertexArray(0);
 }
