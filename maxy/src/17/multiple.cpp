@@ -119,8 +119,8 @@ public:
 
 private:
   struct programs_t {
-    id_t view{};
-    id_t light{};
+    Shader view;
+    Shader light;
   };
   struct vaos_t {
     id_t cube{};
@@ -242,7 +242,7 @@ SceneRenderer::create(GLFWwindow *window) {
   glEnableVertexAttribArray(0);
 
   SceneRenderer r;
-  r.m_programs = {.view = shader->program_id(), .light = light_shader->program_id()};
+  r.m_programs = {.view = std::move(*shader), .light = std::move(*light_shader)};
   r.m_vaos = {.cube = cube_vao, .pyramid = pyramid_vao, .light = light_vao};
   r.m_textures = {
       .diffuse = *load_texture_res,
@@ -253,8 +253,8 @@ SceneRenderer::create(GLFWwindow *window) {
   r.m_pyramid_ebo = pyramid_ebo;
   r.m_window = window;
 
-  shader->use();
-  shader->set_int("material.diffuse", 0);
+  r.m_programs.view.use();
+  r.m_programs.view.set_int("material.diffuse", 0);
 
   return r;
 }
@@ -268,7 +268,7 @@ void SceneRenderer::render(input_t input, float delta) {
 }
 
 void SceneRenderer::render_scene() {
-  glUseProgram(m_programs.view);
+  m_programs.view.use();
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, m_textures.diffuse);
   glActiveTexture(GL_TEXTURE1);
@@ -289,36 +289,36 @@ void SceneRenderer::render_scene() {
                            static_cast<float>(state.ws.viewport.height),
                        .1f, 100.f);
 
-  set_mat4(m_programs.view, "view", view);
-  set_mat4(m_programs.view, "projection", projection);
-  set_vec3(m_programs.view, "view_pos", state.ws.camera.position);
-  set_specular_map(m_programs.view, "material", specular_map);
-  set_directional_light(m_programs.view, "dir_light", state.dir_light);
+  set_mat4(m_programs.view.program_id(), "view", view);
+  set_mat4(m_programs.view.program_id(), "projection", projection);
+  set_vec3(m_programs.view.program_id(), "view_pos", state.ws.camera.position);
+  set_specular_map(m_programs.view.program_id(), "material", specular_map);
+  set_directional_light(m_programs.view.program_id(), "dir_light", state.dir_light);
 
   glBindVertexArray(m_vaos.cube);
   for (unsigned int i = 0; i < state.pos_lights.size(); ++i) {
-    set_positional_light(m_programs.view, std::format("pos_lights[{}]", i),
+    set_positional_light(m_programs.view.program_id(), std::format("pos_lights[{}]", i),
                          state.pos_lights[i]);
   }
   for (unsigned int i = 0; i < state.spot_lights.size(); ++i) {
-    set_spot_light(m_programs.view, std::format("spot_lights[{}]", i),
+    set_spot_light(m_programs.view.program_id(), std::format("spot_lights[{}]", i),
                    state.spot_lights[i]);
   }
 
-  glUseProgram(m_programs.view);
+  m_programs.view.use();
   float angle;
   for (unsigned int i = 0; i < 10; ++i) {
     angle = glfwGetTime() * (i % 3) * 25.f;
     model = glm::translate(glm::mat4(1.f), example_cube_positions[i]);
     model = glm::rotate(model, glm::radians(angle), glm::vec3(1.f, .3f, .5f));
 
-    set_mat4(m_programs.view, "model", model);
+    set_mat4(m_programs.view.program_id(), "model", model);
     glDrawArrays(GL_TRIANGLES, 0, 36);
   }
 
-  glUseProgram(m_programs.light);
-  set_mat4(m_programs.light, "view", view);
-  set_mat4(m_programs.light, "projection", projection);
+  m_programs.light.use();
+  set_mat4(m_programs.light.program_id(), "view", view);
+  set_mat4(m_programs.light.program_id(), "projection", projection);
 
   glBindVertexArray(m_vaos.light);
   for (unsigned int i = 0; i < state.pos_lights.size(); ++i) {
@@ -326,8 +326,8 @@ void SceneRenderer::render_scene() {
     model = glm::translate(model, state.pos_lights[i].position);
     model = glm::scale(model, glm::vec3(.2f));
 
-    set_mat4(m_programs.light, "model", model);
-    set_positional_light(m_programs.light, std::format("pos_lights[{}]", i),
+    set_mat4(m_programs.light.program_id(), "model", model);
+    set_positional_light(m_programs.light.program_id(), std::format("pos_lights[{}]", i),
                          state.pos_lights[i]);
     glDrawArrays(GL_TRIANGLES, 0, 36);
   }
@@ -341,8 +341,8 @@ void SceneRenderer::render_scene() {
     model = model * glm::inverse(look_at_rotation);
     model = glm::scale(model, glm::vec3(.2f));
 
-    set_mat4(m_programs.light, "model", model);
-    set_spot_light(m_programs.light, "light", state.spot_lights[i]);
+    set_mat4(m_programs.light.program_id(), "model", model);
+    set_spot_light(m_programs.light.program_id(), "light", state.spot_lights[i]);
     glDrawElements(GL_TRIANGLES, 18, GL_UNSIGNED_INT, 0);
   }
 }

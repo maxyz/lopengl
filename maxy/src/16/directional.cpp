@@ -51,7 +51,7 @@ public:
 
 private:
   struct programs_t {
-    id_t view{};
+    Shader view;
   };
   struct vaos_t {
     id_t cube{};
@@ -136,7 +136,7 @@ SceneRenderer::create(GLFWwindow *window) {
   glEnableVertexAttribArray(2);
 
   SceneRenderer r;
-  r.m_programs = {.view = shader->program_id()};
+  r.m_programs = {.view = std::move(*shader)};
   r.m_vaos = {.cube = cube_vao};
   r.m_textures = {
       .diffuse = *load_texture_res,
@@ -145,8 +145,8 @@ SceneRenderer::create(GLFWwindow *window) {
   r.m_vbo = vbo;
   r.m_window = window;
 
-  shader->use();
-  shader->set_int("material.diffuse", 0);
+  r.m_programs.view.use();
+  r.m_programs.view.set_int("material.diffuse", 0);
 
   return r;
 }
@@ -160,7 +160,7 @@ void SceneRenderer::render(input_t input, float delta) {
 }
 
 void SceneRenderer::render_scene() {
-  glUseProgram(m_programs.view);
+  m_programs.view.use();
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, m_textures.diffuse);
   glActiveTexture(GL_TEXTURE1);
@@ -181,11 +181,11 @@ void SceneRenderer::render_scene() {
                            static_cast<float>(state.ws.viewport.height),
                        .1f, 100.f);
 
-  set_mat4(m_programs.view, "view", view);
-  set_mat4(m_programs.view, "projection", projection);
-  set_vec3(m_programs.view, "view_pos", state.ws.camera.position);
-  set_directional_light(m_programs.view, "light", state.light);
-  set_specular_map(m_programs.view, "material", specular_map);
+  set_mat4(m_programs.view.program_id(), "view", view);
+  set_mat4(m_programs.view.program_id(), "projection", projection);
+  set_vec3(m_programs.view.program_id(), "view_pos", state.ws.camera.position);
+  set_directional_light(m_programs.view.program_id(), "light", state.light);
+  set_specular_map(m_programs.view.program_id(), "material", specular_map);
 
   glBindVertexArray(m_vaos.cube);
 
@@ -195,8 +195,8 @@ void SceneRenderer::render_scene() {
     model = glm::translate(glm::mat4(1.f), example_cube_positions[i]);
     model = glm::rotate(model, glm::radians(angle), glm::vec3(1.f, .3f, .5f));
 
-    glUseProgram(m_programs.view);
-    set_mat4(m_programs.view, "model", model);
+    m_programs.view.use();
+    set_mat4(m_programs.view.program_id(), "model", model);
     glDrawArrays(GL_TRIANGLES, 0, 36);
   }
 }

@@ -314,8 +314,8 @@ public:
 
 private:
   struct programs_t {
-    id_t view{};
-    id_t light{};
+    Shader view;
+    Shader light;
   };
   struct vaos_t {
     id_t cube{};
@@ -462,7 +462,7 @@ SceneRenderer SceneRenderer::setup_gl(GLFWwindow *window, Shader shader,
   shader.set_int("material.diffuse", 0);
 
   SceneRenderer r;
-  r.m_programs = {.view = shader.program_id(), .light = light_shader.program_id()};
+  r.m_programs = {.view = std::move(shader), .light = std::move(light_shader)};
   r.m_vaos = {.cube = cube_vao, .pyramid = pyramid_vao, .light = light_vao};
   r.m_textures = {.diffuse = diffuse, .specular = specular};
   r.m_vbo = vbo;
@@ -489,39 +489,39 @@ void SceneRenderer::render_scene() {
 void SceneRenderer::render_scene_bind_textures(const preset_t &preset,
                                                const glm::mat4 &view,
                                                const glm::mat4 &projection) {
-  glUseProgram(m_programs.view);
+  m_programs.view.use();
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, m_textures.diffuse);
   glActiveTexture(GL_TEXTURE1);
   glBindTexture(GL_TEXTURE_2D, m_textures.specular);
-  set_mat4(m_programs.view, "view", view);
-  set_mat4(m_programs.view, "projection", projection);
-  set_vec3(m_programs.view, "view_pos", state.ws.camera.position);
-  set_specular_map(m_programs.view, "material",
+  set_mat4(m_programs.view.program_id(), "view", view);
+  set_mat4(m_programs.view.program_id(), "projection", projection);
+  set_vec3(m_programs.view.program_id(), "view_pos", state.ws.camera.position);
+  set_specular_map(m_programs.view.program_id(), "material",
                    {.diffuse = 0, .specular = 1, .shininess = 64.f});
-  set_directional_light(m_programs.view, "dir_light", preset.dir_light);
+  set_directional_light(m_programs.view.program_id(), "dir_light", preset.dir_light);
   for (unsigned int i = 0; i < preset.pos_lights.size(); ++i)
-    set_positional_light(m_programs.view, std::format("pos_lights[{}]", i),
+    set_positional_light(m_programs.view.program_id(), std::format("pos_lights[{}]", i),
                          preset.pos_lights[i]);
   for (unsigned int i = 0; i < preset.spot_lights.size(); ++i)
-    set_spot_light(m_programs.view, std::format("spot_lights[{}]", i),
+    set_spot_light(m_programs.view.program_id(), std::format("spot_lights[{}]", i),
                    preset.spot_lights[i]);
 }
 
 void SceneRenderer::render_scene_draw_lights(const preset_t &preset,
                                              const glm::mat4 &view,
                                              const glm::mat4 &projection) {
-  glUseProgram(m_programs.light);
-  set_mat4(m_programs.light, "view", view);
-  set_mat4(m_programs.light, "projection", projection);
+  m_programs.light.use();
+  set_mat4(m_programs.light.program_id(), "view", view);
+  set_mat4(m_programs.light.program_id(), "projection", projection);
 
   glBindVertexArray(m_vaos.light);
   for (unsigned int i = 0; i < preset.pos_lights.size(); ++i) {
     const light_positional_t &pos_light = preset.pos_lights[i];
     glm::mat4 model = glm::scale(
         glm::translate(glm::mat4(1.f), pos_light.position), glm::vec3(.2f));
-    set_mat4(m_programs.light, "model", model);
-    set_positional_light(m_programs.light, std::format("pos_lights[{}]", i),
+    set_mat4(m_programs.light.program_id(), "model", model);
+    set_positional_light(m_programs.light.program_id(), std::format("pos_lights[{}]", i),
                          pos_light);
     glDrawArrays(GL_TRIANGLES, 0, 36);
   }
@@ -535,21 +535,21 @@ void SceneRenderer::render_scene_draw_lights(const preset_t &preset,
         glm::scale(glm::translate(glm::mat4(1.f), spot_light.position) *
                        glm::inverse(look_at),
                    glm::vec3(.2f));
-    set_mat4(m_programs.light, "model", model);
-    set_spot_light(m_programs.light, "light", spot_light);
+    set_mat4(m_programs.light.program_id(), "model", model);
+    set_spot_light(m_programs.light.program_id(), "light", spot_light);
     glDrawElements(GL_TRIANGLES, 18, GL_UNSIGNED_INT, 0);
   }
 }
 
 void SceneRenderer::render_scene_draw_cubes() {
-  glUseProgram(m_programs.view);
+  m_programs.view.use();
   glBindVertexArray(m_vaos.cube);
   for (unsigned int i = 0; i < 10; ++i) {
     float angle = glfwGetTime() * (i % 3) * 25.f;
     glm::mat4 model =
         glm::rotate(glm::translate(glm::mat4(1.f), example_cube_positions[i]),
                     glm::radians(angle), glm::vec3(1.f, .3f, .5f));
-    set_mat4(m_programs.view, "model", model);
+    set_mat4(m_programs.view.program_id(), "model", model);
     glDrawArrays(GL_TRIANGLES, 0, 36);
   }
 }
