@@ -1,11 +1,23 @@
 #include "common/shader.hpp"
 
+#include <array>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 
 using read_file_res = std::expected<std::string, std::string>;
 read_file_res read_file(const std::filesystem::path &path);
+
+static std::string_view type_to_view(GLenum type) {
+  switch (type) {
+  case GL_VERTEX_SHADER:
+    return "vertex";
+  case GL_FRAGMENT_SHADER:
+    return "fragment";
+  default:
+    return "unknown";
+  }
+}
 
 static compile_shader_res compile_file(std::string_view path, GLenum type) {
   return read_file(std::filesystem::path(path))
@@ -27,7 +39,8 @@ with_fragment(id_t v_shader, std::string_view fragmentPath) {
 
 static Shader::build_res link_and_clean(std::pair<id_t, id_t> shaders) {
   auto [v, f] = shaders;
-  return link_shaders({v, f}).transform([v, f](id_t program) {
+  const std::array ids{v, f};
+  return link_shaders(ids).transform([v, f](id_t program) {
     glDeleteShader(v);
     glDeleteShader(f);
     return Shader{program};
@@ -66,34 +79,29 @@ void Shader::set_mat4(const std::string &name, const glm::mat4 &value) const {
                      GL_FALSE, glm::value_ptr(value));
 }
 
-const std::string_view type_to_view(const GLenum type);
-
 constexpr int shader_info_log_size = 512;
 
-compile_shader_res compile_shader(const GLenum type, const char *source) {
+compile_shader_res compile_shader(GLenum type, const char *source) {
   int success;
   char info_log[shader_info_log_size];
 
-  id_t shader;
-  shader = glCreateShader(type);
+  id_t shader = glCreateShader(type);
   glShaderSource(shader, 1, &source, nullptr);
   glCompileShader(shader);
   glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
   if (!success) {
     glGetShaderInfoLog(shader, shader_info_log_size, nullptr, info_log);
-    auto error = std::format("error shader {}, compilation failed\n{}",
-                             type_to_view(type), info_log);
-    return std::unexpected(error);
+    return std::unexpected(std::format("error shader {}, compilation failed\n{}",
+                                       type_to_view(type), info_log));
   }
   return shader;
 }
 
-std::expected<id_t, std::string> link_shaders(std::vector<id_t> shaders) {
+link_shaders_res link_shaders(std::span<const id_t> shaders) {
   int success;
   char info_log[shader_info_log_size];
 
-  id_t program;
-  program = glCreateProgram();
+  id_t program = glCreateProgram();
   for (auto shader : shaders) {
     glAttachShader(program, shader);
   }
@@ -101,21 +109,10 @@ std::expected<id_t, std::string> link_shaders(std::vector<id_t> shaders) {
   glGetProgramiv(program, GL_LINK_STATUS, &success);
   if (!success) {
     glGetProgramInfoLog(program, shader_info_log_size, nullptr, info_log);
-    auto error = std::format("error shader link failed\n{}", info_log);
-    return std::unexpected(error);
+    return std::unexpected(
+        std::format("error shader link failed\n{}", info_log));
   }
   return program;
-}
-
-const std::string_view type_to_view(const GLenum type) {
-  switch (type) {
-  case (GL_VERTEX_SHADER):
-    return "vertex";
-  case (GL_FRAGMENT_SHADER):
-    return "fragment";
-  default:
-    return "unknown";
-  }
 }
 
 read_file_res read_file(const std::filesystem::path &path) {
@@ -135,6 +132,7 @@ read_file_res read_file(const std::filesystem::path &path) {
                                        path.string(), e.what()));
   }
 }
+
 void set_int(id_t id, const std::string &name, int value) {
   GLint location = glGetUniformLocation(id, name.c_str());
   glUniform1i(location, value);

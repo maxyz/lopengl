@@ -5,9 +5,9 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include <expected>
+#include <span>
 #include <string>
 #include <utility>
-#include <vector>
 
 #include "common/types.hpp"
 
@@ -47,10 +47,10 @@ private:
 };
 
 using compile_shader_res = std::expected<id_t, std::string>;
-compile_shader_res compile_shader(const GLenum type, const char *source);
+compile_shader_res compile_shader(GLenum type, const char *source);
 
 using link_shaders_res = std::expected<id_t, std::string>;
-link_shaders_res link_shaders(const std::vector<id_t> shaders);
+link_shaders_res link_shaders(std::span<const id_t> shaders);
 
 void set_int(id_t id, const std::string &name, int value);
 void set_float(id_t id, const std::string &name, float value);

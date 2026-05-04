@@ -260,17 +260,17 @@ std::expected<cbs_t, std::string> init_shaders() {
 
 glm::mat4 get_view_matrix(const Camera &camera) {
   glm::mat4 rotation{
-      camera.right.x,
-      camera.up.x,
-      -camera.front.x,
+      camera.right().x,
+      camera.up().x,
+      -camera.front().x,
       0.f, // c1
-      camera.right.y,
-      camera.up.y,
-      -camera.front.y,
+      camera.right().y,
+      camera.up().y,
+      -camera.front().y,
       0.f, // c2
-      camera.right.z,
-      camera.up.z,
-      -camera.front.z,
+      camera.right().z,
+      camera.up().z,
+      -camera.front().z,
       0.f, // c3
       0.f,
       0.f,
