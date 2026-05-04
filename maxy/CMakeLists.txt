@@ -23,8 +23,8 @@ set(LIBS ${LIBS} glfw)
 find_package(glm REQUIRED)
 
 find_package(assimp REQUIRED)
-set(LIBS ${LIBS} assimp)
-include_directories(${ASSIMP_INCLUDE_DIR})
+set(LIBS ${LIBS} ${ASSIMP_LIBRARIES})
+include_directories(${ASSIMP_INCLUDE_DIRS})
 
 find_package(PkgConfig REQUIRED)
 

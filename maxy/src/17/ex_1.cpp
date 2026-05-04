@@ -384,21 +384,21 @@ SceneRenderer::create(GLFWwindow *window) {
         return Shader::build("shaders/17_light.vert", "shaders/17_light.frag")
             .transform([b = std::move(b)](Shader ls) mutable {
               b.light_shader = std::move(ls);
-              return b;
+              return std::move(b);
             });
       })
       .and_then([](build_t b) {
         return load_texture("textures/container2.png")
             .transform([b = std::move(b)](id_t d) mutable {
               b.diffuse = d;
-              return b;
+              return std::move(b);
             });
       })
       .and_then([](build_t b) {
         return load_texture("textures/container2_specular.png")
             .transform([b = std::move(b)](id_t s) mutable {
               b.specular = s;
-              return b;
+              return std::move(b);
             });
       })
       .transform([&](build_t b) {

@@ -97,7 +97,7 @@ std::expected<std::vector<cb_t>, std::string> init_shaders() {
   if (!res.has_value()) {
     return std::unexpected(res.error());
   }
-  auto shader = *res;
+  auto shader = std::move(*res);
   auto p = shader.program_id();
   auto vao = buffers();
 

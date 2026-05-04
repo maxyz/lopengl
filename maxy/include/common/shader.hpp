@@ -6,6 +6,7 @@
 
 #include <expected>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "common/types.hpp"
@@ -14,6 +15,18 @@ class Shader {
 public:
   Shader() = default;
   explicit Shader(id_t program_id) : m_program_id(program_id) {}
+  ~Shader() { glDeleteProgram(m_program_id); }
+
+  Shader(const Shader &) = delete;
+  Shader &operator=(const Shader &) = delete;
+  Shader(Shader &&o) noexcept : m_program_id(std::exchange(o.m_program_id, 0)) {}
+  Shader &operator=(Shader &&o) noexcept {
+    if (this != &o) {
+      glDeleteProgram(m_program_id);
+      m_program_id = std::exchange(o.m_program_id, 0);
+    }
+    return *this;
+  }
 
   using build_res = std::expected<Shader, std::string>;
   static build_res build(std::string_view vertexPath,

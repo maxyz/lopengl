@@ -165,7 +165,7 @@ std::expected<cbs_t, std::string> init_shaders() {
   if (!res.has_value()) {
     return std::unexpected(res.error());
   }
-  auto shader = *res;
+  auto shader = std::move(*res);
   auto p = shader.program_id();
   const std::string filename{"textures/container.jpg"};
   auto texture_ = load_texture(filename);

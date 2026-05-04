@@ -22,8 +22,8 @@ get_asset_path(const std::string &filename) {
 
 std::expected<Image, std::string> load_image(const std::string &filename) {
   stbi_set_flip_vertically_on_load(true);
-  return get_asset_path(filename)
-      .and_then([&](const std::string &path) -> std::expected<Image, std::string> {
+  return get_asset_path(filename).and_then(
+      [&](const std::string &path) -> std::expected<Image, std::string> {
         Image image;
         auto *data = stbi_load(path.c_str(), &image.width, &image.height,
                                &image.channel_count, 0);
@@ -37,9 +37,10 @@ std::expected<Image, std::string> load_image(const std::string &filename) {
 
 static std::expected<std::pair<Image, GLenum>, std::string>
 with_format(Image image) {
-  return guess_format(image).transform([img = std::move(image)](GLenum fmt) mutable {
-    return std::pair{std::move(img), fmt};
-  });
+  return guess_format(image).transform(
+      [img = std::move(image)](GLenum fmt) mutable {
+        return std::pair{std::move(img), fmt};
+      });
 }
 
 std::expected<id_t, std::string> load_texture(const std::string &filename) {
@@ -62,6 +63,13 @@ std::expected<id_t, std::string> load_texture(const std::string &filename) {
       });
 }
 
+std::expected<id_t, std::string> load_texture(const std::string &filename,
+                                              const std::string &directory) {
+  fs::path path{directory};
+  auto filepath = path / filename;
+  return load_texture(filepath);
+}
+
 std::expected<GLenum, std::string> guess_format(const Image &image) {
   if (image.channel_count == 1)
     return GL_RED;
@@ -73,3 +81,4 @@ std::expected<GLenum, std::string> guess_format(const Image &image) {
       "Could not detect image format, invalid amount of channels {}",
       image.channel_count));
 }
+

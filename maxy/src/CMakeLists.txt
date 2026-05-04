@@ -3,6 +3,7 @@ set(LIBS ${LIBS} GLAD)
 
 file(GLOB common_sources common/*.cpp)
 add_library(COMMON ${common_sources})
+target_link_libraries(COMMON ${LIBS})
 set(LIBS ${LIBS} COMMON)
 
 add_executable(query_attributes queries/main.cpp)
@@ -39,3 +40,5 @@ add_subdirectory(15)
 add_subdirectory(16)
 
 add_subdirectory(17)
+
+add_subdirectory(21)

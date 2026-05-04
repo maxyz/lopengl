@@ -25,5 +25,7 @@ get_asset_path(const std::string &filename);
 std::expected<Image, std::string> load_image(const std::string &filename);
 
 std::expected<id_t, std::string> load_texture(const std::string &filename);
+std::expected<id_t, std::string> load_texture(const std::string &filename,
+                                              const std::string &directory);
 
 std::expected<GLenum, std::string> guess_format(const Image &image);

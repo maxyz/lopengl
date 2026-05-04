@@ -11,11 +11,17 @@
 
 class Model {
 public:
+  Model() = default;
+
+  Model(const Model &) = delete;
+  Model &operator=(const Model &) = delete;
+  Model(Model &&o) noexcept = default;
+  Model &operator=(Model &&) = default;
+
   static std::expected<Model, std::string> load(const std::string &path);
   void draw(Shader &shader);
 
 private:
-  Model() = default;
   std::vector<Mesh> m_meshes;
   std::string m_directory;
 

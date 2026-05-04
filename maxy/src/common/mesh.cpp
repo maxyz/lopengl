@@ -33,10 +33,10 @@ static std::string material_uniform_name(std::string_view type,
                                          size_t &diffuse_count,
                                          size_t &specular_count) {
   if (type == texture_type_diffuse)
-    return std::format("material.{}{}", type, diffuse_count++);
+    return std::format("{}{}", type, diffuse_count++);
   if (type == texture_type_specular)
-    return std::format("material.{}{}", type, specular_count++);
-  return std::format("material.{}", type);
+    return std::format("{}{}", type, specular_count++);
+  return std::string(type);
 }
 
 void Mesh::draw(Shader &shader) {
