@@ -5,11 +5,9 @@
 #include <glad/gl.h>
 
 #include <GLFW/glfw3.h>
-#include <glm/geometric.hpp>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
-#include <stb_image.h>
 
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_opengl3.h>
@@ -17,9 +15,9 @@
 
 #include "common/common.hpp"
 
-const char *TITLE = "Model loading example";
-const GLuint WIDTH = 1024;
-const GLuint HEIGHT = 768;
+constexpr const char *TITLE = "Model loading example";
+constexpr GLuint WIDTH = 1024;
+constexpr GLuint HEIGHT = 768;
 
 struct model_preset_t {
   glm::vec3 position;
@@ -57,11 +55,6 @@ private:
 
   static SceneRenderer setup_gl(GLFWwindow *window, Shader shader, Model model);
   void render_scene();
-  void render_scene_bind_textures(const preset_t &preset, const glm::mat4 &view,
-                                  const glm::mat4 &projection);
-  void render_scene_draw_lights(const preset_t &preset, const glm::mat4 &view,
-                                const glm::mat4 &projection);
-  void render_scene_draw_cubes();
   void render_imgui();
 };
 
@@ -85,7 +78,7 @@ int main() {
   return 0;
 }
 
-const std::array<preset_t, 4> presets = {{
+const std::array<preset_t, 1> presets = {{
     {
         .name = "simple",
         .clear_color = glm::vec4(.75f, .52f, .3f, 1.f),
@@ -152,10 +145,10 @@ void SceneRenderer::render_scene() {
   m_shader.set_mat4("view", view);
   m_shader.set_mat4("projection", projection);
 
-  glm::mat4 model = glm::mat4(1.f);
-  model = glm::translate(model, preset.model.position);
-  model = glm::scale(model, preset.model.scale * glm::vec3(1.f));
-  m_shader.set_mat4("model", model);
+  glm::mat4 model_transform = glm::mat4(1.f);
+  model_transform = glm::translate(model_transform, preset.model.position);
+  model_transform = glm::scale(model_transform, glm::vec3(preset.model.scale));
+  m_shader.set_mat4("model", model_transform);
 
   m_model.draw(m_shader);
 }
@@ -176,7 +169,7 @@ void SceneRenderer::render_imgui() {
   }
 
   ImGui::SetNextWindowPos(ImVec2(6.0f, 6.0f), ImGuiCond_Once);
-  ImGui::Begin("Scene information", NULL, ImGuiWindowFlags_AlwaysAutoResize);
+  ImGui::Begin("Scene information", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
   ImGui::PushItemWidth(150.0f);
 
   ImGui::LabelText("Pos", "(%.2f, %.2f, %.2f)", state.ws.camera.position.x,
@@ -194,22 +187,4 @@ void SceneRenderer::render_imgui() {
 
 void process_input(GLFWwindow *window, input_t &input) {
   process_common_input(window, input);
-  if (glfwGetKey(window, GLFW_KEY_I) == GLFW_PRESS) {
-    input.light.forward = true;
-  }
-  if (glfwGetKey(window, GLFW_KEY_K) == GLFW_PRESS) {
-    input.light.back = true;
-  }
-  if (glfwGetKey(window, GLFW_KEY_J) == GLFW_PRESS) {
-    input.light.left = true;
-  }
-  if (glfwGetKey(window, GLFW_KEY_L) == GLFW_PRESS) {
-    input.light.right = true;
-  }
-  if (glfwGetKey(window, GLFW_KEY_U) == GLFW_PRESS) {
-    input.light.up = true;
-  }
-  if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS) {
-    input.light.down = true;
-  }
 }
