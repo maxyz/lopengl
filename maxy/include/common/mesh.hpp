@@ -27,21 +27,17 @@ constexpr std::string_view texture_type_specular = "texture_specular";
 
 class Mesh {
 public:
-  // mesh data
-  std::vector<Vertex> vertices;
-  std::vector<unsigned int> indices;
-  std::vector<Texture> textures;
-
   Mesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices,
        std::vector<Texture> textures)
-      : vertices(vertices), indices(indices), textures(textures) {
+      : m_vertices(std::move(vertices)), m_indices(std::move(indices)),
+        m_textures(std::move(textures)) {
     setup_mesh();
   };
   Mesh(const Mesh &) = delete;
   Mesh &operator=(const Mesh &) = delete;
   Mesh(Mesh &&o) noexcept
-      : vertices(std::move(o.vertices)), indices(std::move(o.indices)),
-        textures(std::move(o.textures)),
+      : m_vertices(std::move(o.m_vertices)), m_indices(std::move(o.m_indices)),
+        m_textures(std::move(o.m_textures)),
         m_vertex_array(std::exchange(o.m_vertex_array, 0)),
         m_vertex_buffer(std::exchange(o.m_vertex_buffer, 0)),
         m_element_buffer(std::exchange(o.m_element_buffer, 0)) {}
@@ -50,9 +46,9 @@ public:
       glDeleteVertexArrays(1, &m_vertex_array);
       glDeleteBuffers(1, &m_vertex_buffer);
       glDeleteBuffers(1, &m_element_buffer);
-      vertices = std::move(o.vertices);
-      indices = std::move(o.indices);
-      textures = std::move(o.textures);
+      m_vertices = std::move(o.m_vertices);
+      m_indices = std::move(o.m_indices);
+      m_textures = std::move(o.m_textures);
       m_vertex_array = std::exchange(o.m_vertex_array, 0);
       m_vertex_buffer = std::exchange(o.m_vertex_buffer, 0);
       m_element_buffer = std::exchange(o.m_element_buffer, 0);
@@ -68,6 +64,10 @@ public:
   void draw(Shader &shader);
 
 private:
+  std::vector<Vertex> m_vertices;
+  std::vector<unsigned int> m_indices;
+  std::vector<Texture> m_textures;
+
   id_t m_vertex_array{};
   id_t m_vertex_buffer{};
   id_t m_element_buffer{};
