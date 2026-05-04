@@ -10,7 +10,7 @@
 
 namespace fs = std::filesystem;
 
-std::vector<Texture> textures_loaded;
+std::vector<Texture> Model::m_textures_loaded;
 
 void Model::draw(Shader &shader) {
   for (auto &mesh : m_meshes) {
@@ -105,38 +105,36 @@ std::expected<Mesh, std::string> Model::process_mesh(aiMesh *mesh,
     textures.insert(textures.end(), specular_maps->begin(),
                     specular_maps->end());
   }
-  return Mesh(vertices, indices, textures);
+  return Mesh(std::move(vertices), std::move(indices), std::move(textures));
 }
 
 std::expected<std::vector<Texture>, std::string>
 Model::load_material_textures(aiMaterial *material, aiTextureType type,
-                              std::string name) {
+                              std::string_view name) {
   std::vector<Texture> textures;
   for (size_t i = 0; i < material->GetTextureCount(type); ++i) {
     aiString str;
     material->GetTexture(type, i, &str);
 
     bool skip = false;
-    for (size_t j = 0; j < textures_loaded.size(); j++) {
-      if (textures_loaded[j].path == str.C_Str()) {
-        textures.push_back(textures_loaded[j]);
+    for (const Texture &cached : m_textures_loaded) {
+      if (cached.path == str.C_Str()) {
+        textures.push_back(cached);
         skip = true;
         break;
       }
     }
 
     if (!skip) {
-      Texture texture;
-      auto id = load_texture(str.C_Str(), m_directory);
+      auto id = load_texture(str.C_Str(), m_directory.string());
       if (!id) {
         return std::unexpected(
             std::format("image {}: {}", str.C_Str(), id.error()));
       }
-      texture.id = *id;
-      texture.type = name;
-      texture.path = str.C_Str();
-      textures_loaded.push_back(texture);
-      textures.push_back(texture);
+      m_textures_loaded.push_back({.id = *id,
+                                   .type = std::string(name),
+                                   .path = str.C_Str()});
+      textures.push_back(m_textures_loaded.back());
     }
   }
   return textures;

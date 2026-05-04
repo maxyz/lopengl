@@ -1,7 +1,9 @@
 #pragma once
 
 #include <expected>
+#include <filesystem>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include <assimp/scene.h>
@@ -23,7 +25,8 @@ public:
 
 private:
   std::vector<Mesh> m_meshes;
-  std::string m_directory;
+  std::filesystem::path m_directory;
+  static std::vector<Texture> m_textures_loaded;
 
   std::expected<void, std::string> load_model(const std::string &path);
   std::expected<void, std::string> process_node(aiNode *node,
@@ -32,5 +35,5 @@ private:
                                                 const aiScene *scene);
   std::expected<std::vector<Texture>, std::string>
   load_material_textures(aiMaterial *material, aiTextureType type,
-                         std::string name);
+                         std::string_view name);
 };
