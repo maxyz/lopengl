@@ -2,6 +2,7 @@
 #include "common/assets.hpp"
 
 #include <GLFW/glfw3.h>
+#include <stb/stb_image.h>
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_opengl3.h>
 #include <glad/gl.h>
@@ -26,6 +27,7 @@ static std::expected<GLFWwindow *, std::string> init_glfw(int width, int height,
   }
   glViewport(0, 0, width, height);
   glEnable(GL_DEPTH_TEST);
+  stbi_set_flip_vertically_on_load(true);
   glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
   return window;
 }

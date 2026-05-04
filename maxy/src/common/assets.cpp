@@ -21,7 +21,6 @@ get_asset_path(const std::string &filename) {
 }
 
 std::expected<Image, std::string> load_image(const std::string &filename) {
-  stbi_set_flip_vertically_on_load(true);
   return get_asset_path(filename).and_then(
       [&](const std::string &path) -> std::expected<Image, std::string> {
         Image image;
@@ -56,7 +55,7 @@ std::expected<id_t, std::string> load_texture(const std::string &filename) {
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
                         GL_LINEAR_MIPMAP_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, image.width, image.height, 0,
+        glTexImage2D(GL_TEXTURE_2D, 0, format, image.width, image.height, 0,
                      format, GL_UNSIGNED_BYTE, image.data.get());
         glGenerateMipmap(GL_TEXTURE_2D);
         return texture;
