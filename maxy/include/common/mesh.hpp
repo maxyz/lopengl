@@ -19,7 +19,6 @@ struct Vertex {
 struct Texture {
   id_t id;
   std::string type;
-  std::string path;
 };
 
 constexpr std::string_view texture_type_diffuse = "texture_diffuse";

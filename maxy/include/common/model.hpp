@@ -2,6 +2,7 @@
 
 #include <expected>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "common/mesh.hpp"
@@ -20,5 +21,5 @@ public:
 
 private:
   std::vector<Mesh> m_meshes;
-  static std::vector<Texture> m_textures_loaded;
+  static std::unordered_map<std::string, Texture> m_textures_loaded;
 };

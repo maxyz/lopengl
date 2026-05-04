@@ -1,5 +1,6 @@
 #include <filesystem>
 #include <format>
+#include <unordered_map>
 
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
@@ -11,14 +12,15 @@
 
 namespace fs = std::filesystem;
 
-std::vector<Texture> Model::m_textures_loaded;
+std::unordered_map<std::string, Texture> Model::m_textures_loaded;
 
 struct ModelLoader {
   std::vector<Mesh> meshes;
   fs::path directory;
-  std::vector<Texture> &textures_loaded;
+  std::unordered_map<std::string, Texture> &textures_loaded;
 
-  explicit ModelLoader(std::vector<Texture> &cache) : textures_loaded(cache) {}
+  explicit ModelLoader(std::unordered_map<std::string, Texture> &cache)
+      : textures_loaded(cache) {}
 
   std::expected<void, std::string> load(const std::string &path);
   std::expected<void, std::string> process_node(aiNode *node,
@@ -137,25 +139,17 @@ ModelLoader::load_material_textures(aiMaterial *material, aiTextureType type,
     aiString str;
     material->GetTexture(type, i, &str);
 
-    bool skip = false;
-    for (const Texture &cached : textures_loaded) {
-      if (cached.path == str.C_Str()) {
-        textures.push_back(cached);
-        skip = true;
-        break;
-      }
-    }
-
-    if (!skip) {
+    std::string path = str.C_Str();
+    auto it = textures_loaded.find(path);
+    if (it != textures_loaded.end()) {
+      textures.push_back(it->second);
+    } else {
       auto id = load_texture(str.C_Str(), directory.string());
       if (!id) {
-        return std::unexpected(
-            std::format("image {}: {}", str.C_Str(), id.error()));
+        return std::unexpected(std::format("image {}: {}", path, id.error()));
       }
-      textures_loaded.push_back({.id = *id,
-                                 .type = std::string(name),
-                                 .path = str.C_Str()});
-      textures.push_back(textures_loaded.back());
+      Texture tex{.id = *id, .type = std::string(name)};
+      textures.push_back(textures_loaded.emplace(path, tex).first->second);
     }
   }
   return textures;
