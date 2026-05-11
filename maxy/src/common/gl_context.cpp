@@ -1,16 +1,23 @@
-#include "common/gl_context.hpp"
+#include <format>
+
 #include "common/assets.hpp"
+#include "common/gl_context.hpp"
 
 #include <GLFW/glfw3.h>
-#include <stb/stb_image.h>
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_opengl3.h>
 #include <glad/gl.h>
 #include <imgui.h>
+#include <stb/stb_image.h>
 
 static std::expected<GLFWwindow *, std::string> init_glfw(int width, int height,
                                                           const char *title) {
-  glfwInit();
+  if (glfwInit() == GLFW_FALSE) {
+    char *error_description;
+    glfwGetError((const char **)&error_description);
+    return std::unexpected(
+        std::format("failed to init GLFW: {}", error_description));
+  }
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
@@ -50,20 +57,16 @@ static std::expected<void, std::string> init_imgui(GLFWwindow *w) {
 
 std::expected<GLContext, std::string> GLContext::create(int width, int height,
                                                         const char *title) {
-  return init_glfw(width, height, title)
-      .and_then([](GLFWwindow *w) -> std::expected<GLFWwindow *, std::string> {
-        auto result = init_imgui(w);
-        if (!result) {
-          glfwTerminate();
-          return std::unexpected(std::move(result.error()));
-        }
-        return w;
-      })
-      .transform([](GLFWwindow *w) {
-        GLContext ctx;
-        ctx.m_window = w;
-        return ctx;
-      });
+  auto window = init_glfw(width, height, title);
+  if (!window) {
+    return std::unexpected(window.error());
+  }
+  auto imgui_res = init_imgui(*window);
+  if (!imgui_res) {
+    glfwTerminate();
+    return std::unexpected(imgui_res.error());
+  }
+  return GLContext{*window};
 }
 
 GLContext::~GLContext() {

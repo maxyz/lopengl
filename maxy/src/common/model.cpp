@@ -40,11 +40,11 @@ void Model::draw(Shader &shader) {
 
 std::expected<Model, std::string> Model::load(const std::string &path) {
   ModelLoader loader{m_textures_loaded};
-  return loader.load(path).transform([&loader] {
-    Model model;
-    model.m_meshes = std::move(loader.meshes);
-    return model;
-  });
+  auto load_res = loader.load(path);
+  if (!load_res) {
+    return std::unexpected(load_res.error());
+  }
+  return Model{std::move(loader.meshes)};
 }
 
 std::expected<void, std::string> ModelLoader::load(const std::string &path) {
@@ -64,8 +64,8 @@ std::expected<void, std::string> ModelLoader::load(const std::string &path) {
   return process_node(scene->mRootNode, scene);
 }
 
-std::expected<void, std::string> ModelLoader::process_node(aiNode *node,
-                                                           const aiScene *scene) {
+std::expected<void, std::string>
+ModelLoader::process_node(aiNode *node, const aiScene *scene) {
   for (size_t i = 0; i < node->mNumMeshes; ++i) {
     aiMesh *mesh = scene->mMeshes[node->mMeshes[i]];
     auto processed_mesh = process_mesh(mesh, scene);
@@ -84,8 +84,8 @@ std::expected<void, std::string> ModelLoader::process_node(aiNode *node,
   return {};
 }
 
-std::expected<Mesh, std::string> ModelLoader::process_mesh(aiMesh *mesh,
-                                                           const aiScene *scene) {
+std::expected<Mesh, std::string>
+ModelLoader::process_mesh(aiMesh *mesh, const aiScene *scene) {
   std::vector<Vertex> vertices;
   std::vector<unsigned int> indices;
   std::vector<Texture> textures;
@@ -119,8 +119,8 @@ std::expected<Mesh, std::string> ModelLoader::process_mesh(aiMesh *mesh,
           std::format("diffuse_maps: {}", diffuse_maps.error()));
     }
     textures.insert(textures.end(), diffuse_maps->begin(), diffuse_maps->end());
-    auto specular_maps = load_material_textures(material, aiTextureType_SPECULAR,
-                                                "texture_specular");
+    auto specular_maps = load_material_textures(
+        material, aiTextureType_SPECULAR, "texture_specular");
     if (!specular_maps) {
       return std::unexpected(
           std::format("specular_maps: {}", specular_maps.error()));

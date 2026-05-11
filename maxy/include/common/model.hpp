@@ -10,7 +10,7 @@
 
 class Model {
 public:
-  Model() = default;
+  Model(std::vector<Mesh> meshes) : m_meshes{std::move(meshes)} {};
   Model(const Model &) = delete;
   Model &operator=(const Model &) = delete;
   Model(Model &&) noexcept = default;

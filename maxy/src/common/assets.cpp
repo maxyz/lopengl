@@ -21,45 +21,41 @@ get_asset_path(const std::string &filename) {
 }
 
 std::expected<Image, std::string> load_image(const std::string &filename) {
-  return get_asset_path(filename).and_then(
-      [&](const std::string &path) -> std::expected<Image, std::string> {
-        Image image;
-        auto *data = stbi_load(path.c_str(), &image.width, &image.height,
-                               &image.channel_count, 0);
-        if (!data)
-          return std::unexpected(
-              std::format("Failed to load texture ({})", filename));
-        image.data.reset(data);
-        return image;
-      });
-}
-
-static std::expected<std::pair<Image, GLenum>, std::string>
-with_format(Image image) {
-  return guess_format(image).transform(
-      [img = std::move(image)](GLenum fmt) mutable {
-        return std::pair{std::move(img), fmt};
-      });
+  auto asset_path = get_asset_path(filename);
+  if (!asset_path) {
+    return std::unexpected(asset_path.error());
+  }
+  Image image;
+  auto *data = stbi_load(asset_path->c_str(), &image.width, &image.height,
+                         &image.channel_count, 0);
+  if (!data)
+    return std::unexpected(
+        std::format("Failed to load texture ({})", filename));
+  image.data.reset(data);
+  return image;
 }
 
 std::expected<id_t, std::string> load_texture(const std::string &filename) {
-  return load_image(filename)
-      .and_then(with_format)
-      .transform([](std::pair<Image, GLenum> p) {
-        auto [image, format] = std::move(p);
-        id_t texture;
-        glGenTextures(1, &texture);
-        glBindTexture(GL_TEXTURE_2D, texture);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
-                        GL_LINEAR_MIPMAP_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glTexImage2D(GL_TEXTURE_2D, 0, format, image.width, image.height, 0,
-                     format, GL_UNSIGNED_BYTE, image.data.get());
-        glGenerateMipmap(GL_TEXTURE_2D);
-        return texture;
-      });
+  auto image = load_image(filename);
+  if (!image) {
+    return std::unexpected(image.error());
+  }
+  auto format = guess_format(*image);
+  if (!format) {
+    return std::unexpected(format.error());
+  }
+  id_t texture;
+  glGenTextures(1, &texture);
+  glBindTexture(GL_TEXTURE_2D, texture);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
+                  GL_LINEAR_MIPMAP_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexImage2D(GL_TEXTURE_2D, 0, *format, image->width, image->height, 0,
+               *format, GL_UNSIGNED_BYTE, image->data.get());
+  glGenerateMipmap(GL_TEXTURE_2D);
+  return texture;
 }
 
 std::expected<id_t, std::string> load_texture(const std::string &filename,
@@ -80,4 +76,3 @@ std::expected<GLenum, std::string> guess_format(const Image &image) {
       "Could not detect image format, invalid amount of channels {}",
       image.channel_count));
 }
-

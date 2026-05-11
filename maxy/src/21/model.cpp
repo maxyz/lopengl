@@ -51,7 +51,9 @@ private:
   Shader m_shader{};
   Model m_model;
 
-  SceneRenderer() = default;
+  SceneRenderer(GLFWwindow *window, Shader shader, Model model)
+      : m_window{window}, m_shader{std::move(shader)},
+        m_model{std::move(model)} {};
 
   static SceneRenderer setup_gl(GLFWwindow *window, Shader shader, Model model);
   void render_scene();
@@ -92,32 +94,20 @@ const std::array<preset_t, 1> presets = {{
 
 std::expected<SceneRenderer, std::string>
 SceneRenderer::create(GLFWwindow *window) {
-  struct build_t {
-    Shader shader;
-    Model model;
-  };
-
-  return Shader::build("shaders/21_model.vert", "shaders/21_model.frag")
-      .transform([](Shader s) { return build_t{.shader = std::move(s)}; })
-      .and_then([](build_t b) {
-        return Model::load("objects/backpack/backpack.obj")
-            .transform([b = std::move(b)](Model m) mutable {
-              b.model = std::move(m);
-              return std::move(b);
-            });
-      })
-      .transform([&](build_t b) {
-        return setup_gl(window, std::move(b.shader), std::move(b.model));
-      });
+  auto shader = Shader::build("shaders/21_model.vert", "shaders/21_model.frag");
+  if (!shader) {
+    return std::unexpected(shader.error());
+  }
+  auto model = Model::load("objects/backpack/backpack.obj");
+  if (!model) {
+    return std::unexpected(model.error());
+  }
+  return setup_gl(window, std::move(*shader), std::move(*model));
 }
 
 SceneRenderer SceneRenderer::setup_gl(GLFWwindow *window, Shader shader,
                                       Model model) {
-  SceneRenderer r;
-  r.m_window = window;
-  r.m_shader = std::move(shader);
-  r.m_model = std::move(model);
-  return r;
+  return SceneRenderer{window, std::move(shader), std::move(model)};
 }
 
 void SceneRenderer::render(input_t input, float delta) {

@@ -19,6 +19,7 @@ public:
   GLFWwindow *window() const { return m_window; }
 
 private:
-  GLContext() = default;
   GLFWwindow *m_window = nullptr;
+
+  GLContext(GLFWwindow *window) : m_window(window) {}
 };

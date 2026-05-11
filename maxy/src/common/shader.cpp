@@ -5,6 +5,8 @@
 #include <fstream>
 #include <iostream>
 
+namespace fs = std::filesystem;
+
 using read_file_res = std::expected<std::string, std::string>;
 read_file_res read_file(const std::filesystem::path &path);
 
@@ -20,38 +22,38 @@ static std::string_view type_to_view(GLenum type) {
 }
 
 static compile_shader_res compile_file(std::string_view path, GLenum type) {
-  return read_file(std::filesystem::path(path))
-      .and_then([type](const std::string &code) {
-        return compile_shader(type, code.c_str());
-      })
-      .transform_error([path](std::string e) {
-        return std::format("error compiling {}\n{}", path, e);
-      });
-}
-
-static std::expected<std::pair<id_t, id_t>, std::string>
-with_fragment(id_t v_shader, std::string_view fragmentPath) {
-  return compile_file(fragmentPath, GL_FRAGMENT_SHADER)
-      .transform([v_shader](id_t f_shader) {
-        return std::pair{v_shader, f_shader};
-      });
-}
-
-static Shader::build_res link_and_clean(std::pair<id_t, id_t> shaders) {
-  auto [v, f] = shaders;
-  const std::array ids{v, f};
-  return link_shaders(ids).transform([v, f](id_t program) {
-    glDeleteShader(v);
-    glDeleteShader(f);
-    return Shader{program};
-  });
+  auto code = read_file(fs::path(path));
+  if (!code) {
+    return std::unexpected(
+        std::format("error reading {}: {}", path, code.error()));
+  }
+  auto object = compile_shader(type, code->c_str());
+  if (!object) {
+    return std::unexpected(
+        std::format("error compiling {}: {}", path, object.error()));
+  }
+  return object;
 }
 
 Shader::build_res Shader::build(std::string_view vertexPath,
                                 std::string_view fragmentPath) {
-  return compile_file(vertexPath, GL_VERTEX_SHADER)
-      .and_then([fragmentPath](id_t v) { return with_fragment(v, fragmentPath); })
-      .and_then(link_and_clean);
+  auto vertex = compile_file(vertexPath, GL_VERTEX_SHADER);
+  if (!vertex) {
+    return std::unexpected(vertex.error());
+  }
+  auto fragment = compile_file(fragmentPath, GL_FRAGMENT_SHADER);
+  if (!fragment) {
+    glDeleteShader(*vertex);
+    return std::unexpected(fragment.error());
+  }
+  const std::array ids{*vertex, *fragment};
+  auto program = link_shaders(ids);
+  glDeleteShader(*vertex);
+  glDeleteShader(*fragment);
+  if (!program) {
+    return std::unexpected(program.error());
+  }
+  return Shader(*program);
 }
 
 void Shader::use() { glUseProgram(m_program_id); }
@@ -91,8 +93,9 @@ compile_shader_res compile_shader(GLenum type, const char *source) {
   glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
   if (!success) {
     glGetShaderInfoLog(shader, shader_info_log_size, nullptr, info_log);
-    return std::unexpected(std::format("error shader {}, compilation failed\n{}",
-                                       type_to_view(type), info_log));
+    return std::unexpected(
+        std::format("error shader {}, compilation failed\n{}",
+                    type_to_view(type), info_log));
   }
   return shader;
 }
