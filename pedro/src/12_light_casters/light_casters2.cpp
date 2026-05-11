@@ -3,7 +3,6 @@
 #include <iostream>
 #include <string>
 #include "shader.h"
-#include "shader.h"
 #include "texture.h"
 #include "camera.h"
 #include "material.cpp"
