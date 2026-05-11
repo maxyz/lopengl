@@ -16,7 +16,6 @@
 
 typedef unsigned int uint;
 
-bool setupBuffers(uint *VAO);
 GLFWwindow* windowAndContext();
 void framebuffer_size_callback(GLFWwindow* window, int _width, int _height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
@@ -80,6 +79,8 @@ int main()
         model = glm::mat4(1.0f);
         view = cam.lookFront();
         projection = glm::perspective(glm::radians(cam.fov), width / height, 0.1f, 100.0f);
+
+        lightingShader.setVertexMatrices(view, model, projection);
 
         // #### RENDER OBJECTS ####
         objects.draw(lightingShader);

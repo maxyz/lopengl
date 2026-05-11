@@ -29,7 +29,7 @@ public:
     void setMat3(const GLchar* uniformName, const glm::mat3 &value);
     void setMat4(const GLchar* uniformName, const glm::mat4 &value);
 
-    void setVertexMatrices(glm::mat4 &view, glm::mat4 model, glm::mat4 &projection);
+    void setVertexMatrices(glm::mat4 &view, glm::mat4 &model, glm::mat4 &projection);
 };
 
 #endif
