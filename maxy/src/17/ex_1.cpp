@@ -286,7 +286,7 @@ const std::array<preset_t, 4> presets = {
     }};
 
 struct state_t {
-  window_state_t ws = {.viewport = {.width = WIDTH, .height = HEIGHT}};
+  window_state_t window = {.viewport = {.width = WIDTH, .height = HEIGHT}};
   size_t preset_index = 0;
 };
 // Global state
@@ -358,7 +358,7 @@ int main() {
     return -1;
   }
 
-  init_window_callbacks(ctx->window(), state.ws);
+  init_window_callbacks(ctx->window(), state.window);
 
   auto renderer = SceneRenderer::create(ctx->window());
   if (!renderer) {
@@ -470,11 +470,11 @@ SceneRenderer SceneRenderer::setup_gl(GLFWwindow *window, Shader shader,
 
 void SceneRenderer::render_scene() {
   const preset_t &preset = presets[state.preset_index];
-  glm::mat4 view = state.ws.camera.get_view_matrix();
+  glm::mat4 view = state.window.camera.get_view_matrix();
   glm::mat4 projection =
-      glm::perspective(glm::radians(state.ws.camera.fov),
-                       static_cast<float>(state.ws.viewport.width) /
-                           static_cast<float>(state.ws.viewport.height),
+      glm::perspective(glm::radians(state.window.camera.fov),
+                       static_cast<float>(state.window.viewport.width) /
+                           static_cast<float>(state.window.viewport.height),
                        .1f, 100.f);
 
   render_scene_bind_textures(preset, view, projection);
@@ -492,7 +492,8 @@ void SceneRenderer::render_scene_bind_textures(const preset_t &preset,
   glBindTexture(GL_TEXTURE_2D, m_textures.specular);
   set_mat4(m_programs.view.program_id(), "view", view);
   set_mat4(m_programs.view.program_id(), "projection", projection);
-  set_vec3(m_programs.view.program_id(), "view_pos", state.ws.camera.position);
+  set_vec3(m_programs.view.program_id(), "view_pos",
+           state.window.camera.position);
   set_specular_map(m_programs.view.program_id(), "material",
                    {.diffuse = 0, .specular = 1, .shininess = 64.f});
   set_directional_light(m_programs.view.program_id(), "dir_light",
@@ -571,8 +572,9 @@ void SceneRenderer::render_imgui() {
   ImGui::Begin("Scene information", NULL, ImGuiWindowFlags_AlwaysAutoResize);
   ImGui::PushItemWidth(150.0f);
 
-  ImGui::LabelText("Pos", "(%.2f, %.2f, %.2f)", state.ws.camera.position.x,
-                   state.ws.camera.position.y, state.ws.camera.position.z);
+  ImGui::LabelText("Pos", "(%.2f, %.2f, %.2f)", state.window.camera.position.x,
+                   state.window.camera.position.y,
+                   state.window.camera.position.z);
   double x, y;
   glfwGetCursorPos(m_window, &x, &y);
   ImGui::LabelText("Mouse", "(%.2f, %.2f)", x, y);
@@ -585,7 +587,7 @@ void SceneRenderer::render_imgui() {
 }
 
 void SceneRenderer::render(input_t input, float delta) {
-  process_camera_events(state.ws, input, delta);
+  process_camera_events(state.window, input, delta);
 
   const preset_t &preset = presets[state.preset_index];
   glClearColor(preset.clear_color.x, preset.clear_color.y, preset.clear_color.z,

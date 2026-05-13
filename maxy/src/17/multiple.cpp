@@ -22,7 +22,7 @@ const GLuint WIDTH = 1024;
 const GLuint HEIGHT = 768;
 
 struct state_t {
-  window_state_t ws = {.viewport = {.width = WIDTH, .height = HEIGHT}};
+  window_state_t window = {.viewport = {.width = WIDTH, .height = HEIGHT}};
   light_directional_t dir_light = {
       .direction = glm::vec3(-.2f, -1.f, -.3f),
       .ambient = glm::vec3(.05f, 0.05f, .05f),
@@ -155,7 +155,7 @@ int main() {
     return -1;
   }
 
-  init_window_callbacks(ctx->window(), state.ws);
+  init_window_callbacks(ctx->window(), state.window);
 
   auto renderer = SceneRenderer::create(ctx->window());
   if (!renderer) {
@@ -259,7 +259,7 @@ SceneRenderer::create(GLFWwindow *window) {
 void SceneRenderer::render(input_t input, float delta) {
   glClearColor(.2f, .3f, .3f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-  process_camera_events(state.ws, input, delta);
+  process_camera_events(state.window, input, delta);
   render_scene();
   render_imgui();
 }
@@ -278,17 +278,18 @@ void SceneRenderer::render_scene() {
 
   glm::mat4 model;
 
-  glm::mat4 view = state.ws.camera.get_view_matrix();
+  glm::mat4 view = state.window.camera.get_view_matrix();
 
   glm::mat4 projection =
-      glm::perspective(glm::radians(state.ws.camera.fov),
-                       static_cast<float>(state.ws.viewport.width) /
-                           static_cast<float>(state.ws.viewport.height),
+      glm::perspective(glm::radians(state.window.camera.fov),
+                       static_cast<float>(state.window.viewport.width) /
+                           static_cast<float>(state.window.viewport.height),
                        .1f, 100.f);
 
   set_mat4(m_programs.view.program_id(), "view", view);
   set_mat4(m_programs.view.program_id(), "projection", projection);
-  set_vec3(m_programs.view.program_id(), "view_pos", state.ws.camera.position);
+  set_vec3(m_programs.view.program_id(), "view_pos",
+           state.window.camera.position);
   set_specular_map(m_programs.view.program_id(), "material", specular_map);
   set_directional_light(m_programs.view.program_id(), "dir_light",
                         state.dir_light);
@@ -371,8 +372,9 @@ void SceneRenderer::render_imgui() {
   ImGui::Begin("Scene information", NULL, ImGuiWindowFlags_AlwaysAutoResize);
   ImGui::PushItemWidth(150.0f);
 
-  ImGui::LabelText("Pos", "(%.2f, %.2f, %.2f)", state.ws.camera.position.x,
-                   state.ws.camera.position.y, state.ws.camera.position.z);
+  ImGui::LabelText("Pos", "(%.2f, %.2f, %.2f)", state.window.camera.position.x,
+                   state.window.camera.position.y,
+                   state.window.camera.position.z);
   double x, y;
   glfwGetCursorPos(m_window, &x, &y);
   ImGui::LabelText("Mouse", "(%.2f, %.2f)", x, y);

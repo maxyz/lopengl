@@ -18,28 +18,30 @@ inline void update_delta(frame_time_t &d) {
 
 constexpr float keyboard_yaw_speed = 120.f;
 
-inline void process_camera_events(window_state_t &ws, input_t input,
+inline void process_camera_events(window_state_t &window_state, input_t input,
                                   float delta) {
   if (input.fov_inc)
-    ws.camera.update_fov(1.f);
+    window_state.camera.update_fov(1.f);
   if (input.fov_dec)
-    ws.camera.update_fov(-1.f);
+    window_state.camera.update_fov(-1.f);
   if (input.camera.up)
-    ws.camera.process_movement(CameraMovement::UP, delta);
+    window_state.camera.process_movement(CameraMovement::UP, delta);
   if (input.camera.down)
-    ws.camera.process_movement(CameraMovement::DOWN, delta);
+    window_state.camera.process_movement(CameraMovement::DOWN, delta);
   if (input.camera.left)
-    ws.camera.process_movement(CameraMovement::LEFT, delta);
+    window_state.camera.process_movement(CameraMovement::LEFT, delta);
   if (input.camera.right)
-    ws.camera.process_movement(CameraMovement::RIGHT, delta);
+    window_state.camera.process_movement(CameraMovement::RIGHT, delta);
   if (input.camera.forward)
-    ws.camera.process_movement(CameraMovement::FORWARD, delta);
+    window_state.camera.process_movement(CameraMovement::FORWARD, delta);
   if (input.camera.back)
-    ws.camera.process_movement(CameraMovement::BACKWARD, delta);
+    window_state.camera.process_movement(CameraMovement::BACKWARD, delta);
   if (input.cam_yaw_left)
-    ws.camera.process_rotation(keyboard_yaw_speed * -camera_speed * delta, 0.f);
+    window_state.camera.process_rotation(
+        keyboard_yaw_speed * -camera_speed * delta, 0.f);
   if (input.cam_yaw_right)
-    ws.camera.process_rotation(keyboard_yaw_speed * camera_speed * delta, 0.f);
+    window_state.camera.process_rotation(
+        keyboard_yaw_speed * camera_speed * delta, 0.f);
 }
 
 template <typename Renderer, typename InputFn>
