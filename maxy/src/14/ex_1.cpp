@@ -326,17 +326,14 @@ buffers_t buffers() {
   glBufferData(GL_ARRAY_BUFFER, sizeof(cube_vertices), cube_vertices.data(),
                GL_STATIC_DRAW);
 
-  glVertexAttribPointer(
-      0, 3, GL_FLOAT, GL_FALSE, sizeof(cube_vertex_t),
-      reinterpret_cast<void *>(offsetof(cube_vertex_t, position)));
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(vertex_t),
+                        reinterpret_cast<void *>(offsetof(vertex_t, position)));
   glEnableVertexAttribArray(0);
-  glVertexAttribPointer(
-      1, 3, GL_FLOAT, GL_FALSE, sizeof(cube_vertex_t),
-      reinterpret_cast<void *>(offsetof(cube_vertex_t, normal)));
+  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(vertex_t),
+                        reinterpret_cast<void *>(offsetof(vertex_t, normal)));
   glEnableVertexAttribArray(1);
-  glVertexAttribPointer(
-      2, 2, GL_FLOAT, GL_FALSE, sizeof(cube_vertex_t),
-      reinterpret_cast<void *>(offsetof(cube_vertex_t, texcoord)));
+  glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(vertex_t),
+                        reinterpret_cast<void *>(offsetof(vertex_t, texcoord)));
   glEnableVertexAttribArray(2);
 
   unsigned int light_vao;
@@ -344,9 +341,8 @@ buffers_t buffers() {
   glBindVertexArray(light_vao);
   glBindBuffer(GL_ARRAY_BUFFER, vbo);
 
-  glVertexAttribPointer(
-      0, 3, GL_FLOAT, GL_FALSE, sizeof(cube_vertex_t),
-      reinterpret_cast<void *>(offsetof(cube_vertex_t, position)));
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(vertex_t),
+                        reinterpret_cast<void *>(offsetof(vertex_t, position)));
   glEnableVertexAttribArray(0);
 
   auto cleanup = [cube_vao, light_vao, vbo]() {

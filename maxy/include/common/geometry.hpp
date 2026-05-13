@@ -3,7 +3,7 @@
 #include <array>
 #include <glm/glm.hpp>
 
-struct cube_vertex_t {
+struct vertex_t {
   glm::vec3 position;
   glm::vec3 normal;
   glm::vec2 texcoord;
@@ -11,7 +11,7 @@ struct cube_vertex_t {
 
 // Unit cube: 36 vertices (6 faces × 2 triangles × 3), no index buffer.
 // Stride = sizeof(cube_vertex_t). Use offsetof() for attrib pointers.
-inline const std::array<cube_vertex_t, 36> cube_vertices = {{
+inline const std::array<vertex_t, 36> cube_vertices = {{
     {{-.5f, -.5f, -.5f}, {.0f, .0f, -1.f}, {.0f, .0f}}, // back
     {{.5f, -.5f, -.5f}, {.0f, .0f, -1.f}, {1.f, .0f}},
     {{.5f, .5f, -.5f}, {.0f, .0f, -1.f}, {1.f, 1.f}},
@@ -79,3 +79,14 @@ inline constexpr unsigned int pyramid_indices[] = {
     1, 2, 3, // base 1
     1, 3, 4, // base 2
 };
+
+// To be used with GL_REPEAT
+inline const std::array<vertex_t, 6> floor_vertices = {{
+    {{5.f, -.5f, 5.f}, {0.f, 1.f, 0.f}, {2.f, 0.f}},
+    {{-5.f, -.5f, 5.f}, {0.f, 1.f, 0.f}, {0.f, 0.f}},
+    {{-5.f, -.5f, -5.f}, {0.f, 1.f, 0.f}, {0.f, 2.f}},
+
+    {{5.f, -.5f, 5.f}, {0.f, 1.f, 0.f}, {2.f, 0.f}},
+    {{-5.f, -.5f, -5.f}, {0.f, 1.f, 0.f}, {0.f, 2.f}},
+    {{5.f, -0.5f, -5.f}, {0.f, 1.f, 0.f}, {2.f, 2.f}},
+}};

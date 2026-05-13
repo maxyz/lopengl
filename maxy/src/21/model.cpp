@@ -43,6 +43,7 @@ public:
   SceneRenderer &operator=(const SceneRenderer &) = delete;
   SceneRenderer(SceneRenderer &&o) noexcept = default;
   SceneRenderer &operator=(SceneRenderer &&) = default;
+  ~SceneRenderer() noexcept = default;
 
   void render(input_t input, float delta);
 

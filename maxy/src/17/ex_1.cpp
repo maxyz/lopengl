@@ -419,26 +419,22 @@ SceneRenderer SceneRenderer::setup_gl(GLFWwindow *window, Shader shader,
   glBindBuffer(GL_ARRAY_BUFFER, vbo);
   glBufferData(GL_ARRAY_BUFFER, sizeof(cube_vertices), cube_vertices.data(),
                GL_STATIC_DRAW);
-  glVertexAttribPointer(
-      0, 3, GL_FLOAT, GL_FALSE, sizeof(cube_vertex_t),
-      reinterpret_cast<void *>(offsetof(cube_vertex_t, position)));
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(vertex_t),
+                        reinterpret_cast<void *>(offsetof(vertex_t, position)));
   glEnableVertexAttribArray(0);
-  glVertexAttribPointer(
-      1, 3, GL_FLOAT, GL_FALSE, sizeof(cube_vertex_t),
-      reinterpret_cast<void *>(offsetof(cube_vertex_t, normal)));
+  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(vertex_t),
+                        reinterpret_cast<void *>(offsetof(vertex_t, normal)));
   glEnableVertexAttribArray(1);
-  glVertexAttribPointer(
-      2, 2, GL_FLOAT, GL_FALSE, sizeof(cube_vertex_t),
-      reinterpret_cast<void *>(offsetof(cube_vertex_t, texcoord)));
+  glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(vertex_t),
+                        reinterpret_cast<void *>(offsetof(vertex_t, texcoord)));
   glEnableVertexAttribArray(2);
 
   id_t light_vao;
   glGenVertexArrays(1, &light_vao);
   glBindVertexArray(light_vao);
   glBindBuffer(GL_ARRAY_BUFFER, vbo);
-  glVertexAttribPointer(
-      0, 3, GL_FLOAT, GL_FALSE, sizeof(cube_vertex_t),
-      reinterpret_cast<void *>(offsetof(cube_vertex_t, position)));
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(vertex_t),
+                        reinterpret_cast<void *>(offsetof(vertex_t, position)));
   glEnableVertexAttribArray(0);
 
   id_t pyramid_vao;
@@ -499,13 +495,15 @@ void SceneRenderer::render_scene_bind_textures(const preset_t &preset,
   set_vec3(m_programs.view.program_id(), "view_pos", state.ws.camera.position);
   set_specular_map(m_programs.view.program_id(), "material",
                    {.diffuse = 0, .specular = 1, .shininess = 64.f});
-  set_directional_light(m_programs.view.program_id(), "dir_light", preset.dir_light);
+  set_directional_light(m_programs.view.program_id(), "dir_light",
+                        preset.dir_light);
   for (unsigned int i = 0; i < preset.pos_lights.size(); ++i)
-    set_positional_light(m_programs.view.program_id(), std::format("pos_lights[{}]", i),
+    set_positional_light(m_programs.view.program_id(),
+                         std::format("pos_lights[{}]", i),
                          preset.pos_lights[i]);
   for (unsigned int i = 0; i < preset.spot_lights.size(); ++i)
-    set_spot_light(m_programs.view.program_id(), std::format("spot_lights[{}]", i),
-                   preset.spot_lights[i]);
+    set_spot_light(m_programs.view.program_id(),
+                   std::format("spot_lights[{}]", i), preset.spot_lights[i]);
 }
 
 void SceneRenderer::render_scene_draw_lights(const preset_t &preset,
@@ -521,8 +519,8 @@ void SceneRenderer::render_scene_draw_lights(const preset_t &preset,
     glm::mat4 model = glm::scale(
         glm::translate(glm::mat4(1.f), pos_light.position), glm::vec3(.2f));
     set_mat4(m_programs.light.program_id(), "model", model);
-    set_positional_light(m_programs.light.program_id(), std::format("pos_lights[{}]", i),
-                         pos_light);
+    set_positional_light(m_programs.light.program_id(),
+                         std::format("pos_lights[{}]", i), pos_light);
     glDrawArrays(GL_TRIANGLES, 0, 36);
   }
 
@@ -560,7 +558,8 @@ void SceneRenderer::render_imgui() {
   ImGui::NewFrame();
 
   ImGuiIO &io = ImGui::GetIO();
-  bool cam_mode = glfwGetInputMode(m_window, GLFW_CURSOR) == GLFW_CURSOR_DISABLED;
+  bool cam_mode =
+      glfwGetInputMode(m_window, GLFW_CURSOR) == GLFW_CURSOR_DISABLED;
 
   if (cam_mode) {
     io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;

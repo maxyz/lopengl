@@ -200,17 +200,14 @@ SceneRenderer::create(GLFWwindow *window) {
   glBufferData(GL_ARRAY_BUFFER, sizeof(cube_vertices), cube_vertices.data(),
                GL_STATIC_DRAW);
 
-  glVertexAttribPointer(
-      0, 3, GL_FLOAT, GL_FALSE, sizeof(cube_vertex_t),
-      reinterpret_cast<void *>(offsetof(cube_vertex_t, position)));
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(vertex_t),
+                        reinterpret_cast<void *>(offsetof(vertex_t, position)));
   glEnableVertexAttribArray(0);
-  glVertexAttribPointer(
-      1, 3, GL_FLOAT, GL_FALSE, sizeof(cube_vertex_t),
-      reinterpret_cast<void *>(offsetof(cube_vertex_t, normal)));
+  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(vertex_t),
+                        reinterpret_cast<void *>(offsetof(vertex_t, normal)));
   glEnableVertexAttribArray(1);
-  glVertexAttribPointer(
-      2, 2, GL_FLOAT, GL_FALSE, sizeof(cube_vertex_t),
-      reinterpret_cast<void *>(offsetof(cube_vertex_t, texcoord)));
+  glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(vertex_t),
+                        reinterpret_cast<void *>(offsetof(vertex_t, texcoord)));
   glEnableVertexAttribArray(2);
 
   id_t light_vao;
@@ -218,9 +215,8 @@ SceneRenderer::create(GLFWwindow *window) {
   glBindVertexArray(light_vao);
   glBindBuffer(GL_ARRAY_BUFFER, vbo);
 
-  glVertexAttribPointer(
-      0, 3, GL_FLOAT, GL_FALSE, sizeof(cube_vertex_t),
-      reinterpret_cast<void *>(offsetof(cube_vertex_t, position)));
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(vertex_t),
+                        reinterpret_cast<void *>(offsetof(vertex_t, position)));
   glEnableVertexAttribArray(0);
 
   id_t pyramid_vao;
@@ -242,7 +238,8 @@ SceneRenderer::create(GLFWwindow *window) {
   glEnableVertexAttribArray(0);
 
   SceneRenderer r;
-  r.m_programs = {.view = std::move(*shader), .light = std::move(*light_shader)};
+  r.m_programs = {.view = std::move(*shader),
+                  .light = std::move(*light_shader)};
   r.m_vaos = {.cube = cube_vao, .pyramid = pyramid_vao, .light = light_vao};
   r.m_textures = {
       .diffuse = *load_texture_res,
@@ -293,16 +290,17 @@ void SceneRenderer::render_scene() {
   set_mat4(m_programs.view.program_id(), "projection", projection);
   set_vec3(m_programs.view.program_id(), "view_pos", state.ws.camera.position);
   set_specular_map(m_programs.view.program_id(), "material", specular_map);
-  set_directional_light(m_programs.view.program_id(), "dir_light", state.dir_light);
+  set_directional_light(m_programs.view.program_id(), "dir_light",
+                        state.dir_light);
 
   glBindVertexArray(m_vaos.cube);
   for (unsigned int i = 0; i < state.pos_lights.size(); ++i) {
-    set_positional_light(m_programs.view.program_id(), std::format("pos_lights[{}]", i),
-                         state.pos_lights[i]);
+    set_positional_light(m_programs.view.program_id(),
+                         std::format("pos_lights[{}]", i), state.pos_lights[i]);
   }
   for (unsigned int i = 0; i < state.spot_lights.size(); ++i) {
-    set_spot_light(m_programs.view.program_id(), std::format("spot_lights[{}]", i),
-                   state.spot_lights[i]);
+    set_spot_light(m_programs.view.program_id(),
+                   std::format("spot_lights[{}]", i), state.spot_lights[i]);
   }
 
   m_programs.view.use();
@@ -327,8 +325,8 @@ void SceneRenderer::render_scene() {
     model = glm::scale(model, glm::vec3(.2f));
 
     set_mat4(m_programs.light.program_id(), "model", model);
-    set_positional_light(m_programs.light.program_id(), std::format("pos_lights[{}]", i),
-                         state.pos_lights[i]);
+    set_positional_light(m_programs.light.program_id(),
+                         std::format("pos_lights[{}]", i), state.pos_lights[i]);
     glDrawArrays(GL_TRIANGLES, 0, 36);
   }
 
@@ -342,7 +340,8 @@ void SceneRenderer::render_scene() {
     model = glm::scale(model, glm::vec3(.2f));
 
     set_mat4(m_programs.light.program_id(), "model", model);
-    set_spot_light(m_programs.light.program_id(), "light", state.spot_lights[i]);
+    set_spot_light(m_programs.light.program_id(), "light",
+                   state.spot_lights[i]);
     glDrawElements(GL_TRIANGLES, 18, GL_UNSIGNED_INT, 0);
   }
 }
