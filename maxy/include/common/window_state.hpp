@@ -24,25 +24,28 @@ struct window_state_t {
 
 inline void framebuffer_size_callback(GLFWwindow *window, int width,
                                       int height) {
-  auto *ws = static_cast<window_state_t *>(glfwGetWindowUserPointer(window));
-  ws->viewport.width = static_cast<float>(width);
-  ws->viewport.height = static_cast<float>(height);
+  auto *window_state =
+      static_cast<window_state_t *>(glfwGetWindowUserPointer(window));
+  window_state->viewport.width = static_cast<float>(width);
+  window_state->viewport.height = static_cast<float>(height);
   glViewport(0, 0, width, height);
 }
 
 inline void window_focus_callback(GLFWwindow *window, int focused) {
-  auto *ws = static_cast<window_state_t *>(glfwGetWindowUserPointer(window));
+  auto *window_state =
+      static_cast<window_state_t *>(glfwGetWindowUserPointer(window));
   if (!focused) {
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
   } else {
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-    ws->mouse_new_focus = true;
+    window_state->mouse_new_focus = true;
   }
 }
 
 inline void key_callback(GLFWwindow *window, int key, int /*scancode*/,
                          int action, int /*mods*/) {
-  auto *ws = static_cast<window_state_t *>(glfwGetWindowUserPointer(window));
+  auto *window_state =
+      static_cast<window_state_t *>(glfwGetWindowUserPointer(window));
   ImGuiIO &io = ImGui::GetIO();
   if (io.WantCaptureKeyboard)
     return;
@@ -53,13 +56,14 @@ inline void key_callback(GLFWwindow *window, int key, int /*scancode*/,
       glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
     } else {
       glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-      ws->mouse_new_focus = true;
+      window_state->mouse_new_focus = true;
     }
   }
 }
 
 inline void mouse_callback(GLFWwindow *window, double x_pos, double y_pos) {
-  auto *ws = static_cast<window_state_t *>(glfwGetWindowUserPointer(window));
+  auto *window_state =
+      static_cast<window_state_t *>(glfwGetWindowUserPointer(window));
 
   ImGuiIO &io = ImGui::GetIO();
   auto input_mode = glfwGetInputMode(window, GLFW_CURSOR);
@@ -68,31 +72,33 @@ inline void mouse_callback(GLFWwindow *window, double x_pos, double y_pos) {
     return;
   }
 
-  if (ws->mouse_new_focus) {
-    ws->last_mouse_x = static_cast<float>(x_pos);
-    ws->last_mouse_y = static_cast<float>(y_pos);
-    ws->mouse_new_focus = false;
+  if (window_state->mouse_new_focus) {
+    window_state->last_mouse_x = static_cast<float>(x_pos);
+    window_state->last_mouse_y = static_cast<float>(y_pos);
+    window_state->mouse_new_focus = false;
   }
 
-  float x_offset = static_cast<float>(x_pos) - ws->last_mouse_x;
-  float y_offset = ws->last_mouse_y - static_cast<float>(y_pos);
-  ws->last_mouse_x = static_cast<float>(x_pos);
-  ws->last_mouse_y = static_cast<float>(y_pos);
-  ws->camera.process_rotation(x_offset, y_offset);
+  float x_offset = static_cast<float>(x_pos) - window_state->last_mouse_x;
+  float y_offset = window_state->last_mouse_y - static_cast<float>(y_pos);
+  window_state->last_mouse_x = static_cast<float>(x_pos);
+  window_state->last_mouse_y = static_cast<float>(y_pos);
+  window_state->camera.process_rotation(x_offset, y_offset);
 }
 
 inline void scroll_callback(GLFWwindow *window, double /*x_offset*/,
                             double y_offset) {
-  auto *ws = static_cast<window_state_t *>(glfwGetWindowUserPointer(window));
+  auto *window_state =
+      static_cast<window_state_t *>(glfwGetWindowUserPointer(window));
   ImGuiIO &io = ImGui::GetIO();
   if (io.WantCaptureMouse)
     return;
 
-  ws->camera.update_fov(static_cast<float>(y_offset));
+  window_state->camera.update_fov(static_cast<float>(y_offset));
 }
 
-inline void init_window_callbacks(GLFWwindow *window, window_state_t &ws) {
-  glfwSetWindowUserPointer(window, &ws);
+inline void init_window_callbacks(GLFWwindow *window,
+                                  window_state_t &window_state) {
+  glfwSetWindowUserPointer(window, &window_state);
   glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
   glfwSetWindowFocusCallback(window, window_focus_callback);
   glfwSetKeyCallback(window, key_callback);
