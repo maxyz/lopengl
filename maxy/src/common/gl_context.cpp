@@ -33,7 +33,13 @@ static std::expected<GLFWwindow *, std::string> init_glfw(int width, int height,
     return std::unexpected("failed to init glad");
   }
   glViewport(0, 0, width, height);
+
   glEnable(GL_DEPTH_TEST);
+  glDepthFunc(GL_LESS);
+  glEnable(GL_STENCIL_TEST);
+
+  glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+
   stbi_set_flip_vertically_on_load(true);
   glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
   return window;
