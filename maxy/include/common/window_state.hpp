@@ -96,12 +96,29 @@ inline void scroll_callback(GLFWwindow *window, double /*x_offset*/,
   window_state->camera.update_fov(static_cast<float>(y_offset));
 }
 
-inline void init_window_callbacks(GLFWwindow *window,
-                                  window_state_t &window_state) {
+struct window_callbacks_t {
+  GLFWframebuffersizefun framebuffer_size;
+  GLFWwindowfocusfun window_focus;
+  GLFWkeyfun key;
+  GLFWcursorposfun cursor_pos;
+  GLFWscrollfun scroll;
+};
+
+const window_callbacks_t DEFAULT_WINDOW_CALLBACKS = {
+    .framebuffer_size = framebuffer_size_callback,
+    .window_focus = window_focus_callback,
+    .key = key_callback,
+    .cursor_pos = mouse_callback,
+    .scroll = scroll_callback,
+};
+
+inline void
+init_window_callbacks(GLFWwindow *window, window_state_t &window_state,
+                      window_callbacks_t callbacks = DEFAULT_WINDOW_CALLBACKS) {
   glfwSetWindowUserPointer(window, &window_state);
-  glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
-  glfwSetWindowFocusCallback(window, window_focus_callback);
-  glfwSetKeyCallback(window, key_callback);
-  glfwSetCursorPosCallback(window, mouse_callback);
-  glfwSetScrollCallback(window, scroll_callback);
+  glfwSetFramebufferSizeCallback(window, callbacks.framebuffer_size);
+  glfwSetWindowFocusCallback(window, callbacks.window_focus);
+  glfwSetKeyCallback(window, callbacks.key);
+  glfwSetCursorPosCallback(window, callbacks.cursor_pos);
+  glfwSetScrollCallback(window, callbacks.scroll);
 }
