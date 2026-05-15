@@ -246,6 +246,8 @@ int main()
     // Starting Background
     glm::vec3 backgroundColor = glm::vec3( 0.1f,  0.2f,  0.4f);
 
+    float scale = 1.05f;
+    
     // Setup Dear ImGui context
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
@@ -292,7 +294,7 @@ int main()
         // Only show the controls when the mouse is not captured by the camera
         if (glfwGetInputMode(window, GLFW_CURSOR) != GLFW_CURSOR_DISABLED) {
             ImGui::ColorEdit3("Background", glm::value_ptr(backgroundColor));
-            ImGui::SliderFloat("Shininess", &material.shininess, 0.0f, 256.0f);
+            ImGui::SliderFloat("Scale", &scale, 1.0f, 2.0f);
 
             directionalLight.showImGuiControls("Directional Light");
             for (int i = 0; i < sizeof(positionalLights)/sizeof(PositionalLight); i++) {
@@ -377,12 +379,12 @@ int main()
         singleColorShader.setMatrix4fv("projection", glm::value_ptr(projection));
         model = glm::mat4(1.0f);
         model = glm::translate(model, glm::vec3(-1.0f, 0.0f, -1.0f));
-        model = glm::scale(model, glm::vec3(1.05f, 1.05f, 1.05f));
+        model = glm::scale(model, glm::vec3(scale, scale, scale));
         singleColorShader.setMatrix4fv("model", glm::value_ptr(model));
         glDrawArrays(GL_TRIANGLES, 0, 36);
         model = glm::mat4(1.0f);
         model = glm::translate(model, glm::vec3(2.0f, 0.0f, 0.0f));
-        model = glm::scale(model, glm::vec3(1.05f, 1.05f, 1.05f));
+        model = glm::scale(model, glm::vec3(scale, scale, scale));
         singleColorShader.setMatrix4fv("model", glm::value_ptr(model));
         glDrawArrays(GL_TRIANGLES, 0, 36);
 
