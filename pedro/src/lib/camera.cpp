@@ -1,4 +1,5 @@
 #include "camera.h"
+#include "iostream"
 
 glm::mat4 myLookAt(glm::vec3 position, glm::vec3 target, glm::vec3 up) {
     
@@ -71,6 +72,7 @@ void Camera::moveFrontPlane() {
 }
 
 void Camera::moveBack() {
+    
     position -= deltaSpeed * front;
 }
 

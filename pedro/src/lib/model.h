@@ -1,3 +1,6 @@
+#ifndef MODEL_H
+#define MODEL_H
+
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
@@ -32,3 +35,5 @@ private:
     uint textureFromFile(std::string path, std::string directory);
 
 };
+
+#endif
