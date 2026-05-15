@@ -1,4 +1,4 @@
-EXES = model_test
+EXES = model_test model_test_light
 
 LIB = libGLAD.a stb_image.o shader.o texture.o camera.o material.o model.o mesh.o
 
@@ -15,7 +15,10 @@ EXTRAS = /usr/lib/x86_64-linux-gnu/libglfw.so libGLAD.a
 
 model_test: model_test.cpp $(LIB)
 	g++ $(CPPFLAGS) $^ $(EXTRAS) -o $@ $(LDFLAGS)
-	
+
+model_test_light: model_test_light.cpp $(LIB)
+	g++ $(CPPFLAGS) $^ $(EXTRAS) -o $@ $(LDFLAGS)
+
 camera.o: ../lib/camera.cpp ../lib/camera.h
 	g++ $(CPPFLAGS) -c $< -o $@
 

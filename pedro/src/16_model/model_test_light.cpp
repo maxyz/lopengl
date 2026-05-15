@@ -16,13 +16,44 @@
 
 typedef unsigned int uint;
 
+struct Light {
+    glm::vec3 direction;
+    glm::vec3 color;   
+    glm::vec3 ambient;
+    glm::vec3 diffuse;
+    glm::vec3 specular;
+
+    float ambient_intensity;
+    float diff_intensity;
+
+    bool lightOn;
+
+    void changeColor(const glm::vec3 newColor) {
+        color = newColor;
+        diffuse = diff_intensity * color;
+        ambient = ambient_intensity * diffuse;
+        specular = color;
+    }
+};
+
+Light light1 = {
+    glm::vec3(-0.2f, -1.0f, -0.3f),     // Position
+    glm::vec3(1.0f),                    // Color
+    glm::vec3(0.2f),                    // Ambient
+    glm::vec3(0.8f),                    // Diffuse
+    glm::vec3(1.0f),                    // Specular
+    0.2f,
+    0.8f,
+    true
+};  
+
 GLFWwindow* windowAndContext();
 void framebuffer_size_callback(GLFWwindow* window, int _width, int _height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void processInput(GLFWwindow *window);
 void processInput(GLFWwindow *window, Camera &cam);
-void setLights(Shader &shader);
+void setLight(Shader &shader, const Light &light);
 
 float width = 800.0f, height = 600.0f;
 
@@ -48,7 +79,7 @@ int main()
     glEnable(GL_DEPTH_TEST);
 
     // Setup Shaders
-    Shader lightingShader("shaders/lightShader01.vs", "shaders/lightShader02.frag");
+    Shader lightingShader("shaders/lightShader01.vs", "shaders/lightShader01.frag");
 
     // Texture2D emissionMap("../media/matrix.jpg", JPG);
     lightingShader.use();
@@ -79,6 +110,9 @@ int main()
         model = glm::mat4(1.0f);
         view = cam.lookFront();
         projection = glm::perspective(glm::radians(cam.fov), width / height, 0.1f, 100.0f);
+
+        setLight(lightingShader, light1);
+        lightingShader.setVec3("viewPos", cam.position);
 
         lightingShader.setVertexMatrices(view, model, projection);
 
@@ -236,6 +270,13 @@ void processInput(GLFWwindow *window)
         glfwSetWindowShouldClose(window, true);
         return;
     }        
+}
+
+void setLight(Shader &shader, const Light &light) {
+    shader.setVec3("light.direction", light.direction);
+    shader.setVec3("light.ambient", light.ambient);
+    shader.setVec3("light.diffuse", light.diffuse);
+    shader.setVec3("light.specular", light.specular);
 }
 
 #pragma endregion 
