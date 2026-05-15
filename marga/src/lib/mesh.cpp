@@ -69,7 +69,6 @@ Texture::Texture(const char *filepath, const std::string &directory)
 {
     this->path = std::string(filepath);
     std::string path = directory + '/' + std::string(filepath);
-    std::cout << "Loading: " << path << std::endl;
     glGenTextures(1, &this->id);
 
     int width, height, nrComponents;
