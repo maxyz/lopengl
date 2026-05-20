@@ -282,8 +282,8 @@ void SceneRenderer::render_scene_set_view_and_projection() {
   m_shaders.shader.set_mat4("view", view);
   m_shaders.shader.set_mat4("projection", projection);
   m_shaders.stencil.use();
-  m_shaders.shader.set_mat4("view", view);
-  m_shaders.shader.set_mat4("projection", projection);
+  m_shaders.stencil.set_mat4("view", view);
+  m_shaders.stencil.set_mat4("projection", projection);
 }
 
 void SceneRenderer::render_scene_draw_cubes(Shader &shader, float scale) {
