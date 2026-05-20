@@ -1,7 +1,7 @@
 #version 330 core
 
 #define MAX_POS_LIGHTS 16
-#define NR_SPOT_LIGHTS 2
+#define MAX_SPOT_LIGHTS 8
 
 out vec4 frag_color;
 
@@ -10,8 +10,8 @@ in vec3 frag_pos;
 in vec3 normal;
 in vec3 dir_light_dir_view;
 in vec3 pos_lights_pos_view[MAX_POS_LIGHTS];
-in vec3 spot_lights_pos_view[NR_SPOT_LIGHTS];
-in vec3 spot_lights_dir_view[NR_SPOT_LIGHTS];
+in vec3 spot_lights_pos_view[MAX_SPOT_LIGHTS];
+in vec3 spot_lights_dir_view[MAX_SPOT_LIGHTS];
 
 struct material_t {
   sampler2D diffuse;
@@ -89,7 +89,8 @@ uniform material_t material;
 uniform directional_light_t dir_light;
 uniform positional_light_t pos_lights[MAX_POS_LIGHTS];
 uniform int pos_light_count;
-uniform spot_light_t spot_lights[NR_SPOT_LIGHTS];
+uniform spot_light_t spot_lights[MAX_SPOT_LIGHTS];
+uniform int spot_light_count;
 uniform flashlight_t flashlight;
 
 vec3 directional_light_process(directional_light_view_t light_view, vec3 normal, vec3 view_dir) {
@@ -181,8 +182,8 @@ void main() {
     pos_lights_view[i].position_view = pos_lights_pos_view[i];
     pos_lights_view[i].light = pos_lights[i];
   }
-  spot_light_view_t spot_lights_view[NR_SPOT_LIGHTS];
-  for (int i=0; i < NR_SPOT_LIGHTS; ++i) {
+  spot_light_view_t spot_lights_view[MAX_SPOT_LIGHTS];
+  for (int i=0; i < spot_light_count; ++i) {
     spot_lights_view[i].position_view = spot_lights_pos_view[i];
     spot_lights_view[i].direction_view = spot_lights_dir_view[i];
     spot_lights_view[i].light = spot_lights[i];
@@ -194,7 +195,7 @@ void main() {
   for (int i = 0; i < pos_light_count; ++i) {
     result += positional_light_process(pos_lights_view[i], normal, view_dir, frag_pos);
   }
-  for (int i = 0; i < NR_SPOT_LIGHTS; ++i) {
+  for (int i = 0; i < spot_light_count; ++i) {
     result += spot_light_process(spot_lights_view[i], normal, view_dir, frag_pos);
   }
   result += flashlight_process(flashlight, norm, view_dir, frag_pos);

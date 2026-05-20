@@ -23,6 +23,7 @@ const char *TITLE = "LOpenGL";
 const GLuint WIDTH = 1024;
 const GLuint HEIGHT = 768;
 constexpr int MAX_POS_LIGHTS = 16;
+constexpr int MAX_SPOT_LIGHTS = 8;
 
 struct preset_t {
   std::string name;
@@ -338,6 +339,7 @@ struct state_t {
   window_state_t window = {.viewport = {.width = WIDTH, .height = HEIGHT}};
   size_t preset_index = 0;
   std::vector<light_positional_t> pos_lights{};
+  std::vector<light_spot_t> spot_lights{};
 };
 // Global state
 state_t state;
@@ -345,6 +347,7 @@ state_t state;
 void init_state() {
   const auto &preset = presets[state.preset_index];
   state.pos_lights.assign(preset.pos_lights.begin(), preset.pos_lights.end());
+  state.spot_lights.assign(preset.spot_lights.begin(), preset.spot_lights.end());
 }
 
 float random_float(float lo, float hi) {
@@ -363,6 +366,31 @@ light_positional_t random_positional_light() {
       .ambient = color * 0.1f,
       .diffuse = color,
       .specular = color,
+      .constant = 1.f,
+      .linear = random_float(0.07f, 0.22f),
+      .quadratic = random_float(0.017f, 0.07f),
+  };
+}
+
+light_spot_t random_spot_light() {
+  glm::vec3 color{
+      random_float(0.1f, 1.f), random_float(0.1f, 1.f), random_float(0.1f, 1.f)
+  };
+  float cutoff_deg = random_float(10.f, 25.f);
+  float outer_cutoff_deg = cutoff_deg + random_float(2.f, 8.f);
+  glm::vec3 dir{
+      random_float(-1.f, 1.f), random_float(-1.f, 1.f), random_float(-1.f, 1.f)
+  };
+  return {
+      .position =
+          {random_float(-5.f, 5.f), random_float(-5.f, 5.f),
+           random_float(-5.f, 5.f)},
+      .direction = glm::normalize(dir),
+      .ambient = color * 0.05f,
+      .diffuse = color,
+      .specular = color,
+      .cutoff = glm::cos(glm::radians(cutoff_deg)),
+      .outer_cutoff = glm::cos(glm::radians(outer_cutoff_deg)),
       .constant = 1.f,
       .linear = random_float(0.07f, 0.22f),
       .quadratic = random_float(0.017f, 0.07f),
@@ -593,10 +621,14 @@ void SceneRenderer::render_scene_bind_textures(
         m_programs.view.program_id(), std::format("pos_lights[{}]", i),
         state.pos_lights[i]
     );
-  for (unsigned int i = 0; i < preset.spot_lights.size(); ++i)
+  set_int(
+      m_programs.view.program_id(), "spot_light_count",
+      static_cast<int>(state.spot_lights.size())
+  );
+  for (unsigned int i = 0; i < state.spot_lights.size(); ++i)
     set_spot_light(
         m_programs.view.program_id(), std::format("spot_lights[{}]", i),
-        preset.spot_lights[i]
+        state.spot_lights[i]
     );
   set_flashlight(m_programs.view.program_id(), "flashlight", preset.flashlight);
 }
@@ -620,8 +652,8 @@ void SceneRenderer::render_scene_draw_lights(
   }
 
   glBindVertexArray(m_vaos.pyramid);
-  for (unsigned int i = 0; i < preset.spot_lights.size(); ++i) {
-    const light_spot_t &spot_light = preset.spot_lights[i];
+  for (unsigned int i = 0; i < state.spot_lights.size(); ++i) {
+    const light_spot_t &spot_light = state.spot_lights[i];
     glm::mat4 look_at =
         glm::lookAt(glm::vec3(0.f), spot_light.direction, glm::vec3(0, 1, 0));
     glm::mat4 model = glm::scale(
@@ -677,13 +709,24 @@ void SceneRenderer::render_imgui() {
         "Pos lights", "%d / %d", static_cast<int>(state.pos_lights.size()),
         MAX_POS_LIGHTS
     );
+    ImGui::LabelText(
+        "Spot lights", "%d / %d", static_cast<int>(state.spot_lights.size()),
+        MAX_SPOT_LIGHTS
+    );
   } else {
-    int count = static_cast<int>(state.pos_lights.size());
-    if (ImGui::SliderInt("Pos lights", &count, 0, MAX_POS_LIGHTS)) {
-      while (static_cast<int>(state.pos_lights.size()) < count)
+    int pos_count = static_cast<int>(state.pos_lights.size());
+    if (ImGui::SliderInt("Pos lights", &pos_count, 0, MAX_POS_LIGHTS)) {
+      while (static_cast<int>(state.pos_lights.size()) < pos_count)
         state.pos_lights.push_back(random_positional_light());
-      while (static_cast<int>(state.pos_lights.size()) > count)
+      while (static_cast<int>(state.pos_lights.size()) > pos_count)
         state.pos_lights.pop_back();
+    }
+    int spot_count = static_cast<int>(state.spot_lights.size());
+    if (ImGui::SliderInt("Spot lights", &spot_count, 0, MAX_SPOT_LIGHTS)) {
+      while (static_cast<int>(state.spot_lights.size()) < spot_count)
+        state.spot_lights.push_back(random_spot_light());
+      while (static_cast<int>(state.spot_lights.size()) > spot_count)
+        state.spot_lights.pop_back();
     }
   }
   double x, y;
@@ -741,6 +784,7 @@ void key_callback_with_preset(
     }
     const auto &preset = presets[state.preset_index];
     state.pos_lights.assign(preset.pos_lights.begin(), preset.pos_lights.end());
+    state.spot_lights.assign(preset.spot_lights.begin(), preset.spot_lights.end());
   }
   if (key == GLFW_KEY_EQUAL &&
       (action == GLFW_PRESS || action == GLFW_REPEAT)) {
@@ -753,6 +797,14 @@ void key_callback_with_preset(
       (action == GLFW_PRESS || action == GLFW_REPEAT)) {
     if (!state.pos_lights.empty())
       state.pos_lights.pop_back();
+  }
+  if (key == GLFW_KEY_0 && action == GLFW_PRESS) {
+    if (static_cast<int>(state.spot_lights.size()) < MAX_SPOT_LIGHTS)
+      state.spot_lights.push_back(random_spot_light());
+  }
+  if (key == GLFW_KEY_9 && action == GLFW_PRESS) {
+    if (!state.spot_lights.empty())
+      state.spot_lights.pop_back();
   }
 }
 
