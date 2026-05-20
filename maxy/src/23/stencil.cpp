@@ -40,6 +40,7 @@ struct state_t {
   window_state_t window = {.viewport = {.width = WIDTH, .height = HEIGHT}};
   size_t preset_index = 0;
   size_t depth_mode_index = 2; // Initial value set to less
+  float border_thickness = BORDER_THICKNESS;
 };
 state_t state;
 
@@ -270,7 +271,7 @@ void SceneRenderer::render_outline_pass() {
   glStencilMask(0x00);
   glDisable(GL_DEPTH_TEST);
   m_shaders.border.use();
-  m_shaders.border.set_float("border_thickness", BORDER_THICKNESS);
+  m_shaders.border.set_float("border_thickness", state.border_thickness);
   render_scene_draw_cubes(m_shaders.border);
   glEnable(GL_DEPTH_TEST);
   glStencilMask(0xFF);
@@ -361,6 +362,13 @@ void SceneRenderer::render_imgui() {
   ImGui::LabelText(
       "Dept Mode", "%s", depth_modes[state.depth_mode_index].name.c_str()
   );
+  if (camera_mode) {
+    ImGui::LabelText("Border", "%.4f", state.border_thickness);
+  } else {
+    ImGui::SliderFloat(
+        "Border", &state.border_thickness, 0.0f, 0.05f, "%.4f"
+    );
+  }
   ImGui::PopItemWidth();
 
   ImGui::End();
