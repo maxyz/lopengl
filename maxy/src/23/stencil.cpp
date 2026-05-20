@@ -18,6 +18,7 @@
 constexpr const char *TITLE = "Model loading example";
 constexpr GLuint WIDTH = 1024;
 constexpr GLuint HEIGHT = 768;
+constexpr float BORDER_THICKNESS = 0.015f;
 
 struct model_preset_t {
   glm::vec3 position;
@@ -44,7 +45,7 @@ state_t state;
 
 struct shaders_t {
   Shader shader;
-  Shader stencil;
+  Shader border;
 };
 struct vaos_t {
   id_t cube;
@@ -90,9 +91,10 @@ private:
         m_vaos{vaos}, m_vbos(vbos) {};
 
   void render_scene();
+  void render_fill_pass();
+  void render_outline_pass();
   void render_scene_set_view_and_projection();
-  void render_scene_bind_textures();
-  void render_scene_draw_cubes(Shader &, float);
+  void render_scene_draw_cubes(Shader &);
   void render_scene_draw_plane();
   void render_imgui();
 };
@@ -212,14 +214,14 @@ SceneRenderer::create(GLFWwindow *window) {
   if (!shader) {
     return std::unexpected(shader.error());
   }
-  auto stencil_shader =
-      Shader::build("shaders/23_depth.vert", "shaders/23_stencil.frag");
-  if (!stencil_shader) {
-    return std::unexpected(shader.error());
+  auto border_shader =
+      Shader::build("shaders/23_border.vert", "shaders/23_border.frag");
+  if (!border_shader) {
+    return std::unexpected(border_shader.error());
   }
   shaders_t shaders = {
       .shader = std::move(*shader),
-      .stencil = std::move(*stencil_shader),
+      .border = std::move(*border_shader),
   };
   auto textures = load_textures();
   if (!textures) {
@@ -251,20 +253,25 @@ void SceneRenderer::render(input_t input, float delta) {
 
 void SceneRenderer::render_scene() {
   render_scene_set_view_and_projection();
+  render_fill_pass();
+  render_outline_pass();
+}
 
-  m_shaders.shader.use();
-  glStencilMask(0x00);
+void SceneRenderer::render_fill_pass() {
   render_scene_draw_plane();
 
   glStencilFunc(GL_ALWAYS, 1, 0xFF);
   glStencilMask(0xFF);
-  render_scene_draw_cubes(m_shaders.shader, 1.0);
+  render_scene_draw_cubes(m_shaders.shader);
+}
 
+void SceneRenderer::render_outline_pass() {
   glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
   glStencilMask(0x00);
   glDisable(GL_DEPTH_TEST);
-  render_scene_draw_cubes(m_shaders.stencil, 1.1);
-
+  m_shaders.border.use();
+  m_shaders.border.set_float("border_thickness", BORDER_THICKNESS);
+  render_scene_draw_cubes(m_shaders.border);
   glEnable(GL_DEPTH_TEST);
   glStencilMask(0xFF);
   glStencilFunc(GL_ALWAYS, 0, 0xFF);
@@ -281,12 +288,12 @@ void SceneRenderer::render_scene_set_view_and_projection() {
   m_shaders.shader.use();
   m_shaders.shader.set_mat4("view", view);
   m_shaders.shader.set_mat4("projection", projection);
-  m_shaders.stencil.use();
-  m_shaders.stencil.set_mat4("view", view);
-  m_shaders.stencil.set_mat4("projection", projection);
+  m_shaders.border.use();
+  m_shaders.border.set_mat4("view", view);
+  m_shaders.border.set_mat4("projection", projection);
 }
 
-void SceneRenderer::render_scene_draw_cubes(Shader &shader, float scale) {
+void SceneRenderer::render_scene_draw_cubes(Shader &shader) {
   const preset_t &preset = presets[state.preset_index];
 
   shader.use();
@@ -299,7 +306,6 @@ void SceneRenderer::render_scene_draw_cubes(Shader &shader, float scale) {
     glm::mat4 model_transform = glm::mat4(1.f);
     model_transform = glm::translate(model_transform, model_info.position);
     model_transform = glm::scale(model_transform, glm::vec3(model_info.scale));
-    model_transform = glm::scale(model_transform, glm::vec3(scale));
 
     shader.set_mat4("model", model_transform);
     glDrawArrays(GL_TRIANGLES, 0, cube_vertices.size());
@@ -307,6 +313,9 @@ void SceneRenderer::render_scene_draw_cubes(Shader &shader, float scale) {
 }
 
 void SceneRenderer::render_scene_draw_plane() {
+  glStencilFunc(GL_ALWAYS, 0, 0xFF);
+  glStencilMask(0x00);
+
   const preset_t &preset = presets[state.preset_index];
 
   glBindVertexArray(m_vaos.plane);
@@ -318,6 +327,7 @@ void SceneRenderer::render_scene_draw_plane() {
   model_transform = glm::translate(model_transform, model_info.position);
   model_transform = glm::scale(model_transform, glm::vec3(model_info.scale));
 
+  m_shaders.shader.use();
   m_shaders.shader.set_mat4("model", model_transform);
   glDrawArrays(GL_TRIANGLES, 0, floor_vertices.size());
 }
