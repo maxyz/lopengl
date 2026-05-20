@@ -27,6 +27,7 @@ struct preset_t {
   light_directional_t dir_light;
   std::array<light_positional_t, 4> pos_lights;
   std::array<light_spot_t, 2> spot_lights;
+  flashlight_t flashlight;
 };
 
 const std::array<preset_t, 4> presets = {
@@ -93,6 +94,18 @@ const std::array<preset_t, 4> presets = {
                     .linear = .09f,
                     .quadratic = .032f},
             }},
+            .flashlight =
+                {
+                    .ambient = glm::vec3(.0f, .0f, .0f),
+                    .diffuse = glm::vec3(.5f, .5f, .5f),
+                    .specular = glm::vec3(1.f, 1.f, 1.f),
+                    .cutoff = glm::cos(glm::radians(15.f)),
+                    .outer_cutoff = glm::cos(glm::radians(20.f)),
+                    .constant = 1.f,
+                    .linear = .09f,
+                    .quadratic = .032f,
+
+                },
         },
         {
             .name = "factory",
@@ -156,6 +169,17 @@ const std::array<preset_t, 4> presets = {
                     .linear = .09f,
                     .quadratic = .032f},
             }},
+            .flashlight =
+                {
+                    .ambient = glm::vec3(.0f, .0f, .0f),
+                    .diffuse = glm::vec3(1.f, 1.f, 1.f),
+                    .specular = glm::vec3(1.f, 1.f, 1.f),
+                    .cutoff = glm::cos(glm::radians(15.f)),
+                    .outer_cutoff = glm::cos(glm::radians(20.f)),
+                    .constant = 1.f,
+                    .linear = .09f,
+                    .quadratic = .032f,
+                },
         },
         {
             .name = "horror",
@@ -219,6 +243,17 @@ const std::array<preset_t, 4> presets = {
                     .linear = .09f,
                     .quadratic = .032f},
             }},
+            .flashlight =
+                {
+                    .ambient = glm::vec3(.0f, .0f, .0f),
+                    .diffuse = glm::vec3(1.f, 1.f, 1.f),
+                    .specular = glm::vec3(1.f, 1.f, 1.f),
+                    .cutoff = glm::cos(glm::radians(15.f)),
+                    .outer_cutoff = glm::cos(glm::radians(20.f)),
+                    .constant = 1.f,
+                    .linear = .09f,
+                    .quadratic = .032f,
+                },
         },
         {
             .name = "biochemical",
@@ -282,6 +317,17 @@ const std::array<preset_t, 4> presets = {
                     .linear = .07f,
                     .quadratic = .017f},
             }},
+            .flashlight =
+                {
+                    .ambient = glm::vec3(.0f, .0f, .0f),
+                    .diffuse = glm::vec3(.0f, 1.f, .0f),
+                    .specular = glm::vec3(.0f, 1.f, .0f),
+                    .cutoff = glm::cos(glm::radians(15.f)),
+                    .outer_cutoff = glm::cos(glm::radians(20.f)),
+                    .constant = 1.f,
+                    .linear = .07f,
+                    .quadratic = .017f,
+                },
         },
     }};
 
@@ -337,32 +383,37 @@ private:
 
   SceneRenderer() = default;
 
-  static SceneRenderer setup_gl(GLFWwindow *window, Shader shader,
-      Shader light_shader, id_t diffuse, id_t specular);
+  static SceneRenderer setup_gl(
+      GLFWwindow *window, Shader shader, Shader light_shader, id_t diffuse,
+      id_t specular
+  );
   void render_scene();
-  void render_scene_bind_textures(const preset_t &preset, const glm::mat4 &view,
-      const glm::mat4 &projection);
-  void render_scene_draw_lights(const preset_t &preset, const glm::mat4 &view,
-      const glm::mat4 &projection);
+  void render_scene_bind_textures(
+      const preset_t &preset, const glm::mat4 &view, const glm::mat4 &projection
+  );
+  void render_scene_draw_lights(
+      const preset_t &preset, const glm::mat4 &view, const glm::mat4 &projection
+  );
   void render_scene_draw_cubes();
   void render_imgui();
 };
 
 void process_input(GLFWwindow *window, input_t &input);
 
-std::expected<SceneRenderer, std::string> SceneRenderer::create(
-    GLFWwindow *window) {
+std::expected<SceneRenderer, std::string>
+SceneRenderer::create(GLFWwindow *window) {
   struct build_t {
     Shader shader;
     Shader light_shader;
     id_t diffuse{};
     id_t specular{};
+    id_t metal{};
   };
 
-  return Shader::build("shaders/17_multiple.vert", "shaders/17_multiple.frag")
+  return Shader::build("shaders/22_multiple.vert", "shaders/22_multiple.frag")
       .transform([](Shader s) { return build_t{.shader = std::move(s)}; })
       .and_then([](build_t b) {
-        return Shader::build("shaders/17_light.vert", "shaders/17_light.frag")
+        return Shader::build("shaders/22_light.vert", "shaders/22_light.frag")
             .transform([b = std::move(b)](Shader ls) mutable {
               b.light_shader = std::move(ls);
               return std::move(b);
@@ -383,13 +434,17 @@ std::expected<SceneRenderer, std::string> SceneRenderer::create(
             });
       })
       .transform([&](build_t b) {
-        return setup_gl(window, std::move(b.shader), std::move(b.light_shader),
-            b.diffuse, b.specular);
+        return setup_gl(
+            window, std::move(b.shader), std::move(b.light_shader), b.diffuse,
+            b.specular
+        );
       });
 }
 
-SceneRenderer SceneRenderer::setup_gl(GLFWwindow *window, Shader shader,
-    Shader light_shader, id_t diffuse, id_t specular) {
+SceneRenderer SceneRenderer::setup_gl(
+    GLFWwindow *window, Shader shader, Shader light_shader, id_t diffuse,
+    id_t specular
+) {
   id_t cube_vao;
   id_t vbo;
   glGenVertexArrays(1, &cube_vao);
@@ -397,24 +452,34 @@ SceneRenderer SceneRenderer::setup_gl(GLFWwindow *window, Shader shader,
 
   glBindVertexArray(cube_vao);
   glBindBuffer(GL_ARRAY_BUFFER, vbo);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(cube_vertices), cube_vertices.data(),
-      GL_STATIC_DRAW);
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(vertex_t),
-      reinterpret_cast<void *>(offsetof(vertex_t, position)));
+  glBufferData(
+      GL_ARRAY_BUFFER, sizeof(cube_vertices), cube_vertices.data(),
+      GL_STATIC_DRAW
+  );
+  glVertexAttribPointer(
+      0, 3, GL_FLOAT, GL_FALSE, sizeof(vertex_t),
+      reinterpret_cast<void *>(offsetof(vertex_t, position))
+  );
   glEnableVertexAttribArray(0);
-  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(vertex_t),
-      reinterpret_cast<void *>(offsetof(vertex_t, normal)));
+  glVertexAttribPointer(
+      1, 3, GL_FLOAT, GL_FALSE, sizeof(vertex_t),
+      reinterpret_cast<void *>(offsetof(vertex_t, normal))
+  );
   glEnableVertexAttribArray(1);
-  glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(vertex_t),
-      reinterpret_cast<void *>(offsetof(vertex_t, texcoord)));
+  glVertexAttribPointer(
+      2, 2, GL_FLOAT, GL_FALSE, sizeof(vertex_t),
+      reinterpret_cast<void *>(offsetof(vertex_t, texcoord))
+  );
   glEnableVertexAttribArray(2);
 
   id_t light_vao;
   glGenVertexArrays(1, &light_vao);
   glBindVertexArray(light_vao);
   glBindBuffer(GL_ARRAY_BUFFER, vbo);
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(vertex_t),
-      reinterpret_cast<void *>(offsetof(vertex_t, position)));
+  glVertexAttribPointer(
+      0, 3, GL_FLOAT, GL_FALSE, sizeof(vertex_t),
+      reinterpret_cast<void *>(offsetof(vertex_t, position))
+  );
   glEnableVertexAttribArray(0);
 
   id_t pyramid_vao;
@@ -425,13 +490,18 @@ SceneRenderer SceneRenderer::setup_gl(GLFWwindow *window, Shader shader,
   glGenBuffers(1, &pyramid_ebo);
   glBindVertexArray(pyramid_vao);
   glBindBuffer(GL_ARRAY_BUFFER, pyramid_vbo);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(pyramid_vertices), pyramid_vertices,
-      GL_STATIC_DRAW);
+  glBufferData(
+      GL_ARRAY_BUFFER, sizeof(pyramid_vertices), pyramid_vertices,
+      GL_STATIC_DRAW
+  );
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, pyramid_ebo);
-  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(pyramid_indices),
-      pyramid_indices, GL_STATIC_DRAW);
+  glBufferData(
+      GL_ELEMENT_ARRAY_BUFFER, sizeof(pyramid_indices), pyramid_indices,
+      GL_STATIC_DRAW
+  );
   glVertexAttribPointer(
-      0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), reinterpret_cast<void *>(0));
+      0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), reinterpret_cast<void *>(0)
+  );
   glEnableVertexAttribArray(0);
 
   shader.use();
@@ -451,18 +521,21 @@ SceneRenderer SceneRenderer::setup_gl(GLFWwindow *window, Shader shader,
 void SceneRenderer::render_scene() {
   const preset_t &preset = presets[state.preset_index];
   glm::mat4 view = state.window.camera.get_view_matrix();
-  glm::mat4 projection = glm::perspective(glm::radians(state.window.camera.fov),
+  glm::mat4 projection = glm::perspective(
+      glm::radians(state.window.camera.fov),
       static_cast<float>(state.window.viewport.width) /
           static_cast<float>(state.window.viewport.height),
-      .1f, 100.f);
+      .1f, 100.f
+  );
 
   render_scene_bind_textures(preset, view, projection);
   render_scene_draw_lights(preset, view, projection);
   render_scene_draw_cubes();
 }
 
-void SceneRenderer::render_scene_bind_textures(const preset_t &preset,
-    const glm::mat4 &view, const glm::mat4 &projection) {
+void SceneRenderer::render_scene_bind_textures(
+    const preset_t &preset, const glm::mat4 &view, const glm::mat4 &projection
+) {
   m_programs.view.use();
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, m_textures.diffuse);
@@ -471,21 +544,31 @@ void SceneRenderer::render_scene_bind_textures(const preset_t &preset,
   set_mat4(m_programs.view.program_id(), "view", view);
   set_mat4(m_programs.view.program_id(), "projection", projection);
   set_vec3(
-      m_programs.view.program_id(), "view_pos", state.window.camera.position);
-  set_specular_map(m_programs.view.program_id(), "material",
-      {.diffuse = 0, .specular = 1, .shininess = 64.f});
+      m_programs.view.program_id(), "view_pos", state.window.camera.position
+  );
+  set_specular_map(
+      m_programs.view.program_id(), "material",
+      {.diffuse = 0, .specular = 1, .shininess = 64.f}
+  );
   set_directional_light(
-      m_programs.view.program_id(), "dir_light", preset.dir_light);
+      m_programs.view.program_id(), "dir_light", preset.dir_light
+  );
   for (unsigned int i = 0; i < preset.pos_lights.size(); ++i)
-    set_positional_light(m_programs.view.program_id(),
-        std::format("pos_lights[{}]", i), preset.pos_lights[i]);
+    set_positional_light(
+        m_programs.view.program_id(), std::format("pos_lights[{}]", i),
+        preset.pos_lights[i]
+    );
   for (unsigned int i = 0; i < preset.spot_lights.size(); ++i)
-    set_spot_light(m_programs.view.program_id(),
-        std::format("spot_lights[{}]", i), preset.spot_lights[i]);
+    set_spot_light(
+        m_programs.view.program_id(), std::format("spot_lights[{}]", i),
+        preset.spot_lights[i]
+    );
+  set_flashlight(m_programs.view.program_id(), "flashlight", preset.flashlight);
 }
 
-void SceneRenderer::render_scene_draw_lights(const preset_t &preset,
-    const glm::mat4 &view, const glm::mat4 &projection) {
+void SceneRenderer::render_scene_draw_lights(
+    const preset_t &preset, const glm::mat4 &view, const glm::mat4 &projection
+) {
   m_programs.light.use();
   set_mat4(m_programs.light.program_id(), "view", view);
   set_mat4(m_programs.light.program_id(), "projection", projection);
@@ -494,10 +577,13 @@ void SceneRenderer::render_scene_draw_lights(const preset_t &preset,
   for (unsigned int i = 0; i < preset.pos_lights.size(); ++i) {
     const light_positional_t &pos_light = preset.pos_lights[i];
     glm::mat4 model = glm::scale(
-        glm::translate(glm::mat4(1.f), pos_light.position), glm::vec3(.2f));
+        glm::translate(glm::mat4(1.f), pos_light.position), glm::vec3(.2f)
+    );
     set_mat4(m_programs.light.program_id(), "model", model);
-    set_positional_light(m_programs.light.program_id(),
-        std::format("pos_lights[{}]", i), pos_light);
+    set_positional_light(
+        m_programs.light.program_id(), std::format("pos_lights[{}]", i),
+        pos_light
+    );
     glDrawArrays(GL_TRIANGLES, 0, 36);
   }
 
@@ -506,10 +592,11 @@ void SceneRenderer::render_scene_draw_lights(const preset_t &preset,
     const light_spot_t &spot_light = preset.spot_lights[i];
     glm::mat4 look_at =
         glm::lookAt(glm::vec3(0.f), spot_light.direction, glm::vec3(0, 1, 0));
-    glm::mat4 model =
-        glm::scale(glm::translate(glm::mat4(1.f), spot_light.position) *
-                       glm::inverse(look_at),
-            glm::vec3(.2f));
+    glm::mat4 model = glm::scale(
+        glm::translate(glm::mat4(1.f), spot_light.position) *
+            glm::inverse(look_at),
+        glm::vec3(.2f)
+    );
     set_mat4(m_programs.light.program_id(), "model", model);
     set_spot_light(m_programs.light.program_id(), "light", spot_light);
     glDrawElements(GL_TRIANGLES, 18, GL_UNSIGNED_INT, 0);
@@ -521,9 +608,10 @@ void SceneRenderer::render_scene_draw_cubes() {
   glBindVertexArray(m_vaos.cube);
   for (unsigned int i = 0; i < 10; ++i) {
     float angle = glfwGetTime() * (i % 3) * 25.f;
-    glm::mat4 model =
-        glm::rotate(glm::translate(glm::mat4(1.f), example_cube_positions[i]),
-            glm::radians(angle), glm::vec3(1.f, .3f, .5f));
+    glm::mat4 model = glm::rotate(
+        glm::translate(glm::mat4(1.f), example_cube_positions[i]),
+        glm::radians(angle), glm::vec3(1.f, .3f, .5f)
+    );
     set_mat4(m_programs.view.program_id(), "model", model);
     glDrawArrays(GL_TRIANGLES, 0, 36);
   }
@@ -548,8 +636,10 @@ void SceneRenderer::render_imgui() {
   ImGui::Begin("Scene information", NULL, ImGuiWindowFlags_AlwaysAutoResize);
   ImGui::PushItemWidth(150.0f);
 
-  ImGui::LabelText("Pos", "(%.2f, %.2f, %.2f)", state.window.camera.position.x,
-      state.window.camera.position.y, state.window.camera.position.z);
+  ImGui::LabelText(
+      "Pos", "(%.2f, %.2f, %.2f)", state.window.camera.position.x,
+      state.window.camera.position.y, state.window.camera.position.z
+  );
   double x, y;
   glfwGetCursorPos(m_window, &x, &y);
   ImGui::LabelText("Mouse", "(%.2f, %.2f)", x, y);
@@ -565,8 +655,10 @@ void SceneRenderer::render(input_t input, float delta) {
   process_camera_events(state.window, input, delta);
 
   const preset_t &preset = presets[state.preset_index];
-  glClearColor(preset.clear_color.x, preset.clear_color.y, preset.clear_color.z,
-      preset.clear_color.w);
+  glClearColor(
+      preset.clear_color.x, preset.clear_color.y, preset.clear_color.z,
+      preset.clear_color.w
+  );
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
   render_scene();
@@ -585,15 +677,16 @@ SceneRenderer::~SceneRenderer() {
   glDeleteBuffers(1, &m_pyramid_ebo);
 }
 
-void key_callback_with_depth_mode(
-    GLFWwindow *window, int key, int scancode, int action, int mods) {
+void key_callback_with_preset(
+    GLFWwindow *window, int key, int scancode, int action, int mods
+) {
   ImGuiIO &io = ImGui::GetIO();
   if (io.WantCaptureKeyboard) {
     return;
   }
   key_callback(window, key, scancode, action, mods);
 
-  if ((key == GLFW_KEY_P) && (action == GLFW_PRESS || action == GLFW_REPEAT)) {
+  if ((key == GLFW_KEY_M) && (action == GLFW_PRESS || action == GLFW_REPEAT)) {
     if (mods & GLFW_MOD_SHIFT) {
       state.preset_index =
           (presets.size() + state.preset_index - 1) % presets.size();
@@ -633,7 +726,7 @@ int main() {
   }
 
   window_callbacks_t window_callbacks{DEFAULT_WINDOW_CALLBACKS};
-  window_callbacks.key = key_callback_with_depth_mode;
+  window_callbacks.key = key_callback_with_preset;
   init_window_callbacks(ctx->window(), state.window, window_callbacks);
 
   auto renderer = SceneRenderer::create(ctx->window());

@@ -10,13 +10,14 @@
 #include <imgui.h>
 #include <stb/stb_image.h>
 
-static std::expected<GLFWwindow *, std::string> init_glfw(int width, int height,
-                                                          const char *title) {
+static std::expected<GLFWwindow *, std::string>
+init_glfw(int width, int height, const char *title) {
   if (glfwInit() == GLFW_FALSE) {
     char *error_description;
     glfwGetError((const char **)&error_description);
     return std::unexpected(
-        std::format("failed to init GLFW: {}", error_description));
+        std::format("failed to init GLFW: {}", error_description)
+    );
   }
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
@@ -59,8 +60,8 @@ static std::expected<void, std::string> init_imgui(GLFWwindow *w) {
   return {};
 }
 
-std::expected<GLContext, std::string> GLContext::create(int width, int height,
-                                                        const char *title) {
+std::expected<GLContext, std::string>
+GLContext::create(int width, int height, const char *title) {
   auto window = init_glfw(width, height, title);
   if (!window) {
     return std::unexpected(window.error());

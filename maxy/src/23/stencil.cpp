@@ -82,8 +82,10 @@ private:
   vaos_t m_vaos;
   vbos_t m_vbos;
 
-  SceneRenderer(GLFWwindow *window, shaders_t shaders, textures_t textures,
-                vaos_t vaos, vbos_t vbos)
+  SceneRenderer(
+      GLFWwindow *window, shaders_t shaders, textures_t textures, vaos_t vaos,
+      vbos_t vbos
+  )
       : m_window{window}, m_shaders{std::move(shaders)}, m_textures(textures),
         m_vaos{vaos}, m_vbos(vbos) {};
 
@@ -110,11 +112,10 @@ const std::array<preset_t, 1> presets = {{
                     .scale = 2.f,
                 },
             },
-        .plane =
-            {
-                .position = glm::vec3(0.f, 0.f, 0.f),
-                .scale = 1.f,
-            },
+        .plane = {
+            .position = glm::vec3(0.f, 0.f, 0.f),
+            .scale = 1.f,
+        },
     },
 }};
 
@@ -165,21 +166,30 @@ std::expected<textures_t, std::string> load_textures() {
   return textures_t{.marble = *marble_texture, .metal = *metal_texture};
 }
 
-void load_buffer_vertices(std::span<const vertex_t> vertices,
-                          id_t vertex_array_object, id_t vertex_buffer_object) {
+void load_buffer_vertices(
+    std::span<const vertex_t> vertices, id_t vertex_array_object,
+    id_t vertex_buffer_object
+) {
 
   glBindVertexArray(vertex_array_object);
   glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_object);
-  glBufferData(GL_ARRAY_BUFFER, vertices.size_bytes(), vertices.data(),
-               GL_STATIC_DRAW);
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(vertex_t),
-                        reinterpret_cast<void *>(offsetof(vertex_t, position)));
+  glBufferData(
+      GL_ARRAY_BUFFER, vertices.size_bytes(), vertices.data(), GL_STATIC_DRAW
+  );
+  glVertexAttribPointer(
+      0, 3, GL_FLOAT, GL_FALSE, sizeof(vertex_t),
+      reinterpret_cast<void *>(offsetof(vertex_t, position))
+  );
   glEnableVertexAttribArray(0);
-  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(vertex_t),
-                        reinterpret_cast<void *>(offsetof(vertex_t, normal)));
+  glVertexAttribPointer(
+      1, 3, GL_FLOAT, GL_FALSE, sizeof(vertex_t),
+      reinterpret_cast<void *>(offsetof(vertex_t, normal))
+  );
   glEnableVertexAttribArray(1);
-  glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(vertex_t),
-                        reinterpret_cast<void *>(offsetof(vertex_t, texcoord)));
+  glVertexAttribPointer(
+      2, 2, GL_FLOAT, GL_FALSE, sizeof(vertex_t),
+      reinterpret_cast<void *>(offsetof(vertex_t, texcoord))
+  );
   glEnableVertexAttribArray(2);
 }
 
@@ -220,15 +230,18 @@ SceneRenderer::create(GLFWwindow *window) {
   auto [vaos, vbos] = load_buffers();
 
   return std::unique_ptr<SceneRenderer>{
-      new SceneRenderer{window, std::move(shaders), *textures, vaos, vbos}};
+      new SceneRenderer{window, std::move(shaders), *textures, vaos, vbos}
+  };
 }
 
 void SceneRenderer::render(input_t input, float delta) {
   process_camera_events(state.window, input, delta);
 
   const preset_t &preset = presets[state.preset_index];
-  glClearColor(preset.clear_color.x, preset.clear_color.y, preset.clear_color.z,
-               preset.clear_color.w);
+  glClearColor(
+      preset.clear_color.x, preset.clear_color.y, preset.clear_color.z,
+      preset.clear_color.w
+  );
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
   render_scene();
@@ -259,11 +272,12 @@ void SceneRenderer::render_scene() {
 
 void SceneRenderer::render_scene_set_view_and_projection() {
   glm::mat4 view = state.window.camera.get_view_matrix();
-  glm::mat4 projection =
-      glm::perspective(glm::radians(state.window.camera.fov),
-                       static_cast<float>(state.window.viewport.width) /
-                           static_cast<float>(state.window.viewport.height),
-                       .1f, 100.f);
+  glm::mat4 projection = glm::perspective(
+      glm::radians(state.window.camera.fov),
+      static_cast<float>(state.window.viewport.width) /
+          static_cast<float>(state.window.viewport.height),
+      .1f, 100.f
+  );
   m_shaders.shader.use();
   m_shaders.shader.set_mat4("view", view);
   m_shaders.shader.set_mat4("projection", projection);
@@ -327,14 +341,16 @@ void SceneRenderer::render_imgui() {
   ImGui::Begin("Scene information", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
   ImGui::PushItemWidth(150.0f);
 
-  ImGui::LabelText("Pos", "(%.2f, %.2f, %.2f)", state.window.camera.position.x,
-                   state.window.camera.position.y,
-                   state.window.camera.position.z);
+  ImGui::LabelText(
+      "Pos", "(%.2f, %.2f, %.2f)", state.window.camera.position.x,
+      state.window.camera.position.y, state.window.camera.position.z
+  );
   double x, y;
   glfwGetCursorPos(m_window, &x, &y);
   ImGui::LabelText("Mouse", "(%.2f, %.2f)", x, y);
-  ImGui::LabelText("Dept Mode", "%s",
-                   depth_modes[state.depth_mode_index].name.c_str());
+  ImGui::LabelText(
+      "Dept Mode", "%s", depth_modes[state.depth_mode_index].name.c_str()
+  );
   ImGui::PopItemWidth();
 
   ImGui::End();
@@ -348,8 +364,9 @@ void set_depth_func() {
   glDepthFunc(depth_mode.mode);
 }
 
-void key_callback_with_depth_mode(GLFWwindow *window, int key, int scancode,
-                                  int action, int mods) {
+void key_callback_with_depth_mode(
+    GLFWwindow *window, int key, int scancode, int action, int mods
+) {
   ImGuiIO &io = ImGui::GetIO();
   if (io.WantCaptureKeyboard) {
     return;

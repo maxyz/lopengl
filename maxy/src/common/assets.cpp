@@ -26,11 +26,13 @@ std::expected<Image, std::string> load_image(const std::string &filename) {
     return std::unexpected(asset_path.error());
   }
   Image image;
-  auto *data = stbi_load(asset_path->c_str(), &image.width, &image.height,
-                         &image.channel_count, 0);
+  auto *data = stbi_load(
+      asset_path->c_str(), &image.width, &image.height, &image.channel_count, 0
+  );
   if (!data)
     return std::unexpected(
-        std::format("Failed to load texture ({})", filename));
+        std::format("Failed to load texture ({})", filename)
+    );
   image.data.reset(data);
   return image;
 }
@@ -49,17 +51,20 @@ std::expected<id_t, std::string> load_texture(const std::string &filename) {
   glBindTexture(GL_TEXTURE_2D, texture);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
-                  GL_LINEAR_MIPMAP_LINEAR);
+  glTexParameteri(
+      GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR
+  );
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  glTexImage2D(GL_TEXTURE_2D, 0, *format, image->width, image->height, 0,
-               *format, GL_UNSIGNED_BYTE, image->data.get());
+  glTexImage2D(
+      GL_TEXTURE_2D, 0, *format, image->width, image->height, 0, *format,
+      GL_UNSIGNED_BYTE, image->data.get()
+  );
   glGenerateMipmap(GL_TEXTURE_2D);
   return texture;
 }
 
-std::expected<id_t, std::string> load_texture(const std::string &filename,
-                                              const std::string &directory) {
+std::expected<id_t, std::string>
+load_texture(const std::string &filename, const std::string &directory) {
   fs::path path{directory};
   auto filepath = path / filename;
   return load_texture(filepath);
@@ -72,7 +77,10 @@ std::expected<GLenum, std::string> guess_format(const Image &image) {
     return GL_RGB;
   if (image.channel_count == 4)
     return GL_RGBA;
-  return std::unexpected(std::format(
-      "Could not detect image format, invalid amount of channels {}",
-      image.channel_count));
+  return std::unexpected(
+      std::format(
+          "Could not detect image format, invalid amount of channels {}",
+          image.channel_count
+      )
+  );
 }

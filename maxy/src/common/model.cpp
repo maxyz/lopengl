@@ -23,13 +23,13 @@ struct ModelLoader {
       : textures_loaded(cache) {}
 
   std::expected<void, std::string> load(const std::string &path);
-  std::expected<void, std::string> process_node(aiNode *node,
-                                                const aiScene *scene);
-  std::expected<Mesh, std::string> process_mesh(aiMesh *mesh,
-                                                const aiScene *scene);
-  std::expected<std::vector<Texture>, std::string>
-  load_material_textures(aiMaterial *material, aiTextureType type,
-                         std::string_view name);
+  std::expected<void, std::string>
+  process_node(aiNode *node, const aiScene *scene);
+  std::expected<Mesh, std::string>
+  process_mesh(aiMesh *mesh, const aiScene *scene);
+  std::expected<std::vector<Texture>, std::string> load_material_textures(
+      aiMaterial *material, aiTextureType type, std::string_view name
+  );
 };
 
 void Model::draw(Shader &shader) {
@@ -59,7 +59,8 @@ std::expected<void, std::string> ModelLoader::load(const std::string &path) {
   if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE ||
       !scene->mRootNode) {
     return std::unexpected(
-        std::format("assimp: {}", importer.GetErrorString()));
+        std::format("assimp: {}", importer.GetErrorString())
+    );
   }
   return process_node(scene->mRootNode, scene);
 }
@@ -71,7 +72,8 @@ ModelLoader::process_node(aiNode *node, const aiScene *scene) {
     auto processed_mesh = process_mesh(mesh, scene);
     if (!processed_mesh) {
       return std::unexpected(
-          std::format("mesh[{}]: {}", i, processed_mesh.error()));
+          std::format("mesh[{}]: {}", i, processed_mesh.error())
+      );
     }
     meshes.push_back(std::move(*processed_mesh));
   }
@@ -92,10 +94,12 @@ ModelLoader::process_mesh(aiMesh *mesh, const aiScene *scene) {
 
   for (size_t i = 0; i < mesh->mNumVertices; ++i) {
     Vertex vertex;
-    vertex.position = glm::vec3(mesh->mVertices[i].x, mesh->mVertices[i].y,
-                                mesh->mVertices[i].z);
-    vertex.normal = glm::vec3(mesh->mNormals[i].x, mesh->mNormals[i].y,
-                              mesh->mNormals[i].z);
+    vertex.position = glm::vec3(
+        mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z
+    );
+    vertex.normal = glm::vec3(
+        mesh->mNormals[i].x, mesh->mNormals[i].y, mesh->mNormals[i].z
+    );
     if (mesh->mTextureCoords[0]) {
       vertex.tex_coords =
           glm::vec2(mesh->mTextureCoords[0][i].x, mesh->mTextureCoords[0][i].y);
@@ -112,28 +116,34 @@ ModelLoader::process_mesh(aiMesh *mesh, const aiScene *scene) {
 
   if (mesh->mMaterialIndex >= 0) {
     aiMaterial *material = scene->mMaterials[mesh->mMaterialIndex];
-    auto diffuse_maps = load_material_textures(material, aiTextureType_DIFFUSE,
-                                               "texture_diffuse");
+    auto diffuse_maps = load_material_textures(
+        material, aiTextureType_DIFFUSE, "texture_diffuse"
+    );
     if (!diffuse_maps) {
       return std::unexpected(
-          std::format("diffuse_maps: {}", diffuse_maps.error()));
+          std::format("diffuse_maps: {}", diffuse_maps.error())
+      );
     }
     textures.insert(textures.end(), diffuse_maps->begin(), diffuse_maps->end());
     auto specular_maps = load_material_textures(
-        material, aiTextureType_SPECULAR, "texture_specular");
+        material, aiTextureType_SPECULAR, "texture_specular"
+    );
     if (!specular_maps) {
       return std::unexpected(
-          std::format("specular_maps: {}", specular_maps.error()));
+          std::format("specular_maps: {}", specular_maps.error())
+      );
     }
-    textures.insert(textures.end(), specular_maps->begin(),
-                    specular_maps->end());
+    textures.insert(
+        textures.end(), specular_maps->begin(), specular_maps->end()
+    );
   }
   return Mesh(std::move(vertices), std::move(indices), std::move(textures));
 }
 
 std::expected<std::vector<Texture>, std::string>
-ModelLoader::load_material_textures(aiMaterial *material, aiTextureType type,
-                                    std::string_view name) {
+ModelLoader::load_material_textures(
+    aiMaterial *material, aiTextureType type, std::string_view name
+) {
   std::vector<Texture> textures;
   for (size_t i = 0; i < material->GetTextureCount(type); ++i) {
     aiString str;

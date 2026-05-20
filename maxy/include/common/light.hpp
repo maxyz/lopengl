@@ -48,6 +48,19 @@ struct light_spot_t {
   float quadratic;
 };
 
+struct flashlight_t {
+  glm::vec3 ambient;
+  glm::vec3 diffuse;
+  glm::vec3 specular;
+
+  float cutoff;
+  float outer_cutoff;
+
+  float constant;
+  float linear;
+  float quadratic;
+};
+
 void set_light(id_t id, const std::string &name, const light_t &value);
 void set_directional_light(id_t id, const std::string &name,
                            const light_directional_t &value);
@@ -55,3 +68,5 @@ void set_positional_light(id_t id, const std::string &name,
                           const light_positional_t &value);
 void set_spot_light(id_t id, const std::string &name,
                     const light_spot_t &value);
+void set_flashlight(id_t id, const std::string &name,
+                    const flashlight_t &value);
