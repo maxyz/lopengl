@@ -32,6 +32,7 @@ inline void framebuffer_size_callback(GLFWwindow *window, int width,
 }
 
 inline void window_focus_callback(GLFWwindow *window, int focused) {
+  ImGui_ImplGlfw_WindowFocusCallback(window, focused);
   auto *window_state =
       static_cast<window_state_t *>(glfwGetWindowUserPointer(window));
   if (!focused) {
@@ -42,8 +43,9 @@ inline void window_focus_callback(GLFWwindow *window, int focused) {
   }
 }
 
-inline void key_callback(GLFWwindow *window, int key, int /*scancode*/,
-                         int action, int /*mods*/) {
+inline void key_callback(GLFWwindow *window, int key, int scancode,
+                         int action, int mods) {
+  ImGui_ImplGlfw_KeyCallback(window, key, scancode, action, mods);
   auto *window_state =
       static_cast<window_state_t *>(glfwGetWindowUserPointer(window));
   ImGuiIO &io = ImGui::GetIO();
@@ -61,7 +63,13 @@ inline void key_callback(GLFWwindow *window, int key, int /*scancode*/,
   }
 }
 
+inline void mouse_button_callback(GLFWwindow *window, int button, int action,
+                                  int mods) {
+  ImGui_ImplGlfw_MouseButtonCallback(window, button, action, mods);
+}
+
 inline void mouse_callback(GLFWwindow *window, double x_pos, double y_pos) {
+  ImGui_ImplGlfw_CursorPosCallback(window, x_pos, y_pos);
   auto *window_state =
       static_cast<window_state_t *>(glfwGetWindowUserPointer(window));
 
@@ -85,8 +93,9 @@ inline void mouse_callback(GLFWwindow *window, double x_pos, double y_pos) {
   window_state->camera.process_rotation(x_offset, y_offset);
 }
 
-inline void scroll_callback(GLFWwindow *window, double /*x_offset*/,
-                            double y_offset) {
+inline void scroll_callback(GLFWwindow *window, double x_offset,
+                             double y_offset) {
+  ImGui_ImplGlfw_ScrollCallback(window, x_offset, y_offset);
   auto *window_state =
       static_cast<window_state_t *>(glfwGetWindowUserPointer(window));
   ImGuiIO &io = ImGui::GetIO();
@@ -100,6 +109,7 @@ struct window_callbacks_t {
   GLFWframebuffersizefun framebuffer_size;
   GLFWwindowfocusfun window_focus;
   GLFWkeyfun key;
+  GLFWmousebuttonfun mouse_button;
   GLFWcursorposfun cursor_pos;
   GLFWscrollfun scroll;
 };
@@ -108,6 +118,7 @@ const window_callbacks_t DEFAULT_WINDOW_CALLBACKS = {
     .framebuffer_size = framebuffer_size_callback,
     .window_focus = window_focus_callback,
     .key = key_callback,
+    .mouse_button = mouse_button_callback,
     .cursor_pos = mouse_callback,
     .scroll = scroll_callback,
 };
@@ -119,6 +130,7 @@ init_window_callbacks(GLFWwindow *window, window_state_t &window_state,
   glfwSetFramebufferSizeCallback(window, callbacks.framebuffer_size);
   glfwSetWindowFocusCallback(window, callbacks.window_focus);
   glfwSetKeyCallback(window, callbacks.key);
+  glfwSetMouseButtonCallback(window, callbacks.mouse_button);
   glfwSetCursorPosCallback(window, callbacks.cursor_pos);
   glfwSetScrollCallback(window, callbacks.scroll);
 }

@@ -347,6 +347,28 @@ void init_state() {
   state.pos_lights.assign(preset.pos_lights.begin(), preset.pos_lights.end());
 }
 
+float random_float(float lo, float hi) {
+  static std::mt19937 rng{std::random_device{}()};
+  return std::uniform_real_distribution<float>{lo, hi}(rng);
+}
+
+light_positional_t random_positional_light() {
+  glm::vec3 color{
+      random_float(0.1f, 1.f), random_float(0.1f, 1.f), random_float(0.1f, 1.f)
+  };
+  return {
+      .position =
+          {random_float(-5.f, 5.f), random_float(-5.f, 5.f),
+           random_float(-5.f, 5.f)},
+      .ambient = color * 0.1f,
+      .diffuse = color,
+      .specular = color,
+      .constant = 1.f,
+      .linear = random_float(0.07f, 0.22f),
+      .quadratic = random_float(0.017f, 0.07f),
+  };
+}
+
 class SceneRenderer {
 public:
   static std::expected<SceneRenderer, std::string> create(GLFWwindow *window);
@@ -650,10 +672,20 @@ void SceneRenderer::render_imgui() {
       "Pos", "(%.2f, %.2f, %.2f)", state.window.camera.position.x,
       state.window.camera.position.y, state.window.camera.position.z
   );
-  ImGui::LabelText(
-      "Pos lights", "%d / %d", static_cast<int>(state.pos_lights.size()),
-      MAX_POS_LIGHTS
-  );
+  if (cam_mode) {
+    ImGui::LabelText(
+        "Pos lights", "%d / %d", static_cast<int>(state.pos_lights.size()),
+        MAX_POS_LIGHTS
+    );
+  } else {
+    int count = static_cast<int>(state.pos_lights.size());
+    if (ImGui::SliderInt("Pos lights", &count, 0, MAX_POS_LIGHTS)) {
+      while (static_cast<int>(state.pos_lights.size()) < count)
+        state.pos_lights.push_back(random_positional_light());
+      while (static_cast<int>(state.pos_lights.size()) > count)
+        state.pos_lights.pop_back();
+    }
+  }
   double x, y;
   glfwGetCursorPos(m_window, &x, &y);
   ImGui::LabelText("Mouse", "(%.2f, %.2f)", x, y);
@@ -689,28 +721,6 @@ SceneRenderer::~SceneRenderer() {
   glDeleteBuffers(1, &m_vbo);
   glDeleteBuffers(1, &m_pyramid_vbo);
   glDeleteBuffers(1, &m_pyramid_ebo);
-}
-
-float random_float(float lo, float hi) {
-  static std::mt19937 rng{std::random_device{}()};
-  return std::uniform_real_distribution<float>{lo, hi}(rng);
-}
-
-light_positional_t random_positional_light() {
-  glm::vec3 color{
-      random_float(0.1f, 1.f), random_float(0.1f, 1.f), random_float(0.1f, 1.f)
-  };
-  return {
-      .position =
-          {random_float(-5.f, 5.f), random_float(-5.f, 5.f),
-           random_float(-5.f, 5.f)},
-      .ambient = color * 0.1f,
-      .diffuse = color,
-      .specular = color,
-      .constant = 1.f,
-      .linear = random_float(0.07f, 0.22f),
-      .quadratic = random_float(0.017f, 0.07f),
-  };
 }
 
 void key_callback_with_preset(

@@ -55,7 +55,7 @@ static std::expected<void, std::string> init_imgui(GLFWwindow *w) {
   io.Fonts->AddFontFromFileTTF(font_path->c_str(), 20);
   io.IniFilename = nullptr;
   ImGui::StyleColorsClassic();
-  ImGui_ImplGlfw_InitForOpenGL(w, true);
+  ImGui_ImplGlfw_InitForOpenGL(w, false);
   ImGui_ImplOpenGL3_Init();
   return {};
 }
