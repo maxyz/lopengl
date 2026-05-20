@@ -593,10 +593,7 @@ void SceneRenderer::render_scene_draw_lights(
         glm::translate(glm::mat4(1.f), pos_light.position), glm::vec3(.2f)
     );
     set_mat4(m_programs.light.program_id(), "model", model);
-    set_positional_light(
-        m_programs.light.program_id(), std::format("pos_lights[{}]", i),
-        pos_light
-    );
+    set_positional_light(m_programs.light.program_id(), "light", pos_light);
     glDrawArrays(GL_TRIANGLES, 0, 36);
   }
 

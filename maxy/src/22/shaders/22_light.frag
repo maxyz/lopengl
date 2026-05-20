@@ -11,6 +11,6 @@ struct light_t {
 uniform light_t light;
 
 void main() {
-  vec3 color = light.ambient + light.diffuse + light.specular;
+  vec3 color = light.diffuse;
   frag_color = vec4(color, 1.0);
 }
