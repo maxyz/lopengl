@@ -1,6 +1,6 @@
 #version 330 core
 
-#define NR_POS_LIGHTS 4
+#define MAX_POS_LIGHTS 16
 #define NR_SPOT_LIGHTS 2
 
 layout(location = 0) in vec3 a_pos;
@@ -11,7 +11,7 @@ out vec2 tex_coord;
 out vec3 frag_pos;
 out vec3 normal;
 out vec3 dir_light_dir_view;
-out vec3 pos_lights_pos_view[NR_POS_LIGHTS];
+out vec3 pos_lights_pos_view[MAX_POS_LIGHTS];
 out vec3 spot_lights_pos_view[NR_SPOT_LIGHTS];
 out vec3 spot_lights_dir_view[NR_SPOT_LIGHTS];
 
@@ -55,7 +55,8 @@ uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
 uniform directional_light_t dir_light;
-uniform positional_light_t pos_lights[NR_POS_LIGHTS];
+uniform positional_light_t pos_lights[MAX_POS_LIGHTS];
+uniform int pos_light_count;
 uniform spot_light_t spot_lights[NR_SPOT_LIGHTS];
 
 void main() {
@@ -67,7 +68,7 @@ void main() {
   normal = mat3(transpose(inverse(vm))) * a_normal;
 
   dir_light_dir_view = vec3(view * vec4(dir_light.direction, 0.));
-  for (int i=0; i< NR_POS_LIGHTS; ++i) {
+  for (int i=0; i < pos_light_count; ++i) {
     pos_lights_pos_view[i] = vec3(view * vec4(pos_lights[i].position, 1.));
   }
   for (int i=0; i< NR_SPOT_LIGHTS; ++i) {

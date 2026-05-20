@@ -1,7 +1,9 @@
 #include <expected>
 #include <glm/geometric.hpp>
 #include <iostream>
+#include <random>
 #include <utility>
+#include <vector>
 
 #include <glad/gl.h>
 
@@ -20,6 +22,7 @@
 const char *TITLE = "LOpenGL";
 const GLuint WIDTH = 1024;
 const GLuint HEIGHT = 768;
+constexpr int MAX_POS_LIGHTS = 16;
 
 struct preset_t {
   std::string name;
@@ -334,9 +337,15 @@ const std::array<preset_t, 4> presets = {
 struct state_t {
   window_state_t window = {.viewport = {.width = WIDTH, .height = HEIGHT}};
   size_t preset_index = 0;
+  std::vector<light_positional_t> pos_lights{};
 };
 // Global state
 state_t state;
+
+void init_state() {
+  const auto &preset = presets[state.preset_index];
+  state.pos_lights.assign(preset.pos_lights.begin(), preset.pos_lights.end());
+}
 
 class SceneRenderer {
 public:
@@ -553,10 +562,14 @@ void SceneRenderer::render_scene_bind_textures(
   set_directional_light(
       m_programs.view.program_id(), "dir_light", preset.dir_light
   );
-  for (unsigned int i = 0; i < preset.pos_lights.size(); ++i)
+  set_int(
+      m_programs.view.program_id(), "pos_light_count",
+      static_cast<int>(state.pos_lights.size())
+  );
+  for (unsigned int i = 0; i < state.pos_lights.size(); ++i)
     set_positional_light(
         m_programs.view.program_id(), std::format("pos_lights[{}]", i),
-        preset.pos_lights[i]
+        state.pos_lights[i]
     );
   for (unsigned int i = 0; i < preset.spot_lights.size(); ++i)
     set_spot_light(
@@ -574,8 +587,8 @@ void SceneRenderer::render_scene_draw_lights(
   set_mat4(m_programs.light.program_id(), "projection", projection);
 
   glBindVertexArray(m_vaos.light);
-  for (unsigned int i = 0; i < preset.pos_lights.size(); ++i) {
-    const light_positional_t &pos_light = preset.pos_lights[i];
+  for (unsigned int i = 0; i < state.pos_lights.size(); ++i) {
+    const light_positional_t &pos_light = state.pos_lights[i];
     glm::mat4 model = glm::scale(
         glm::translate(glm::mat4(1.f), pos_light.position), glm::vec3(.2f)
     );
@@ -640,6 +653,10 @@ void SceneRenderer::render_imgui() {
       "Pos", "(%.2f, %.2f, %.2f)", state.window.camera.position.x,
       state.window.camera.position.y, state.window.camera.position.z
   );
+  ImGui::LabelText(
+      "Pos lights", "%d / %d", static_cast<int>(state.pos_lights.size()),
+      MAX_POS_LIGHTS
+  );
   double x, y;
   glfwGetCursorPos(m_window, &x, &y);
   ImGui::LabelText("Mouse", "(%.2f, %.2f)", x, y);
@@ -677,6 +694,28 @@ SceneRenderer::~SceneRenderer() {
   glDeleteBuffers(1, &m_pyramid_ebo);
 }
 
+float random_float(float lo, float hi) {
+  static std::mt19937 rng{std::random_device{}()};
+  return std::uniform_real_distribution<float>{lo, hi}(rng);
+}
+
+light_positional_t random_positional_light() {
+  glm::vec3 color{
+      random_float(0.1f, 1.f), random_float(0.1f, 1.f), random_float(0.1f, 1.f)
+  };
+  return {
+      .position =
+          {random_float(-5.f, 5.f), random_float(-5.f, 5.f),
+           random_float(-5.f, 5.f)},
+      .ambient = color * 0.1f,
+      .diffuse = color,
+      .specular = color,
+      .constant = 1.f,
+      .linear = random_float(0.07f, 0.22f),
+      .quadratic = random_float(0.017f, 0.07f),
+  };
+}
+
 void key_callback_with_preset(
     GLFWwindow *window, int key, int scancode, int action, int mods
 ) {
@@ -686,13 +725,27 @@ void key_callback_with_preset(
   }
   key_callback(window, key, scancode, action, mods);
 
-  if ((key == GLFW_KEY_M) && (action == GLFW_PRESS || action == GLFW_REPEAT)) {
+  if ((key == GLFW_KEY_P) && (action == GLFW_PRESS || action == GLFW_REPEAT)) {
     if (mods & GLFW_MOD_SHIFT) {
       state.preset_index =
           (presets.size() + state.preset_index - 1) % presets.size();
     } else {
       state.preset_index = (state.preset_index + 1) % presets.size();
     }
+    const auto &preset = presets[state.preset_index];
+    state.pos_lights.assign(preset.pos_lights.begin(), preset.pos_lights.end());
+  }
+  if (key == GLFW_KEY_EQUAL &&
+      (action == GLFW_PRESS || action == GLFW_REPEAT)) {
+    if (mods & GLFW_MOD_SHIFT) {
+      if (static_cast<int>(state.pos_lights.size()) < MAX_POS_LIGHTS)
+        state.pos_lights.push_back(random_positional_light());
+    }
+  }
+  if (key == GLFW_KEY_MINUS &&
+      (action == GLFW_PRESS || action == GLFW_REPEAT)) {
+    if (!state.pos_lights.empty())
+      state.pos_lights.pop_back();
   }
 }
 
@@ -728,6 +781,8 @@ int main() {
   window_callbacks_t window_callbacks{DEFAULT_WINDOW_CALLBACKS};
   window_callbacks.key = key_callback_with_preset;
   init_window_callbacks(ctx->window(), state.window, window_callbacks);
+
+  init_state();
 
   auto renderer = SceneRenderer::create(ctx->window());
   if (!renderer) {
