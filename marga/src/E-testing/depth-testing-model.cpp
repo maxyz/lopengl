@@ -346,7 +346,7 @@ int main()
         glm::mat4 view = camera.GetViewMatrix();
         // ** Projection **
         glm::mat4 projection;
-        projection = glm::perspective(glm::radians(camera.Zoom), width/height, 0.1f, 100.0f);
+        projection = glm::perspective(glm::radians(camera.Zoom), width/height, 0.1f, 200.0f);
 
         ourShader.setMatrix4fv("view", glm::value_ptr(view));
         ourShader.setMatrix4fv("projection", glm::value_ptr(projection));
