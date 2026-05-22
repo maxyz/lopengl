@@ -22,8 +22,8 @@ struct window_state_t {
   float last_mouse_y{};
 };
 
-inline void framebuffer_size_callback(GLFWwindow *window, int width,
-                                      int height) {
+inline void
+framebuffer_size_callback(GLFWwindow *window, int width, int height) {
   auto *window_state =
       static_cast<window_state_t *>(glfwGetWindowUserPointer(window));
   window_state->viewport.width = static_cast<float>(width);
@@ -43,8 +43,8 @@ inline void window_focus_callback(GLFWwindow *window, int focused) {
   }
 }
 
-inline void key_callback(GLFWwindow *window, int key, int scancode,
-                         int action, int mods) {
+inline void
+key_callback(GLFWwindow *window, int key, int scancode, int action, int mods) {
   ImGui_ImplGlfw_KeyCallback(window, key, scancode, action, mods);
   auto *window_state =
       static_cast<window_state_t *>(glfwGetWindowUserPointer(window));
@@ -52,9 +52,8 @@ inline void key_callback(GLFWwindow *window, int key, int scancode,
   if (io.WantCaptureKeyboard)
     return;
 
-  if ((key == GLFW_KEY_GRAVE_ACCENT) &&
-      (action == GLFW_PRESS || action == GLFW_REPEAT)) {
-    if (glfwGetInputMode(window, GLFW_CURSOR) == GLFW_CURSOR_DISABLED) {
+  if ((key == GLFW_KEY_GRAVE_ACCENT) && (action == GLFW_PRESS)) {
+    if (glfwGetInputMode(window, GLFW_CURSOR) != GLFW_CURSOR_NORMAL) {
       glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
     } else {
       glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
@@ -63,20 +62,22 @@ inline void key_callback(GLFWwindow *window, int key, int scancode,
   }
 }
 
-inline void mouse_button_callback(GLFWwindow *window, int button, int action,
-                                  int mods) {
-  ImGui_ImplGlfw_MouseButtonCallback(window, button, action, mods);
+inline void
+mouse_button_callback(GLFWwindow *window, int button, int action, int mods) {
+  auto input_mode = glfwGetInputMode(window, GLFW_CURSOR);
+  if (input_mode == GLFW_CURSOR_NORMAL) {
+    ImGui_ImplGlfw_MouseButtonCallback(window, button, action, mods);
+    return;
+  }
 }
 
 inline void mouse_callback(GLFWwindow *window, double x_pos, double y_pos) {
-  ImGui_ImplGlfw_CursorPosCallback(window, x_pos, y_pos);
   auto *window_state =
       static_cast<window_state_t *>(glfwGetWindowUserPointer(window));
 
-  ImGuiIO &io = ImGui::GetIO();
   auto input_mode = glfwGetInputMode(window, GLFW_CURSOR);
-  if ((input_mode == GLFW_CURSOR_NORMAL) ||
-      ((input_mode == GLFW_CURSOR_DISABLED) && io.WantCaptureMouse)) {
+  if (input_mode == GLFW_CURSOR_NORMAL) {
+    ImGui_ImplGlfw_CursorPosCallback(window, x_pos, y_pos);
     return;
   }
 
@@ -93,8 +94,8 @@ inline void mouse_callback(GLFWwindow *window, double x_pos, double y_pos) {
   window_state->camera.process_rotation(x_offset, y_offset);
 }
 
-inline void scroll_callback(GLFWwindow *window, double x_offset,
-                             double y_offset) {
+inline void
+scroll_callback(GLFWwindow *window, double x_offset, double y_offset) {
   ImGui_ImplGlfw_ScrollCallback(window, x_offset, y_offset);
   auto *window_state =
       static_cast<window_state_t *>(glfwGetWindowUserPointer(window));
@@ -123,9 +124,10 @@ const window_callbacks_t DEFAULT_WINDOW_CALLBACKS = {
     .scroll = scroll_callback,
 };
 
-inline void
-init_window_callbacks(GLFWwindow *window, window_state_t &window_state,
-                      window_callbacks_t callbacks = DEFAULT_WINDOW_CALLBACKS) {
+inline void init_window_callbacks(
+    GLFWwindow *window, window_state_t &window_state,
+    window_callbacks_t callbacks = DEFAULT_WINDOW_CALLBACKS
+) {
   glfwSetWindowUserPointer(window, &window_state);
   glfwSetFramebufferSizeCallback(window, callbacks.framebuffer_size);
   glfwSetWindowFocusCallback(window, callbacks.window_focus);

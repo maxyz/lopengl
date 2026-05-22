@@ -367,19 +367,16 @@ void SceneRenderer::render_scene_draw_plane() {
 }
 
 void SceneRenderer::render_imgui() {
+  ImGuiIO &io = ImGui::GetIO();
+  auto cursor_input_mode = glfwGetInputMode(m_window, GLFW_CURSOR);
+  bool camera_mode = cursor_input_mode != GLFW_CURSOR_NORMAL;
+  if (camera_mode) {
+  } else {
+  }
+
   ImGui_ImplOpenGL3_NewFrame();
   ImGui_ImplGlfw_NewFrame();
   ImGui::NewFrame();
-
-  ImGuiIO &io = ImGui::GetIO();
-  bool camera_mode =
-      glfwGetInputMode(m_window, GLFW_CURSOR) == GLFW_CURSOR_DISABLED;
-
-  if (camera_mode) {
-    io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;
-  } else {
-    io.ConfigFlags &= ~ImGuiConfigFlags_NoMouseCursorChange;
-  }
 
   ImGui::SetNextWindowPos(ImVec2(6.0f, 6.0f), ImGuiCond_Once);
   ImGui::Begin("Scene information", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
@@ -395,6 +392,13 @@ void SceneRenderer::render_imgui() {
   ImGui::LabelText(
       "Dept Mode", "%s", depth_modes[state.depth_mode_index].name.c_str()
   );
+  ImGui::LabelText(
+      "Cursor mode", "%s",
+      cursor_input_mode == GLFW_CURSOR_DISABLED ? "DISABLED"
+      : cursor_input_mode == GLFW_CURSOR_HIDDEN ? "HIDDEN"
+                                                : "NORMAL"
+  );
+
   if (camera_mode) {
   } else {
   }
