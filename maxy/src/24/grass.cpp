@@ -291,7 +291,6 @@ void SceneRenderer::render_scene() {
 
 void SceneRenderer::render_fill_pass() {
   render_scene_draw_plane();
-
   render_scene_draw_cubes(m_shaders.shader);
   render_scene_draw_grass();
 }
@@ -361,7 +360,10 @@ void SceneRenderer::render_scene_draw_plane() {
 
   m_shaders.shader.use();
   m_shaders.shader.set_mat4("model", model_transform);
+  glEnable(GL_POLYGON_OFFSET_FILL);
+  glPolygonOffset(-1.f, -1.f);
   glDrawArrays(GL_TRIANGLES, 0, floor_vertices.size());
+  glDisable(GL_POLYGON_OFFSET_FILL);
 }
 
 void SceneRenderer::render_imgui() {
