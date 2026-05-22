@@ -15,10 +15,9 @@
 
 #include "common/common.hpp"
 
-constexpr const char *TITLE = "Model loading example";
+constexpr const char *TITLE = "Transparent grass";
 constexpr GLuint WIDTH = 1024;
 constexpr GLuint HEIGHT = 768;
-constexpr float BORDER_THICKNESS = 0.015f;
 
 struct model_preset_t {
   glm::vec3 position;
@@ -28,6 +27,7 @@ struct preset_t {
   std::string name;
   glm::vec4 clear_color;
   std::vector<model_preset_t> cubes;
+  std::vector<model_preset_t> vegetation;
   model_preset_t plane;
 };
 
@@ -37,28 +37,32 @@ struct depth_mode_t {
 };
 
 struct state_t {
-  window_state_t window = {.viewport = {.width = WIDTH, .height = HEIGHT}};
+  window_state_t window = {
+      .viewport = {.width = WIDTH, .height = HEIGHT},
+      .camera = Camera{glm::vec3(0.f, .5f, 3.f)},
+  };
   size_t preset_index = 0;
   size_t depth_mode_index = 2; // Initial value set to less
-  float border_thickness = BORDER_THICKNESS;
 };
 state_t state;
 
 struct shaders_t {
   Shader shader;
-  Shader border;
 };
 struct vaos_t {
   id_t cube;
+  id_t grass;
   id_t plane;
 };
 struct vbos_t {
   id_t cube;
+  id_t grass;
   id_t plane;
 };
 struct textures_t {
   id_t marble;
   id_t metal;
+  id_t grass;
 };
 
 class SceneRenderer {
@@ -71,8 +75,8 @@ public:
   SceneRenderer(SceneRenderer &&o) noexcept = delete;
   SceneRenderer &operator=(SceneRenderer &&o) = delete;
   ~SceneRenderer() noexcept {
-    glDeleteVertexArrays(2, &m_vaos.cube);
-    glDeleteBuffers(2, &m_vbos.cube);
+    glDeleteVertexArrays(3, &m_vaos.cube);
+    glDeleteBuffers(3, &m_vbos.cube);
   }
 
   void render(input_t input, float delta);
@@ -93,9 +97,9 @@ private:
 
   void render_scene();
   void render_fill_pass();
-  void render_outline_pass();
   void render_scene_set_view_and_projection();
   void render_scene_draw_cubes(Shader &);
+  void render_scene_draw_grass();
   void render_scene_draw_plane();
   void render_imgui();
 };
@@ -107,12 +111,35 @@ const std::array<preset_t, 1> presets = {{
         .cubes =
             {
                 {
-                    .position = glm::vec3(-1.f, 0.f, 1.f),
+                    .position = glm::vec3(-1.f, .5f, 1.f),
                     .scale = 1.f,
                 },
                 {
-                    .position = glm::vec3(2.f, 0.f, 0.f),
+                    .position = glm::vec3(2.f, 1.f, 0.f),
                     .scale = 2.f,
+                },
+            },
+        .vegetation =
+            {
+                {
+                    .position = glm::vec3(-1.5f, 0.f, -0.48f),
+                    .scale = .8f,
+                },
+                {
+                    .position = glm::vec3(1.5f, 0.f, .51f),
+                    .scale = .9f,
+                },
+                {
+                    .position = glm::vec3(0.f, 0.f, .7f),
+                    .scale = 1.f,
+                },
+                {
+                    .position = glm::vec3(-.3f, 0.f, -2.3f),
+                    .scale = 1.1f,
+                },
+                {
+                    .position = glm::vec3(.5f, 0.f, -.6f),
+                    .scale = 1.2f,
                 },
             },
         .plane = {
@@ -166,7 +193,17 @@ std::expected<textures_t, std::string> load_textures() {
   if (!metal_texture) {
     return std::unexpected(metal_texture.error());
   }
-  return textures_t{.marble = *marble_texture, .metal = *metal_texture};
+  texture_options_t grass_options{DEFAULT_TEXTURE_OPTIONS};
+  grass_options.wrap = GL_CLAMP_TO_EDGE;
+  auto grass_texture = load_texture("textures/grass.png", grass_options);
+  if (!grass_texture) {
+    return std::unexpected(grass_texture.error());
+  }
+  return textures_t{
+      .marble = *marble_texture,
+      .metal = *metal_texture,
+      .grass = *grass_texture,
+  };
 }
 
 void load_buffer_vertices(
@@ -200,10 +237,11 @@ std::pair<vaos_t, vbos_t> load_buffers() {
   vaos_t vaos{};
   vbos_t vbos{};
 
-  glGenVertexArrays(2, &vaos.cube);
-  glGenBuffers(2, &vbos.cube);
+  glGenVertexArrays(3, &vaos.cube);
+  glGenBuffers(3, &vbos.cube);
 
   load_buffer_vertices(cube_vertices, vaos.cube, vbos.cube);
+  load_buffer_vertices(square_vertices, vaos.grass, vbos.grass);
   load_buffer_vertices(floor_vertices, vaos.plane, vbos.plane);
 
   return {vaos, vbos};
@@ -211,18 +249,12 @@ std::pair<vaos_t, vbos_t> load_buffers() {
 
 std::expected<std::unique_ptr<SceneRenderer>, std::string>
 SceneRenderer::create(GLFWwindow *window) {
-  auto shader = Shader::build("shaders/23_depth.vert", "shaders/23_depth.frag");
+  auto shader = Shader::build("shaders/24_grass.vert", "shaders/24_grass.frag");
   if (!shader) {
     return std::unexpected(shader.error());
   }
-  auto border_shader =
-      Shader::build("shaders/23_border.vert", "shaders/23_border.frag");
-  if (!border_shader) {
-    return std::unexpected(border_shader.error());
-  }
   shaders_t shaders = {
       .shader = std::move(*shader),
-      .border = std::move(*border_shader),
   };
   auto textures = load_textures();
   if (!textures) {
@@ -255,27 +287,13 @@ void SceneRenderer::render(input_t input, float delta) {
 void SceneRenderer::render_scene() {
   render_scene_set_view_and_projection();
   render_fill_pass();
-  render_outline_pass();
 }
 
 void SceneRenderer::render_fill_pass() {
   render_scene_draw_plane();
 
-  glStencilFunc(GL_ALWAYS, 1, 0xFF);
-  glStencilMask(0xFF);
   render_scene_draw_cubes(m_shaders.shader);
-}
-
-void SceneRenderer::render_outline_pass() {
-  glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
-  glStencilMask(0x00);
-  glDisable(GL_DEPTH_TEST);
-  m_shaders.border.use();
-  m_shaders.border.set_float("border_thickness", state.border_thickness);
-  render_scene_draw_cubes(m_shaders.border);
-  glEnable(GL_DEPTH_TEST);
-  glStencilMask(0xFF);
-  glStencilFunc(GL_ALWAYS, 0, 0xFF);
+  render_scene_draw_grass();
 }
 
 void SceneRenderer::render_scene_set_view_and_projection() {
@@ -289,9 +307,6 @@ void SceneRenderer::render_scene_set_view_and_projection() {
   m_shaders.shader.use();
   m_shaders.shader.set_mat4("view", view);
   m_shaders.shader.set_mat4("projection", projection);
-  m_shaders.border.use();
-  m_shaders.border.set_mat4("view", view);
-  m_shaders.border.set_mat4("projection", projection);
 }
 
 void SceneRenderer::render_scene_draw_cubes(Shader &shader) {
@@ -313,10 +328,26 @@ void SceneRenderer::render_scene_draw_cubes(Shader &shader) {
   }
 }
 
-void SceneRenderer::render_scene_draw_plane() {
-  glStencilFunc(GL_ALWAYS, 0, 0xFF);
-  glStencilMask(0x00);
+void SceneRenderer::render_scene_draw_grass() {
+  const preset_t &preset = presets[state.preset_index];
 
+  m_shaders.shader.use();
+
+  glBindVertexArray(m_vaos.grass);
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, m_textures.grass);
+
+  for (auto &model_info : preset.vegetation) {
+    glm::mat4 model_transform = glm::mat4(1.f);
+    model_transform = glm::translate(model_transform, model_info.position);
+    model_transform = glm::scale(model_transform, glm::vec3(model_info.scale));
+
+    m_shaders.shader.set_mat4("model", model_transform);
+    glDrawArrays(GL_TRIANGLES, 0, square_vertices.size());
+  }
+}
+
+void SceneRenderer::render_scene_draw_plane() {
   const preset_t &preset = presets[state.preset_index];
 
   glBindVertexArray(m_vaos.plane);
@@ -363,9 +394,7 @@ void SceneRenderer::render_imgui() {
       "Dept Mode", "%s", depth_modes[state.depth_mode_index].name.c_str()
   );
   if (camera_mode) {
-    ImGui::LabelText("Border", "%.4f", state.border_thickness);
   } else {
-    ImGui::SliderFloat("Border", &state.border_thickness, 0.0f, 0.05f, "%.4f");
   }
   ImGui::PopItemWidth();
 
@@ -412,7 +441,6 @@ int main() {
     std::cerr << ctx.error() << "\n";
     return -1;
   }
-  glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 
   window_callbacks_t window_callbacks{DEFAULT_WINDOW_CALLBACKS};
   window_callbacks.key = key_callback_with_depth_mode;

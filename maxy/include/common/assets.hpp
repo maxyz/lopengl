@@ -9,6 +9,12 @@
 
 #include "common/types.hpp"
 
+struct texture_options_t {
+  GLenum wrap;
+};
+
+constexpr texture_options_t DEFAULT_TEXTURE_OPTIONS{.wrap = GL_REPEAT};
+
 struct STBImageDeleter {
   void operator()(stbi_uc *ptr) const noexcept { stbi_image_free(ptr); }
 };
@@ -25,7 +31,9 @@ get_asset_path(const std::string &filename);
 std::expected<Image, std::string> load_image(const std::string &filename);
 
 std::expected<id_t, std::string> load_texture(const std::string &filename);
-std::expected<id_t, std::string> load_texture(const std::string &filename,
-                                              const std::string &directory);
+std::expected<id_t, std::string>
+load_texture(const std::string &filename, const texture_options_t &options);
+std::expected<id_t, std::string>
+load_texture(const std::string &filename, const std::string &directory);
 
 std::expected<GLenum, std::string> guess_format(const Image &image);
