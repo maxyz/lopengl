@@ -10,19 +10,19 @@
 #include "common/types.hpp"
 
 struct texture_options_t {
-  GLenum wrap;
+    GLenum wrap;
 };
 
 constexpr texture_options_t DEFAULT_TEXTURE_OPTIONS{.wrap = GL_REPEAT};
 
 struct STBImageDeleter {
-  void operator()(stbi_uc *ptr) const noexcept { stbi_image_free(ptr); }
+    void operator()(stbi_uc *ptr) const noexcept { stbi_image_free(ptr); }
 };
 using image_data_ptr = std::unique_ptr<stbi_uc[], STBImageDeleter>;
 
 struct Image {
-  image_data_ptr data;
-  int width, height, channel_count;
+    image_data_ptr data;
+    int width, height, channel_count;
 };
 
 std::expected<std::string, std::string>

@@ -15,152 +15,161 @@ namespace fs = std::filesystem;
 std::unordered_map<std::string, Texture> Model::m_textures_loaded;
 
 struct ModelLoader {
-  std::vector<Mesh> meshes;
-  fs::path directory;
-  std::unordered_map<std::string, Texture> &textures_loaded;
+    std::vector<Mesh> meshes;
+    fs::path directory;
+    std::unordered_map<std::string, Texture> &textures_loaded;
 
-  explicit ModelLoader(std::unordered_map<std::string, Texture> &cache)
-      : textures_loaded(cache) {}
+    explicit ModelLoader(std::unordered_map<std::string, Texture> &cache)
+        : textures_loaded(cache) {}
 
-  std::expected<void, std::string> load(const std::string &path);
-  std::expected<void, std::string>
-  process_node(aiNode *node, const aiScene *scene);
-  std::expected<Mesh, std::string>
-  process_mesh(aiMesh *mesh, const aiScene *scene);
-  std::expected<std::vector<Texture>, std::string> load_material_textures(
-      aiMaterial *material, aiTextureType type, std::string_view name
-  );
+    std::expected<void, std::string> load(const std::string &path);
+    std::expected<void, std::string>
+    process_node(aiNode *node, const aiScene *scene);
+    std::expected<Mesh, std::string>
+    process_mesh(aiMesh *mesh, const aiScene *scene);
+    std::expected<std::vector<Texture>, std::string> load_material_textures(
+        aiMaterial *material, aiTextureType type, std::string_view name
+    );
 };
 
 void Model::draw(Shader &shader) {
-  for (auto &mesh : m_meshes) {
-    mesh.draw(shader);
-  }
+    for (auto &mesh : m_meshes) {
+        mesh.draw(shader);
+    }
 }
 
 std::expected<Model, std::string> Model::load(const std::string &path) {
-  ModelLoader loader{m_textures_loaded};
-  auto load_res = loader.load(path);
-  if (!load_res) {
-    return std::unexpected(load_res.error());
-  }
-  return Model{std::move(loader.meshes)};
+    ModelLoader loader{m_textures_loaded};
+    auto load_res = loader.load(path);
+    if (!load_res) {
+        return std::unexpected(load_res.error());
+    }
+    return Model{std::move(loader.meshes)};
 }
 
 std::expected<void, std::string> ModelLoader::load(const std::string &path) {
-  Assimp::Importer importer;
-  directory = fs::path(path).parent_path();
-  auto filepath = get_asset_path(path);
-  if (!filepath) {
-    return std::unexpected(filepath.error());
-  }
-  const aiScene *scene =
-      importer.ReadFile(*filepath, aiProcess_Triangulate | aiProcess_FlipUVs);
-  if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE ||
-      !scene->mRootNode) {
-    return std::unexpected(
-        std::format("assimp: {}", importer.GetErrorString())
-    );
-  }
-  return process_node(scene->mRootNode, scene);
+    Assimp::Importer importer;
+    directory = fs::path(path).parent_path();
+    auto filepath = get_asset_path(path);
+    if (!filepath) {
+        return std::unexpected(filepath.error());
+    }
+    const aiScene *scene =
+        importer.ReadFile(*filepath, aiProcess_Triangulate | aiProcess_FlipUVs);
+    if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE ||
+        !scene->mRootNode) {
+        return std::unexpected(
+            std::format("assimp: {}", importer.GetErrorString())
+        );
+    }
+    return process_node(scene->mRootNode, scene);
 }
 
 std::expected<void, std::string>
 ModelLoader::process_node(aiNode *node, const aiScene *scene) {
-  for (size_t i = 0; i < node->mNumMeshes; ++i) {
-    aiMesh *mesh = scene->mMeshes[node->mMeshes[i]];
-    auto processed_mesh = process_mesh(mesh, scene);
-    if (!processed_mesh) {
-      return std::unexpected(
-          std::format("mesh[{}]: {}", i, processed_mesh.error())
-      );
+    for (size_t i = 0; i < node->mNumMeshes; ++i) {
+        aiMesh *mesh = scene->mMeshes[node->mMeshes[i]];
+        auto processed_mesh = process_mesh(mesh, scene);
+        if (!processed_mesh) {
+            return std::unexpected(
+                std::format("mesh[{}]: {}", i, processed_mesh.error())
+            );
+        }
+        meshes.push_back(std::move(*processed_mesh));
     }
-    meshes.push_back(std::move(*processed_mesh));
-  }
-  for (size_t i = 0; i < node->mNumChildren; ++i) {
-    auto result = process_node(node->mChildren[i], scene);
-    if (!result) {
-      return std::unexpected(std::format("node[{}]: {}", i, result.error()));
+    for (size_t i = 0; i < node->mNumChildren; ++i) {
+        auto result = process_node(node->mChildren[i], scene);
+        if (!result) {
+            return std::unexpected(
+                std::format("node[{}]: {}", i, result.error())
+            );
+        }
     }
-  }
-  return {};
+    return {};
 }
 
 std::expected<Mesh, std::string>
 ModelLoader::process_mesh(aiMesh *mesh, const aiScene *scene) {
-  std::vector<Vertex> vertices;
-  std::vector<unsigned int> indices;
-  std::vector<Texture> textures;
+    std::vector<Vertex> vertices;
+    std::vector<unsigned int> indices;
+    std::vector<Texture> textures;
 
-  for (size_t i = 0; i < mesh->mNumVertices; ++i) {
-    Vertex vertex;
-    vertex.position = glm::vec3(
-        mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z
-    );
-    vertex.normal = glm::vec3(
-        mesh->mNormals[i].x, mesh->mNormals[i].y, mesh->mNormals[i].z
-    );
-    if (mesh->mTextureCoords[0]) {
-      vertex.tex_coords =
-          glm::vec2(mesh->mTextureCoords[0][i].x, mesh->mTextureCoords[0][i].y);
+    for (size_t i = 0; i < mesh->mNumVertices; ++i) {
+        Vertex vertex;
+        vertex.position = glm::vec3(
+            mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z
+        );
+        vertex.normal = glm::vec3(
+            mesh->mNormals[i].x, mesh->mNormals[i].y, mesh->mNormals[i].z
+        );
+        if (mesh->mTextureCoords[0]) {
+            vertex.tex_coords = glm::vec2(
+                mesh->mTextureCoords[0][i].x, mesh->mTextureCoords[0][i].y
+            );
+        }
+        vertices.push_back(vertex);
     }
-    vertices.push_back(vertex);
-  }
 
-  for (size_t i = 0; i < mesh->mNumFaces; ++i) {
-    aiFace face = mesh->mFaces[i];
-    for (size_t j = 0; j < face.mNumIndices; ++j) {
-      indices.push_back(face.mIndices[j]);
+    for (size_t i = 0; i < mesh->mNumFaces; ++i) {
+        aiFace face = mesh->mFaces[i];
+        for (size_t j = 0; j < face.mNumIndices; ++j) {
+            indices.push_back(face.mIndices[j]);
+        }
     }
-  }
 
-  if (mesh->mMaterialIndex >= 0) {
-    aiMaterial *material = scene->mMaterials[mesh->mMaterialIndex];
-    auto diffuse_maps = load_material_textures(
-        material, aiTextureType_DIFFUSE, "texture_diffuse"
-    );
-    if (!diffuse_maps) {
-      return std::unexpected(
-          std::format("diffuse_maps: {}", diffuse_maps.error())
-      );
+    if (mesh->mMaterialIndex >= 0) {
+        aiMaterial *material = scene->mMaterials[mesh->mMaterialIndex];
+        auto diffuse_maps = load_material_textures(
+            material, aiTextureType_DIFFUSE, "texture_diffuse"
+        );
+        if (!diffuse_maps) {
+            return std::unexpected(
+                std::format("diffuse_maps: {}", diffuse_maps.error())
+            );
+        }
+        textures.insert(
+            textures.end(), diffuse_maps->begin(), diffuse_maps->end()
+        );
+        auto specular_maps = load_material_textures(
+            material, aiTextureType_SPECULAR, "texture_specular"
+        );
+        if (!specular_maps) {
+            return std::unexpected(
+                std::format("specular_maps: {}", specular_maps.error())
+            );
+        }
+        textures.insert(
+            textures.end(), specular_maps->begin(), specular_maps->end()
+        );
     }
-    textures.insert(textures.end(), diffuse_maps->begin(), diffuse_maps->end());
-    auto specular_maps = load_material_textures(
-        material, aiTextureType_SPECULAR, "texture_specular"
-    );
-    if (!specular_maps) {
-      return std::unexpected(
-          std::format("specular_maps: {}", specular_maps.error())
-      );
-    }
-    textures.insert(
-        textures.end(), specular_maps->begin(), specular_maps->end()
-    );
-  }
-  return Mesh(std::move(vertices), std::move(indices), std::move(textures));
+    return Mesh(std::move(vertices), std::move(indices), std::move(textures));
 }
 
 std::expected<std::vector<Texture>, std::string>
 ModelLoader::load_material_textures(
     aiMaterial *material, aiTextureType type, std::string_view name
 ) {
-  std::vector<Texture> textures;
-  for (size_t i = 0; i < material->GetTextureCount(type); ++i) {
-    aiString str;
-    material->GetTexture(type, i, &str);
+    std::vector<Texture> textures;
+    for (size_t i = 0; i < material->GetTextureCount(type); ++i) {
+        aiString str;
+        material->GetTexture(type, i, &str);
 
-    std::string path = str.C_Str();
-    auto it = textures_loaded.find(path);
-    if (it != textures_loaded.end()) {
-      textures.push_back(it->second);
-    } else {
-      auto id = load_texture(str.C_Str(), directory.string());
-      if (!id) {
-        return std::unexpected(std::format("image {}: {}", path, id.error()));
-      }
-      Texture tex{.id = *id, .type = std::string(name)};
-      textures.push_back(textures_loaded.emplace(path, tex).first->second);
+        std::string path = str.C_Str();
+        auto it = textures_loaded.find(path);
+        if (it != textures_loaded.end()) {
+            textures.push_back(it->second);
+        } else {
+            auto id = load_texture(str.C_Str(), directory.string());
+            if (!id) {
+                return std::unexpected(
+                    std::format("image {}: {}", path, id.error())
+                );
+            }
+            Texture tex{.id = *id, .type = std::string(name)};
+            textures.push_back(
+                textures_loaded.emplace(path, tex).first->second
+            );
+        }
     }
-  }
-  return textures;
+    return textures;
 }

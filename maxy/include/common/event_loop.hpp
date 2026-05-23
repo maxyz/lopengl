@@ -6,58 +6,61 @@
 #include "common/window_state.hpp"
 
 struct frame_time_t {
-  float last_time{};
-  float delta{};
+    float last_time{};
+    float delta{};
 };
 
 inline void update_delta(frame_time_t &d) {
-  float now = static_cast<float>(glfwGetTime());
-  d.delta = now - d.last_time;
-  d.last_time = now;
+    float now = static_cast<float>(glfwGetTime());
+    d.delta = now - d.last_time;
+    d.last_time = now;
 }
 
 constexpr float keyboard_yaw_speed = 120.f;
 
-inline void process_camera_events(window_state_t &window_state, input_t input,
-                                  float delta) {
-  if (input.fov_inc)
-    window_state.camera.update_fov(1.f);
-  if (input.fov_dec)
-    window_state.camera.update_fov(-1.f);
-  if (input.camera.up)
-    window_state.camera.process_movement(CameraMovement::UP, delta);
-  if (input.camera.down)
-    window_state.camera.process_movement(CameraMovement::DOWN, delta);
-  if (input.camera.left)
-    window_state.camera.process_movement(CameraMovement::LEFT, delta);
-  if (input.camera.right)
-    window_state.camera.process_movement(CameraMovement::RIGHT, delta);
-  if (input.camera.forward)
-    window_state.camera.process_movement(CameraMovement::FORWARD, delta);
-  if (input.camera.back)
-    window_state.camera.process_movement(CameraMovement::BACKWARD, delta);
-  if (input.cam_yaw_left)
-    window_state.camera.process_rotation(
-        keyboard_yaw_speed * -camera_speed * delta, 0.f);
-  if (input.cam_yaw_right)
-    window_state.camera.process_rotation(
-        keyboard_yaw_speed * camera_speed * delta, 0.f);
+inline void process_camera_events(
+    window_state_t &window_state, input_t input, float delta
+) {
+    if (input.fov_inc)
+        window_state.camera.update_fov(1.f);
+    if (input.fov_dec)
+        window_state.camera.update_fov(-1.f);
+    if (input.camera.up)
+        window_state.camera.process_movement(CameraMovement::UP, delta);
+    if (input.camera.down)
+        window_state.camera.process_movement(CameraMovement::DOWN, delta);
+    if (input.camera.left)
+        window_state.camera.process_movement(CameraMovement::LEFT, delta);
+    if (input.camera.right)
+        window_state.camera.process_movement(CameraMovement::RIGHT, delta);
+    if (input.camera.forward)
+        window_state.camera.process_movement(CameraMovement::FORWARD, delta);
+    if (input.camera.back)
+        window_state.camera.process_movement(CameraMovement::BACKWARD, delta);
+    if (input.cam_yaw_left)
+        window_state.camera.process_rotation(
+            keyboard_yaw_speed * -camera_speed * delta, 0.f
+        );
+    if (input.cam_yaw_right)
+        window_state.camera.process_rotation(
+            keyboard_yaw_speed * camera_speed * delta, 0.f
+        );
 }
 
 template <typename Renderer, typename InputFn>
 void event_loop(GLFWwindow *window, Renderer &renderer, InputFn process_input) {
-  input_t input{};
-  frame_time_t delta{};
+    input_t input{};
+    frame_time_t delta{};
 
-  while (!glfwWindowShouldClose(window)) {
-    update_delta(delta);
+    while (!glfwWindowShouldClose(window)) {
+        update_delta(delta);
 
-    input = {};
-    process_input(window, input);
+        input = {};
+        process_input(window, input);
 
-    renderer.render(input, delta.delta);
+        renderer.render(input, delta.delta);
 
-    glfwSwapBuffers(window);
-    glfwPollEvents();
-  }
+        glfwSwapBuffers(window);
+        glfwPollEvents();
+    }
 }

@@ -10,16 +10,16 @@
 
 class Model {
 public:
-  Model(std::vector<Mesh> meshes) : m_meshes{std::move(meshes)} {};
-  Model(const Model &) = delete;
-  Model &operator=(const Model &) = delete;
-  Model(Model &&) noexcept = default;
-  Model &operator=(Model &&) = default;
+    Model(std::vector<Mesh> meshes) : m_meshes{std::move(meshes)} {};
+    Model(const Model &) = delete;
+    Model &operator=(const Model &) = delete;
+    Model(Model &&) noexcept = default;
+    Model &operator=(Model &&) = default;
 
-  static std::expected<Model, std::string> load(const std::string &path);
-  void draw(Shader &shader);
+    static std::expected<Model, std::string> load(const std::string &path);
+    void draw(Shader &shader);
 
 private:
-  std::vector<Mesh> m_meshes;
-  static std::unordered_map<std::string, Texture> m_textures_loaded;
+    std::vector<Mesh> m_meshes;
+    static std::unordered_map<std::string, Texture> m_textures_loaded;
 };

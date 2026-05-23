@@ -70,10 +70,10 @@ void main() {
   normal = mat3(transpose(inverse(vm))) * (a_normal * normal_flip);
 
   dir_light_dir_view = vec3(view * vec4(dir_light.direction, 0.));
-  for (int i=0; i < pos_light_count; ++i) {
+  for (int i = 0; i < pos_light_count; ++i) {
     pos_lights_pos_view[i] = vec3(view * vec4(pos_lights[i].position, 1.));
   }
-  for (int i=0; i< spot_light_count; ++i) {
+  for (int i = 0; i < spot_light_count; ++i) {
     spot_lights_pos_view[i] = vec3(view * vec4(spot_lights[i].position, 1.));
     spot_lights_dir_view[i] = vec3(view * vec4(spot_lights[i].direction, 0.));
   }

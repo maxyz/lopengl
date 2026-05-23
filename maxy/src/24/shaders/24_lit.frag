@@ -50,7 +50,6 @@ struct positional_light_view_t {
   positional_light_t light;
 };
 
-
 struct spot_light_t {
   vec3 position;
   vec3 direction;
@@ -182,12 +181,12 @@ void main() {
   dir_light_view.light = dir_light;
 
   positional_light_view_t pos_lights_view[MAX_POS_LIGHTS];
-  for (int i=0; i < pos_light_count; ++i) {
+  for (int i = 0; i < pos_light_count; ++i) {
     pos_lights_view[i].position_view = pos_lights_pos_view[i];
     pos_lights_view[i].light = pos_lights[i];
   }
   spot_light_view_t spot_lights_view[MAX_SPOT_LIGHTS];
-  for (int i=0; i < spot_light_count; ++i) {
+  for (int i = 0; i < spot_light_count; ++i) {
     spot_lights_view[i].position_view = spot_lights_pos_view[i];
     spot_lights_view[i].direction_view = spot_lights_dir_view[i];
     spot_lights_view[i].light = spot_lights[i];

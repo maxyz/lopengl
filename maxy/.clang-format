@@ -1,2 +1,6 @@
 ---
 AlignAfterOpenBracket: BlockIndent
+AlignArrayOfStructures: Right
+IndentWidth: 4
+ObjCBlockIndentWidth: 4
+AccessModifierOffset: -4
