@@ -212,6 +212,17 @@ const model_preset_t simple_plane = {
     .scale = 1.f,
 };
 
+// Far clip is 100 units; ±500 ensures the floor edge is never visible.
+// Texture tiles at the same density as floor_vertices (5 units per tile).
+inline const std::array<vertex_t, 6> large_floor_vertices = {{
+    {{ 500.f, 0.f,  500.f}, {0.f, 1.f, 0.f}, {200.f,   0.f}},
+    {{-500.f, 0.f,  500.f}, {0.f, 1.f, 0.f}, {  0.f,   0.f}},
+    {{-500.f, 0.f, -500.f}, {0.f, 1.f, 0.f}, {  0.f, 200.f}},
+    {{ 500.f, 0.f,  500.f}, {0.f, 1.f, 0.f}, {200.f,   0.f}},
+    {{-500.f, 0.f, -500.f}, {0.f, 1.f, 0.f}, {  0.f, 200.f}},
+    {{ 500.f, 0.f, -500.f}, {0.f, 1.f, 0.f}, {200.f, 200.f}},
+}};
+
 const std::array<preset_t, 4> presets = {{
     {
         .name = "desert",
@@ -582,7 +593,7 @@ std::pair<vaos_t, vbos_t> load_buffers() {
 
   load_buffer_vertices(cube_vertices, vaos.cube, vbos.cube);
   load_buffer_vertices(square_vertices, vaos.window, vbos.window);
-  load_buffer_vertices(floor_vertices, vaos.plane, vbos.plane);
+  load_buffer_vertices(large_floor_vertices, vaos.plane, vbos.plane);
 
   // Light cube: shares the cube VBO, position only (attrib 0)
   glBindVertexArray(vaos.light_cube);
@@ -834,7 +845,7 @@ void SceneRenderer::render_scene_draw_plane() {
   m_shaders.view.set_mat4("model", model_transform);
   glEnable(GL_POLYGON_OFFSET_FILL);
   glPolygonOffset(-1.f, -1.f);
-  glDrawArrays(GL_TRIANGLES, 0, floor_vertices.size());
+  glDrawArrays(GL_TRIANGLES, 0, large_floor_vertices.size());
   glDisable(GL_POLYGON_OFFSET_FILL);
 }
 
