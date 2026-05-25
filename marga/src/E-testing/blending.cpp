@@ -398,31 +398,7 @@ int main()
         glDrawArrays(GL_TRIANGLES, 0, 6);
         glBindVertexArray(0);
 
-        // transparentObjects
-        //glBindVertexArray(transparentObjectsVAO);
-        glBindVertexArray(VAO);
-        glBindTexture(GL_TEXTURE_2D, windowPane.ID);  
-        // This draws the transparent objects in fixed order and is not good for blending
-        /*for(unsigned int i = 0; i < transparentObjects.size(); i++) 
-        {
-            model = glm::mat4(1.0f);
-            model = glm::translate(model, transparentObjects[i]);				
-            ourShader.setMatrix4fv("model", glm::value_ptr(model));
-            glDrawArrays(GL_TRIANGLES, 0, 6);
-        }*/
-
-        // Put the transparent objects into a map to get them sorted by distance
-        sortTransparent(recalculateObjects, transparentObjects, &sorted);
-        for(std::map<float,glm::vec3>::reverse_iterator it = sorted.rbegin(); it != sorted.rend(); ++it) 
-        {
-            model = glm::mat4(1.0f);
-            model = glm::translate(model, it->second);				
-            ourShader.setMatrix4fv("model", glm::value_ptr(model));
-            glDrawArrays(GL_TRIANGLES, 0, 6);
-        }
-
-
-        // Draw the light on the screen
+        // Draw the lights on the screen
         sourceShader.use();
         sourceShader.setMatrix4fv("view", glm::value_ptr(view));
         sourceShader.setMatrix4fv("projection", glm::value_ptr(projection));
@@ -439,6 +415,18 @@ int main()
             glDrawArrays(GL_TRIANGLES, 0, 36);
         }
 
+        // Put the transparent objects into a map to get them sorted by distance
+        glBindVertexArray(VAO);
+        glBindTexture(GL_TEXTURE_2D, windowPane.ID);  
+        ourShader.use();
+        sortTransparent(recalculateObjects, transparentObjects, &sorted);
+        for(std::map<float,glm::vec3>::reverse_iterator it = sorted.rbegin(); it != sorted.rend(); ++it) 
+        {
+            model = glm::mat4(1.0f);
+            model = glm::translate(model, it->second);				
+            ourShader.setMatrix4fv("model", glm::value_ptr(model));
+            glDrawArrays(GL_TRIANGLES, 0, 6);
+        }
 
         // Render ImGui
         ImGui::Render();
