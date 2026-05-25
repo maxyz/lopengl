@@ -128,7 +128,7 @@ void sortTransparent(bool recalculateObjects, auto transparentObjects, auto *sor
     for (unsigned int i = 0; i < transparentObjects.size(); i++)
     {
         float distance = glm::length(camera.Position - transparentObjects[i]);
-        (*sorted)[distance] = transparentObjects[i];
+        sorted->insert({distance, transparentObjects[i]});
     }
     recalculateObjects = true;
 }
@@ -211,13 +211,13 @@ int main()
     // Plane definition
     float planeVertices[] = {
         // positions          // texture Coords (note we set these higher than 1 (together with GL_REPEAT as texture wrapping mode). this will cause the floor texture to repeat)
-         5.0f, -0.5f,  5.0f,  0.0f, 1.0f, 0.0f, 2.0f, 0.0f,
-        -5.0f, -0.5f,  5.0f,  0.0f, 1.0f, 0.0f, 0.0f, 0.0f,
-        -5.0f, -0.5f, -5.0f,  0.0f, 1.0f, 0.0f, 0.0f, 2.0f,
+         5.0f, -0.6f,  5.0f,  0.0f, 1.0f, 0.0f, 2.0f, 0.0f,
+        -5.0f, -0.6f,  5.0f,  0.0f, 1.0f, 0.0f, 0.0f, 0.0f,
+        -5.0f, -0.6f, -5.0f,  0.0f, 1.0f, 0.0f, 0.0f, 2.0f,
 
-         5.0f, -0.5f,  5.0f,  0.0f, 1.0f, 0.0f, 2.0f, 0.0f,
-        -5.0f, -0.5f, -5.0f,  0.0f, 1.0f, 0.0f, 0.0f, 2.0f,
-         5.0f, -0.5f, -5.0f,  0.0f, 1.0f, 0.0f, 2.0f, 2.0f								
+         5.0f, -0.6f,  5.0f,  0.0f, 1.0f, 0.0f, 2.0f, 0.0f,
+        -5.0f, -0.6f, -5.0f,  0.0f, 1.0f, 0.0f, 0.0f, 2.0f,
+         5.0f, -0.6f, -5.0f,  0.0f, 1.0f, 0.0f, 2.0f, 2.0f								
     };    
     // plane VAO
     unsigned int planeVAO, planeVBO;
@@ -266,7 +266,7 @@ int main()
     transparentObjects.push_back(glm::vec3(-0.3f,  0.0f, -2.3f));
     transparentObjects.push_back(glm::vec3( 0.5f,  0.0f, -0.6f));  
 
-    std::map<float, glm::vec3> sorted;
+    std::multimap<float, glm::vec3> sorted;
     recalculateObjects = true;
     sortTransparent(recalculateObjects, transparentObjects, &sorted);
 
