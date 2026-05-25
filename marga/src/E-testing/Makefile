@@ -1,4 +1,4 @@
-EXES = depth-testing stencil-testing depth-testing-model
+EXES = depth-testing stencil-testing depth-testing-model blending
 
 default_target: $(EXES)
 
@@ -35,6 +35,9 @@ depth-testing-model: depth-testing-model.cpp libGLAD.a shader.o lights.o mesh.o 
 	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
 
 stencil-testing: stencil-testing.cpp libGLAD.a shader.o lights.o texture.o ../lib/camera.h
+	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
+
+blending: blending.cpp libGLAD.a shader.o lights.o texture.o ../lib/camera.h
 	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
 
 clean:
