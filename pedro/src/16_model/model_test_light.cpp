@@ -37,10 +37,10 @@ struct Light {
 };
 
 Light light1 = {
-    glm::vec3(-0.2f, -1.0f, -0.3f),     // Position
+    glm::vec3(-0.2f, -1.0f, -0.3f),     // Direction
     glm::vec3(1.0f),                    // Color
     glm::vec3(0.2f),                    // Ambient
-    glm::vec3(0.8f),                    // Diffuse
+    glm::vec3(1.0f),                    // Diffuse
     glm::vec3(1.0f),                    // Specular
     0.2f,
     0.8f,
