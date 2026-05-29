@@ -178,14 +178,14 @@ const std::vector<model_preset_t> simple_cubes = {
     {.position = glm::vec3(-2.f, .5f, -1.5f), .scale = 1.f},
     {.position = glm::vec3(2.f, 1.f, -2.f), .scale = 2.f},
 };
-// Desert: 4 windows scattered wide — sparse outpost feel
+// Desert: 4 windows scattered wide - sparse outpost feel
 const std::vector<model_preset_t> desert_windows = {
     {.position = glm::vec3(-3.5f, 0.f, 0.f), .scale = 1.f},
     {.position = glm::vec3(3.f, 0.f, 0.5f), .scale = 1.1f},
     {.position = glm::vec3(0.f, 0.f, -0.5f), .scale = 1.2f},
     {.position = glm::vec3(-1.5f, 0.f, 1.5f), .scale = .85f},
 };
-// Factory: 5 windows in a regular row — industrial spacing
+// Factory: 5 windows in a regular row - industrial spacing
 const std::vector<model_preset_t> factory_windows = {
     {.position = glm::vec3(-2.f, 0.f, -0.5f), .scale = .8f},
     {.position = glm::vec3(-1.f, 0.f, -0.5f), .scale = .8f},
@@ -691,9 +691,11 @@ void SceneRenderer::render_scene_draw_cubes() {
 
     glBindVertexArray(m_vaos.cube);
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, m_textures.marble);
+    glBindTexture(GL_TEXTURE_2D, m_textures.metal);
     glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, m_textures.marble);
+    glBindTexture(GL_TEXTURE_2D, m_textures.metal);
+
+    m_shaders.view.set_float("material.shininess", 32.f);
 
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
@@ -728,8 +730,10 @@ void SceneRenderer::render_scene_draw_windows() {
     glBindTexture(GL_TEXTURE_2D, m_textures.white);
 
     glDepthMask(GL_FALSE);
-    glEnable(GL_CULL_FACE);
+
     m_shaders.view.set_float("material.shininess", 128.f);
+
+    glEnable(GL_CULL_FACE);
 
     glCullFace(GL_FRONT);
     m_shaders.view.set_float("normal_flip", -1.f);
@@ -762,9 +766,11 @@ void SceneRenderer::render_scene_draw_plane() {
 
     glBindVertexArray(m_vaos.plane);
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, m_textures.metal);
+    glBindTexture(GL_TEXTURE_2D, m_textures.marble);
     glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, m_textures.metal);
+    glBindTexture(GL_TEXTURE_2D, m_textures.marble);
+
+    m_shaders.view.set_float("material.shininess", 32.f);
 
     const auto &model_info = preset.plane;
     glm::mat4 model_transform = glm::mat4(1.f);
