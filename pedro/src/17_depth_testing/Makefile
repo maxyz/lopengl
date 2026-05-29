@@ -1,4 +1,4 @@
-EXES = depth_testing
+EXES = depth_testing depth_stencil_testing
 
 LIB = libGLAD.a stb_image.o shader.o texture.o camera.o material.o model.o mesh.o key_command.o
 
@@ -14,6 +14,9 @@ CPPFLAGS = -I ../../include/ -I ../lib/ $(shell pkg-config --cflags assimp)
 EXTRAS = /usr/lib/x86_64-linux-gnu/libglfw.so libGLAD.a
 
 depth_testing: depth_testing.cpp $(LIB)
+	g++ $(CPPFLAGS) $^ $(EXTRAS) -o $@ $(LDFLAGS)
+
+depth_stencil_testing: depth_stencil_testing.cpp $(LIB)
 	g++ $(CPPFLAGS) $^ $(EXTRAS) -o $@ $(LDFLAGS)
 	
 camera.o: ../lib/camera.cpp ../lib/camera.h

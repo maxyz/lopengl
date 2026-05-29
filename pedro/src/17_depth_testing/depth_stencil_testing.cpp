@@ -85,9 +85,11 @@ int main()
     // glDepthMask(GL_FALSE); Si por alguna razón necesitamos que el buffer sea read only
     // glDepthFunc(GL_*COMPARISON CONSTANT*); // Para cambiar la función de testing 
     glDepthFunc(GL_LESS);
+    glEnable(GL_STENCIL_TEST);
 
     // Setup Shaders
     Shader shader("shaders/shader01.vs", "shaders/shader01.frag");
+    Shader borderShader("shaders/shader01.vs", "shaders/shaderSingleColor.frag");
     Shader depthShader("shaders/shader01.vs", "shaders/depthShader.frag");
 
     std::vector<Shader> shaders = {shader, depthShader};
@@ -201,16 +203,31 @@ int main()
         // Render:
         // glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
         // MATRIXES
         model = glm::mat4(1.0f);
         view = cam.lookFront();
         projection = glm::perspective(glm::radians(cam.fov), width / height, 0.1f, 100.0f);
-
         shaders[current_shader].setVertexMatrices(view, model, projection);
 
+        // floor
+        glStencilMask(0x00);
+        shaders[current_shader].use();
+
+        glBindVertexArray(planeVAO);
+        glBindTexture(GL_TEXTURE_2D, floorTexture.texture);
+        shaders[current_shader].setMat4("model", glm::mat4(1.0f));
+        model = glm::mat4(1.0f);
+        shaders[current_shader].setVertexMatrices(view, model, projection);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+        glBindVertexArray(0);
+
         // cubes
+        glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);  
+        glStencilFunc(GL_ALWAYS, 1, 0xFF);
+        glStencilMask(0xFF);
+        
         glBindVertexArray(cubeVAO);
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, cubeTexture.texture); 	
@@ -222,14 +239,30 @@ int main()
         shaders[current_shader].setMat4("model", model);
         glDrawArrays(GL_TRIANGLES, 0, 36);
 
-        // floor
-        glBindVertexArray(planeVAO);
-        glBindTexture(GL_TEXTURE_2D, floorTexture.texture);
-        shaders[current_shader].setMat4("model", glm::mat4(1.0f));
+        // border
+        glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+        glStencilMask(0x00);
+        glDisable(GL_DEPTH_TEST);
+        borderShader.use(); 
+        borderShader.setVertexMatrices(view, model, projection);
+        
+        borderShader.setVec3("color", glm::abs(glm::vec3(sin(currentFrame), cos(currentFrame/ 3.0f), sin(currentFrame * 2.0f))));
+
+        glBindVertexArray(cubeVAO);
         model = glm::mat4(1.0f);
-        shaders[current_shader].setVertexMatrices(view, model, projection);
-        glDrawArrays(GL_TRIANGLES, 0, 6);
-        glBindVertexArray(0);
+        model = glm::translate(model, glm::vec3(-1.0f, 0.0f, -1.0f));
+        model = glm::scale(model, glm::vec3(1.1));
+        borderShader.setMat4("model", model);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+        model = glm::mat4(1.0f);
+        model = glm::translate(model, glm::vec3(2.0f, 0.0f, 0.0f));
+        model = glm::scale(model, glm::vec3(1.1));
+        borderShader.setMat4("model", model);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+
+        glStencilMask(0xFF);
+        glStencilFunc(GL_ALWAYS, 1, 0xFF);   
+        glEnable(GL_DEPTH_TEST);
 
         glfwSwapBuffers(window);
         glfwPollEvents();    

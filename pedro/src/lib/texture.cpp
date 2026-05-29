@@ -10,7 +10,7 @@ Texture2D::Texture2D(const GLchar* mediaPath, const mediaFormat format) {
     // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
     // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
@@ -21,7 +21,6 @@ Texture2D::Texture2D(const GLchar* mediaPath, const mediaFormat format) {
 
     if (data)
     {
-
         switch (format)
         {
         case PNG:
@@ -35,9 +34,9 @@ Texture2D::Texture2D(const GLchar* mediaPath, const mediaFormat format) {
     } else {
         std::cout << "ERROR::TEXTURE::FILE_NOT_SUCCESFULLY_READ" << std::endl;
     }
-    
+
     glGenerateMipmap(GL_TEXTURE_2D);
-    stbi_image_free(data);
+    stbi_image_free(data);    
 }
 
 void Texture2D::activate() { this->activate(0); }
