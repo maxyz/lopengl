@@ -1,4 +1,4 @@
-EXES = depth-testing stencil-testing depth-testing-model blending blending-cubes face-culling
+EXES = depth-testing stencil-testing depth-testing-model blending blending-cubes face-culling face-culling-ej
 
 default_target: $(EXES)
 
@@ -44,6 +44,9 @@ blending-cubes: blending-cubes.cpp libGLAD.a shader.o lights.o texture.o ../lib/
 	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
 
 face-culling: face-culling.cpp libGLAD.a shader.o lights.o texture.o ../lib/camera.h
+	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
+
+face-culling-ej: face-culling-ej.cpp libGLAD.a shader.o lights.o texture.o ../lib/camera.h
 	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
 
 clean:
