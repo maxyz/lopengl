@@ -1,4 +1,4 @@
-EXES = depth_testing depth_stencil_testing
+EXES = depth_testing depth_stencil_testing blending01 blending02
 
 LIB = libGLAD.a stb_image.o shader.o texture.o camera.o material.o model.o mesh.o key_command.o
 
@@ -19,6 +19,12 @@ depth_testing: depth_testing.cpp $(LIB)
 depth_stencil_testing: depth_stencil_testing.cpp $(LIB)
 	g++ $(CPPFLAGS) $^ $(EXTRAS) -o $@ $(LDFLAGS)
 	
+blending01: blending01.cpp $(LIB)
+	g++ $(CPPFLAGS) $^ $(EXTRAS) -o $@ $(LDFLAGS)
+
+blending02: blending02.cpp $(LIB)
+	g++ $(CPPFLAGS) $^ $(EXTRAS) -o $@ $(LDFLAGS)
+
 camera.o: ../lib/camera.cpp ../lib/camera.h
 	g++ $(CPPFLAGS) -c $< -o $@
 

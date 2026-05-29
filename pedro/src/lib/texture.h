@@ -12,7 +12,7 @@ class Texture2D
 public:
     unsigned int texture;
 
-    Texture2D(const GLchar* mediaPath, const mediaFormat format);
+    Texture2D(const GLchar* mediaPath, const mediaFormat format, uint wrap_s = GL_REPEAT, uint wrap_t = GL_REPEAT);
 
     void activate();
     void activate(unsigned int index);
