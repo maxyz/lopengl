@@ -203,7 +203,7 @@ void load_buffer_vertices(
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(
         2, 2, GL_FLOAT, GL_FALSE, sizeof(vertex_t),
-        reinterpret_cast<void *>(offsetof(vertex_t, texcoord))
+        reinterpret_cast<void *>(offsetof(vertex_t, tex_coord))
     );
     glEnableVertexAttribArray(2);
 }

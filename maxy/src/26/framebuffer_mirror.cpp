@@ -1,7 +1,6 @@
 #include <expected>
 #include <iostream>
 #include <map>
-#include <random>
 #include <ranges>
 #include <utility>
 
@@ -18,9 +17,16 @@
 
 #include "common/common.hpp"
 
-constexpr const char *TITLE = "Transparent windows";
+constexpr const char *TITLE = "Rendering to framebuffer";
 constexpr GLuint WIDTH = 1024;
 constexpr GLuint HEIGHT = 768;
+
+constexpr int EFFECT_INVERT = 0;
+constexpr int EFFECT_GREYSCALE = 1;
+constexpr int EFFECT_EXAMPLE = 2;
+constexpr int EFFECT_NARCO = 3;
+constexpr int EFFECT_BLUR = 4;
+constexpr int EFFECT_EDGE = 5;
 
 struct model_preset_t {
     glm::vec3 position;
@@ -46,22 +52,36 @@ struct depth_mode_t {
 constexpr int MAX_POS_LIGHTS = 16;
 constexpr int MAX_SPOT_LIGHTS = 8;
 
+struct effects_t {
+    bool inversion;
+    bool greyscale;
+};
+
 struct state_t {
-    window_state_t window = {
-        .viewport = {.width = WIDTH, .height = HEIGHT},
-        .camera = Camera{glm::vec3(0.f, .5f, 3.f)},
-    };
-    size_t preset_index = 0;
+    window_state_t window;
+    size_t preset_index;
     size_t depth_mode_index = 2; // Initial value set to less
     std::vector<light_positional_t> pos_lights{};
     std::vector<light_spot_t> spot_lights{};
-    bool flashlight_on = true;
+    effects_t effects;
+    bool flashlight_on;
 };
-state_t state;
+state_t state{
+    .window =
+        {
+            .viewport = {.width = WIDTH, .height = HEIGHT},
+            .camera = Camera{glm::vec3(0.f, .5f, 3.f)},
+        },
+    .preset_index = 0,
+    .depth_mode_index = 2, // Initial value set to less
+    .effects{},
+    .flashlight_on = true,
+};
 
 struct shaders_t {
     Shader view;
     Shader light_marker;
+    Shader screen;
 };
 struct vaos_t {
     id_t cube;
@@ -69,6 +89,7 @@ struct vaos_t {
     id_t plane;
     id_t light_cube;
     id_t pyramid;
+    id_t screen;
 };
 struct vbos_t {
     id_t cube;
@@ -76,13 +97,36 @@ struct vbos_t {
     id_t plane;
     id_t pyramid;
     id_t pyramid_ebo;
+    id_t screen;
 };
 struct textures_t {
     id_t marble;
     id_t metal;
     id_t window;
     id_t white;
+    id_t screen;
 };
+struct framebuffers_t {
+    id_t screen;
+};
+struct renderbuffers_t {
+    id_t screen;
+};
+
+struct vertex_2d_tex_t {
+    glm::vec2 position;
+    glm::vec2 tex_coord;
+};
+
+inline const std::array<vertex_2d_tex_t, 6> quad_vertices = {{
+    {{-1.f, 1.f}, {0.f, 1.f}},
+    {{-1.f, -1.f}, {0.f, 0.f}},
+    {{1.f, -1.f}, {1.f, 0.f}},
+
+    {{-1.f, 1.f}, {0.f, 1.f}},
+    {{1.f, -1.f}, {1.f, 0.f}},
+    {{1.f, 1.f}, {1.f, 1.f}},
+}};
 
 class SceneRenderer {
 public:
@@ -94,11 +138,54 @@ public:
     SceneRenderer(SceneRenderer &&o) noexcept = delete;
     SceneRenderer &operator=(SceneRenderer &&o) = delete;
     ~SceneRenderer() noexcept {
-        glDeleteVertexArrays(5, &m_vaos.cube);
-        glDeleteBuffers(5, &m_vbos.cube);
+        glDeleteVertexArrays(
+            sizeof(m_vaos) / sizeof(id_t),
+            reinterpret_cast<id_t *>(&m_vaos.cube)
+        );
+        glDeleteBuffers(
+            sizeof(m_vbos) / sizeof(id_t),
+            reinterpret_cast<id_t *>(&m_vbos.cube)
+        );
+        glDeleteRenderbuffers(
+            sizeof(m_renderbuffers) / sizeof(id_t),
+            reinterpret_cast<id_t *>(&m_renderbuffers)
+        );
+        glDeleteRenderbuffers(
+            sizeof(m_framebuffers) / sizeof(id_t),
+            reinterpret_cast<id_t *>(&m_framebuffers)
+        );
     }
 
     void render(input_t input, float delta);
+
+    void on_window_resize(int width, int height) {
+        // Update the color texture allocation
+        glBindTexture(GL_TEXTURE_2D, m_textures.screen);
+        glTexImage2D(
+            GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA,
+            GL_UNSIGNED_BYTE, NULL
+        );
+
+        // Update the renderbuffer allocation (Depth/Stencil)
+        glBindRenderbuffer(GL_RENDERBUFFER, m_renderbuffers.screen);
+        glRenderbufferStorage(
+            GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height
+        );
+
+        // Validation check to ensure the FBO remains healthy
+        glBindFramebuffer(GL_FRAMEBUFFER, m_framebuffers.screen);
+        if (glCheckFramebufferStatus(GL_FRAMEBUFFER) !=
+            GL_FRAMEBUFFER_COMPLETE) {
+            // Handle framebuffer generation error here
+            // We will probably need to add an error flag, as we are in an event
+            // handler here.
+        }
+
+        // Unbind assets to maintain clean state
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glBindRenderbuffer(GL_RENDERBUFFER, 0);
+        glBindTexture(GL_TEXTURE_2D, 0);
+    }
 
 private:
     GLFWwindow *m_window{};
@@ -106,13 +193,16 @@ private:
     textures_t m_textures{};
     vaos_t m_vaos;
     vbos_t m_vbos;
+    renderbuffers_t m_renderbuffers;
+    framebuffers_t m_framebuffers;
 
     SceneRenderer(
         GLFWwindow *window, shaders_t shaders, textures_t textures, vaos_t vaos,
-        vbos_t vbos
+        vbos_t vbos, framebuffers_t framebuffers, renderbuffers_t renderbuffers
     )
         : m_window{window}, m_shaders{std::move(shaders)}, m_textures(textures),
-          m_vaos{vaos}, m_vbos(vbos) {};
+          m_vaos{vaos}, m_vbos(vbos), m_framebuffers(framebuffers),
+          m_renderbuffers(renderbuffers) {};
 
     void render_scene();
     void render_fill_pass();
@@ -128,14 +218,14 @@ const std::vector<model_preset_t> simple_cubes = {
     {.position = glm::vec3(-2.f, .5f, -1.5f), .scale = 1.f},
     {.position = glm::vec3(2.f, 1.f, -2.f), .scale = 2.f},
 };
-// Desert: 4 windows scattered wide — sparse outpost feel
+// Desert: 4 windows scattered wide - sparse outpost feel
 const std::vector<model_preset_t> desert_windows = {
     {.position = glm::vec3(-3.5f, 0.f, 0.f), .scale = 1.f},
     {.position = glm::vec3(3.f, 0.f, 0.5f), .scale = 1.1f},
     {.position = glm::vec3(0.f, 0.f, -0.5f), .scale = 1.2f},
     {.position = glm::vec3(-1.5f, 0.f, 1.5f), .scale = .85f},
 };
-// Factory: 5 windows in a regular row — industrial spacing
+// Factory: 5 windows in a regular row - industrial spacing
 const std::vector<model_preset_t> factory_windows = {
     {.position = glm::vec3(-2.f, 0.f, -0.5f), .scale = .8f},
     {.position = glm::vec3(-1.f, 0.f, -0.5f), .scale = .8f},
@@ -143,12 +233,12 @@ const std::vector<model_preset_t> factory_windows = {
     {.position = glm::vec3(1.f, 0.f, -0.5f), .scale = .8f},
     {.position = glm::vec3(2.f, 0.f, -0.5f), .scale = .8f},
 };
-// Horror: 2 windows — one looming close, one barely visible far away
+// Horror: 2 windows - one looming close, one barely visible far away
 const std::vector<model_preset_t> horror_windows = {
     {.position = glm::vec3(.5f, 0.f, 1.f), .scale = 1.3f},
     {.position = glm::vec3(-.5f, 0.f, -4.f), .scale = 1.5f},
 };
-// Biochemical: 6 windows in a 2-column grid — lab viewport arrangement
+// Biochemical: 6 windows in a 2-column grid - lab viewport arrangement
 const std::vector<model_preset_t> biochemical_windows = {
     {.position = glm::vec3(-.6f, 0.f, .5f), .scale = .7f},
     {.position = glm::vec3(.6f, 0.f, .5f), .scale = .7f},
@@ -457,8 +547,8 @@ std::pair<vaos_t, vbos_t> load_buffers() {
     vaos_t vaos{};
     vbos_t vbos{};
 
-    glGenVertexArrays(5, &vaos.cube);
-    glGenBuffers(5, &vbos.cube);
+    glGenVertexArrays(6, &vaos.cube);
+    glGenBuffers(6, &vbos.cube);
 
     load_buffer_vertices(cube_vertices, vaos.cube, vbos.cube);
     load_buffer_vertices(square_vertices, vaos.window, vbos.window);
@@ -473,7 +563,7 @@ std::pair<vaos_t, vbos_t> load_buffers() {
     );
     glEnableVertexAttribArray(0);
 
-    // Pyramid: own VBO + EBO, packed vec3 positions (no normal/texcoord)
+    // Pyramid: own VBO + EBO, packed vec3 positions (no normal/tex_coord)
     glBindVertexArray(vaos.pyramid);
     glBindBuffer(GL_ARRAY_BUFFER, vbos.pyramid);
     glBufferData(
@@ -490,44 +580,141 @@ std::pair<vaos_t, vbos_t> load_buffers() {
     );
     glEnableVertexAttribArray(0);
 
+    // Target for the framebuffer rendering
+    glBindVertexArray(vaos.screen);
+    glBindBuffer(GL_ARRAY_BUFFER, vbos.screen);
+    glBufferData(
+        GL_ARRAY_BUFFER, sizeof(quad_vertices), quad_vertices.data(),
+        GL_STATIC_DRAW
+    );
+    glBufferData(
+        GL_ELEMENT_ARRAY_BUFFER, sizeof(pyramid_indices), pyramid_indices,
+        GL_STATIC_DRAW
+    );
+    glVertexAttribPointer(
+        0, 2, GL_FLOAT, GL_FALSE, sizeof(vertex_2d_tex_t),
+        reinterpret_cast<void *>(offsetof(vertex_2d_tex_t, position))
+    );
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(
+        1, 2, GL_FLOAT, GL_FALSE, sizeof(vertex_2d_tex_t),
+        reinterpret_cast<void *>(offsetof(vertex_2d_tex_t, tex_coord))
+    );
+    glEnableVertexAttribArray(1);
+
     return {vaos, vbos};
+}
+
+std::expected<std::pair<framebuffers_t, renderbuffers_t>, std::string>
+create_framebuffers(id_t &texture) {
+    id_t framebuffer;
+    glGenFramebuffers(1, &framebuffer);
+    glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+
+    // create a color attachment texture
+    glGenTextures(1, &texture);
+    glBindTexture(GL_TEXTURE_2D, texture);
+    glTexImage2D(
+        GL_TEXTURE_2D, 0, GL_RGB, state.window.viewport.width,
+        state.window.viewport.height, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr
+    );
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glFramebufferTexture2D(
+        GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture, 0
+    );
+
+    // create a render buffer object for depth and stencil attachment
+    id_t renderbuffer;
+    glGenRenderbuffers(1, &renderbuffer);
+    glBindRenderbuffer(GL_RENDERBUFFER, renderbuffer);
+    glRenderbufferStorage(
+        GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, state.window.viewport.width,
+        state.window.viewport.height
+    );
+    glFramebufferRenderbuffer(
+        GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER,
+        renderbuffer
+    );
+
+    // now that we actually created the framebuffer and added all attachments we
+    // want to check if it is actually complete
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+        glDeleteRenderbuffers(1, &renderbuffer);
+        glDeleteFramebuffers(1, &framebuffer);
+        return std::unexpected("Failed to complete framebuffer");
+    }
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    framebuffers_t framebuffers{.screen = framebuffer};
+    renderbuffers_t renderbuffers{.screen = renderbuffer};
+
+    return std::make_pair(framebuffers, renderbuffers);
 }
 
 std::expected<std::unique_ptr<SceneRenderer>, std::string>
 SceneRenderer::create(GLFWwindow *window) {
     auto view_shader =
-        Shader::build("shaders/24_lit.vert", "shaders/24_lit.frag");
+        Shader::build("shaders/26_lit.vert", "shaders/26_lit.frag");
     if (!view_shader)
         return std::unexpected(view_shader.error());
 
     auto light_marker_shader = Shader::build(
-        "shaders/24_light_marker.vert", "shaders/24_light_marker.frag"
+        "shaders/26_light_marker.vert", "shaders/26_light_marker.frag"
     );
     if (!light_marker_shader)
         return std::unexpected(light_marker_shader.error());
 
+    auto framebuffer_shader = Shader::build(
+        "shaders/26_framebuffer.vert", "shaders/26_framebuffer.frag"
+    );
+    if (!framebuffer_shader)
+        return std::unexpected(framebuffer_shader.error());
+
     auto textures = load_textures();
     if (!textures)
         return std::unexpected(textures.error());
+
+    auto framebuffers_pairs = create_framebuffers(textures->screen);
+    if (!framebuffers_pairs)
+        return std::unexpected(framebuffers_pairs.error());
+    auto [framebuffers, renderbuffers] = *framebuffers_pairs;
 
     auto [vaos, vbos] = load_buffers();
 
     shaders_t shaders{
         .view = std::move(*view_shader),
         .light_marker = std::move(*light_marker_shader),
+        .screen = std::move(*framebuffer_shader),
     };
+
     shaders.view.use();
     shaders.view.set_int("material.diffuse", 0);
     shaders.view.set_int("material.specular", 1);
     shaders.view.set_float("normal_flip", 1.0f);
+    shaders.screen.use();
+    shaders.screen.set_int("screen_texture", 0);
 
-    return std::unique_ptr<SceneRenderer>{
-        new SceneRenderer{window, std::move(shaders), *textures, vaos, vbos}
+    auto renderer = new SceneRenderer{
+        window, std::move(shaders), *textures,     vaos,
+        vbos,   framebuffers,       renderbuffers,
     };
+    state.window.on_resize_callback = [renderer](int width, int height) {
+        renderer->on_window_resize(width, height);
+    };
+    return std::unique_ptr<SceneRenderer>{renderer};
 }
 
 void SceneRenderer::render(input_t input, float delta) {
     process_camera_events(state.window, input, delta);
+
+    render_scene();
+
+    render_imgui();
+}
+
+void SceneRenderer::render_scene() {
+    glBindFramebuffer(GL_FRAMEBUFFER, m_framebuffers.screen);
+    glEnable(GL_DEPTH_TEST);
 
     const preset_t &preset = presets[state.preset_index];
     glClearColor(
@@ -535,13 +722,38 @@ void SceneRenderer::render(input_t input, float delta) {
         preset.clear_color.w
     );
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+    state.window.camera.yaw += 180.f;
+    state.window.camera.pitch *= -1.f;
+    state.window.camera.process_rotation(0, 0, false);
 
-    render_scene();
+    render_fill_pass();
 
-    render_imgui();
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    glClearColor(
+        preset.clear_color.x, preset.clear_color.y, preset.clear_color.z,
+        preset.clear_color.w
+    );
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+    state.window.camera.yaw -= 180.f;
+    state.window.camera.pitch *= -1.f;
+    state.window.camera.process_rotation(0, 0, false);
+
+    render_fill_pass();
+
+    glDisable(GL_DEPTH_TEST);
+
+    m_shaders.screen.use();
+    glm::mat4 transform = glm::mat4(1.f);
+    transform = glm::translate(transform, glm::vec3(.0f, .8f, 0.f));
+    transform = glm::scale(transform, glm::vec3(.3f, .3f, 1.f));
+    m_shaders.screen.set_mat4("transform", transform);
+
+    glBindVertexArray(m_vaos.screen);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, m_textures.screen);
+    glDrawArrays(GL_TRIANGLES, 0, quad_vertices.size());
 }
-
-void SceneRenderer::render_scene() { render_fill_pass(); }
 
 void SceneRenderer::render_fill_pass() {
     render_scene_set_lighting();
@@ -641,9 +853,14 @@ void SceneRenderer::render_scene_draw_cubes() {
 
     glBindVertexArray(m_vaos.cube);
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, m_textures.marble);
+    glBindTexture(GL_TEXTURE_2D, m_textures.metal);
     glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, m_textures.marble);
+    glBindTexture(GL_TEXTURE_2D, m_textures.metal);
+
+    m_shaders.view.set_float("material.shininess", 32.f);
+
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_BACK);
 
     for (const auto &model_info : preset.cubes) {
         glm::mat4 model_transform = glm::mat4(1.f);
@@ -653,6 +870,8 @@ void SceneRenderer::render_scene_draw_cubes() {
         m_shaders.view.set_mat4("model", model_transform);
         glDrawArrays(GL_TRIANGLES, 0, cube_vertices.size());
     }
+
+    glDisable(GL_CULL_FACE);
 }
 
 void SceneRenderer::render_scene_draw_windows() {
@@ -673,8 +892,10 @@ void SceneRenderer::render_scene_draw_windows() {
     glBindTexture(GL_TEXTURE_2D, m_textures.white);
 
     glDepthMask(GL_FALSE);
-    glEnable(GL_CULL_FACE);
+
     m_shaders.view.set_float("material.shininess", 128.f);
+
+    glEnable(GL_CULL_FACE);
 
     glCullFace(GL_FRONT);
     m_shaders.view.set_float("normal_flip", -1.f);
@@ -707,9 +928,11 @@ void SceneRenderer::render_scene_draw_plane() {
 
     glBindVertexArray(m_vaos.plane);
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, m_textures.metal);
+    glBindTexture(GL_TEXTURE_2D, m_textures.marble);
     glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, m_textures.metal);
+    glBindTexture(GL_TEXTURE_2D, m_textures.marble);
+
+    m_shaders.view.set_float("material.shininess", 32.f);
 
     const auto &model_info = preset.plane;
     glm::mat4 model_transform = glm::mat4(1.f);
@@ -787,6 +1010,58 @@ void SceneRenderer::render_imgui() {
                 state.spot_lights.pop_back();
         }
         ImGui::Checkbox("Flashlight", &state.flashlight_on);
+        if (ImGui::CollapsingHeader("Effects")) {
+            if (ImGui::Checkbox("Inversion", &state.effects.inversion)) {
+                m_shaders.screen.use();
+                m_shaders.screen.set_bool(
+                    std::format("effects[{}]", EFFECT_INVERT),
+                    state.effects.inversion
+                );
+            }
+            if (ImGui::Checkbox("Greyscale", &state.effects.greyscale)) {
+                m_shaders.screen.use();
+                m_shaders.screen.set_bool(
+                    std::format("effects[{}]", EFFECT_GREYSCALE),
+                    state.effects.greyscale
+                );
+            }
+            const std::array<std::string, 4> items{
+                "Example", "Narco", "Blur", "Edge"
+            };
+            const std::array<int, 4> items_idx{
+                EFFECT_EXAMPLE, EFFECT_NARCO, EFFECT_BLUR, EFFECT_EDGE
+            };
+            static int selected_idx = -1;
+            static int previous_idx = -1;
+            for (int n = 0; n < items.size(); ++n) {
+                const bool is_selected = (selected_idx == n);
+
+                if (ImGui::Selectable(items[n].c_str(), is_selected)) {
+                    if (is_selected) {
+                        selected_idx = -1;
+                    } else {
+                        selected_idx = n;
+                    }
+                }
+            }
+            if (selected_idx != previous_idx) {
+                if (previous_idx != -1) {
+                    m_shaders.screen.use();
+                    m_shaders.screen.set_bool(
+                        std::format("effects[{}]", items_idx[previous_idx]),
+                        false
+                    );
+                }
+                if (selected_idx != -1) {
+                    m_shaders.screen.use();
+                    m_shaders.screen.set_bool(
+                        std::format("effects[{}]", items_idx[selected_idx]),
+                        true
+                    );
+                }
+                previous_idx = selected_idx;
+            }
+        }
     }
 
     double x, y;

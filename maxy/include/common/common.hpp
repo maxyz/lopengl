@@ -5,6 +5,7 @@
 #include "common/event_loop.hpp"   // IWYU pragma: export
 #include "common/geometry.hpp"     // IWYU pragma: export
 #include "common/gl_context.hpp"   // IWYU pragma: export
+#include "common/helpers.hpp"      // IWYU pragma: export
 #include "common/input.hpp"        // IWYU pragma: export
 #include "common/light.hpp"        // IWYU pragma: export
 #include "common/materials.hpp"    // IWYU pragma: export

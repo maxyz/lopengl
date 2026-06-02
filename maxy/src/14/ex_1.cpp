@@ -25,31 +25,31 @@ const GLuint WIDTH = 800;
 const GLuint HEIGHT = 600;
 
 struct view_t {
-  float width = WIDTH;
-  float height = HEIGHT;
+    float width = WIDTH;
+    float height = HEIGHT;
 };
 view_t viewport;
 
 Camera camera = Camera(glm::vec3(0.f, 0.f, 3.f));
 
 enum event_t {
-  NONE = 0,
-  increase_fov = 1 << 0,
-  decrease_fov = 1 << 1,
-  camera_up = 1 << 2,
-  camera_down = 1 << 3,
-  camera_left = 1 << 4,
-  camera_right = 1 << 5,
-  camera_for = 1 << 6,
-  camera_back = 1 << 7,
-  camera_yaw_left = 1 << 8,
-  camera_yaw_right = 1 << 9,
-  light_up = 1 << 10,
-  light_down = 1 << 11,
-  light_left = 1 << 12,
-  light_right = 1 << 13,
-  light_for = 1 << 14,
-  light_back = 1 << 15,
+    NONE = 0,
+    increase_fov = 1 << 0,
+    decrease_fov = 1 << 1,
+    camera_up = 1 << 2,
+    camera_down = 1 << 3,
+    camera_left = 1 << 4,
+    camera_right = 1 << 5,
+    camera_for = 1 << 6,
+    camera_back = 1 << 7,
+    camera_yaw_left = 1 << 8,
+    camera_yaw_right = 1 << 9,
+    light_up = 1 << 10,
+    light_down = 1 << 11,
+    light_left = 1 << 12,
+    light_right = 1 << 13,
+    light_for = 1 << 14,
+    light_back = 1 << 15,
 };
 
 using cb_t = std::function<void(uint64_t event, float delta)>;
@@ -57,8 +57,8 @@ using cbs_t = std::vector<cb_t>;
 using cleanup_t = std::function<void()>;
 
 struct hooks_t {
-  cbs_t callbacks = {};
-  cleanup_t cleanup = []() {};
+    cbs_t callbacks = {};
+    cleanup_t cleanup = []() {};
 };
 
 std::expected<GLFWwindow *, std::string> init_window();
@@ -70,26 +70,26 @@ void event_loop(GLFWwindow *window, cbs_t cbs);
 void cleanup(cleanup_t);
 
 int main() {
-  auto window = init_window();
-  if (!window) {
-    std::cerr << window.error() << std::endl;
-    return -1;
-  }
+    auto window = init_window();
+    if (!window) {
+        std::cerr << window.error() << std::endl;
+        return -1;
+    }
 
-  auto res = init_shaders();
-  if (!res) {
-    std::cerr << res.error() << std::endl;
-    return -1;
-  }
-  event_loop(*window, res->callbacks);
+    auto res = init_shaders();
+    if (!res) {
+        std::cerr << res.error() << std::endl;
+        return -1;
+    }
+    event_loop(*window, res->callbacks);
 
-  cleanup(res->cleanup);
-  return 0;
+    cleanup(res->cleanup);
+    return 0;
 }
 
 void cleanup(cleanup_t cleanup_) {
-  cleanup_();
-  glfwTerminate();
+    cleanup_();
+    glfwTerminate();
 }
 
 bool mouse_new_focus = true;
@@ -100,369 +100,387 @@ void framebuffer_size_callback(GLFWwindow *window, int width, int height);
 void window_focus_callback(GLFWwindow *window, int focused);
 
 std::expected<GLFWwindow *, std::string> init_window() {
-  glfwInit();
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    glfwInit();
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-  GLFWwindow *window =
-      glfwCreateWindow(viewport.width, viewport.height, TITLE, NULL, NULL);
-  if (window == NULL) {
-    glfwTerminate();
-    return std::unexpected("failed to create GLFW window");
-  }
-  glfwMakeContextCurrent(window);
-  int version = gladLoadGL(glfwGetProcAddress);
-  if (version == 0) {
-    glfwTerminate();
-    return std::unexpected("failed to init glad on top of glfw");
-  }
-  glViewport(0, 0, viewport.width, viewport.height);
-  glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+    GLFWwindow *window =
+        glfwCreateWindow(viewport.width, viewport.height, TITLE, NULL, NULL);
+    if (window == NULL) {
+        glfwTerminate();
+        return std::unexpected("failed to create GLFW window");
+    }
+    glfwMakeContextCurrent(window);
+    int version = gladLoadGL(glfwGetProcAddress);
+    if (version == 0) {
+        glfwTerminate();
+        return std::unexpected("failed to init glad on top of glfw");
+    }
+    glViewport(0, 0, viewport.width, viewport.height);
+    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
-  glfwSetCursorPosCallback(window, mouse_callback);
-  glfwSetScrollCallback(window, scroll_callback);
-  glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    glfwSetCursorPosCallback(window, mouse_callback);
+    glfwSetScrollCallback(window, scroll_callback);
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
-  glEnable(GL_DEPTH_TEST);
-  return window;
+    glEnable(GL_DEPTH_TEST);
+    return window;
 }
 
 void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
-  viewport.width = width;
-  viewport.height = height;
-  glViewport(0, 0, width, height);
+    viewport.width = width;
+    viewport.height = height;
+    glViewport(0, 0, width, height);
 }
 
 void window_focus_callback(GLFWwindow *window, int focused) {
-  if (!focused) {
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-    glfwSetCursorPosCallback(window, NULL);
+    if (!focused) {
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+        glfwSetCursorPosCallback(window, NULL);
 
-  } else {
-    mouse_new_focus = true;
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-    glfwSetCursorPosCallback(window, mouse_callback);
-  }
+    } else {
+        mouse_new_focus = true;
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+        glfwSetCursorPosCallback(window, mouse_callback);
+    }
 }
 
-light_t light = {.position = glm::vec3(2.f, 1.f, -2.f),
-                 .ambient = glm::vec3(.2f, .2f, .2f),
-                 .diffuse = glm::vec3(.5f, .5f, .5f),
-                 .specular = glm::vec3(1.f, 1.f, 1.f)};
+light_t light = {
+    .position = glm::vec3(2.f, 1.f, -2.f),
+    .ambient = glm::vec3(.2f, .2f, .2f),
+    .diffuse = glm::vec3(.5f, .5f, .5f),
+    .specular = glm::vec3(1.f, 1.f, 1.f)
+};
 
 struct buffers_t {
-  unsigned int cube_vao;
-  unsigned int light_vao;
+    unsigned int cube_vao;
+    unsigned int light_vao;
 
-  cleanup_t cleanup = []() {};
+    cleanup_t cleanup = []() {};
 };
 
 buffers_t buffers();
 void strobe_light(light_t &light, double now);
 
 std::expected<hooks_t, std::string> init_shaders() {
-  auto shader = Shader::build("shaders/14_view_strobe.vert",
-                              "shaders/14_view_strobe.frag");
-  if (!shader) {
-    return std::unexpected(shader.error());
-  }
-  auto light_shader = Shader::build("shaders/14_light_strobe.vert",
-                                    "shaders/14_light_strobe.frag");
-  if (!light_shader) {
-    return std::unexpected(light_shader.error());
-  }
-  auto p = shader->program_id();
-  auto light_id = light_shader->program_id();
-  const std::string filename{"textures/container.jpg"};
-  auto texture_ = load_texture(filename);
-  if (!texture_) {
-    return std::unexpected(texture_.error());
-  }
-  auto texture = *texture_;
-  texture_ = load_texture("textures/awesomeface.png");
-  if (!texture_) {
-    return std::unexpected(texture_.error());
-  }
-  auto texture1 = *texture_;
-  auto vaos = buffers();
-  auto cube_vao = vaos.cube_vao;
-  auto light_vao = vaos.light_vao;
-  material_t material = pearl;
+    auto shader = Shader::build(
+        "shaders/14_view_strobe.vert", "shaders/14_view_strobe.frag"
+    );
+    if (!shader) {
+        return std::unexpected(shader.error());
+    }
+    auto light_shader = Shader::build(
+        "shaders/14_light_strobe.vert", "shaders/14_light_strobe.frag"
+    );
+    if (!light_shader) {
+        return std::unexpected(light_shader.error());
+    }
+    auto p = shader->program_id();
+    auto light_id = light_shader->program_id();
+    const std::string filename{"textures/container.jpg"};
+    auto texture_ = load_texture(filename);
+    if (!texture_) {
+        return std::unexpected(texture_.error());
+    }
+    auto texture = *texture_;
+    texture_ = load_texture("textures/awesomeface.png");
+    if (!texture_) {
+        return std::unexpected(texture_.error());
+    }
+    auto texture1 = *texture_;
+    auto vaos = buffers();
+    auto cube_vao = vaos.cube_vao;
+    auto light_vao = vaos.light_vao;
+    material_t material = pearl;
 
-  auto f = [p, light_id, cube_vao, light_vao, texture, texture1,
-            material](uint64_t e, float delta) {
-    auto now = glfwGetTime();
-    strobe_light(light, now);
+    auto f = [p, light_id, cube_vao, light_vao, texture, texture1,
+              material](uint64_t e, float delta) {
+        auto now = glfwGetTime();
+        strobe_light(light, now);
 
-    if (e & event_t::increase_fov) {
-      camera.update_fov(1.f);
-    }
-    if (e & event_t::decrease_fov) {
-      camera.update_fov(-1.f);
-    }
-    if (e & event_t::camera_up) {
-      camera.process_movement(CameraMovement::UP, delta);
-    }
-    if (e & event_t::camera_down) {
-      camera.process_movement(CameraMovement::DOWN, delta);
-    }
-    if (e & event_t::camera_left) {
-      camera.process_movement(CameraMovement::LEFT, delta);
-    }
-    if (e & event_t::camera_right) {
-      camera.process_movement(CameraMovement::RIGHT, delta);
-    }
-    if (e & event_t::camera_for) {
-      camera.process_movement(CameraMovement::FORWARD, delta);
-    }
-    if (e & event_t::camera_back) {
-      camera.process_movement(CameraMovement::BACKWARD, delta);
-    }
-    if (e & event_t::camera_yaw_left) {
-      camera.process_rotation(120 * -camera_speed * delta, 0.f);
-    }
-    if (e & event_t::camera_yaw_right) {
-      camera.process_rotation(120 * camera_speed * delta, 0.f);
-    }
-    if (e & event_t::light_up) {
-      light.position += glm::vec3(0.f, 0.f, camera_speed * delta);
-    }
-    if (e & event_t::light_down) {
-      light.position -= glm::vec3(0.f, 0.f, camera_speed * delta);
-    }
-    if (e & event_t::light_up) {
-      light.position += glm::vec3(0.f, camera_speed * delta, 0.f);
-    }
-    if (e & event_t::light_down) {
-      light.position -= glm::vec3(0.f, camera_speed * delta, 0.f);
-    }
-    if (e & event_t::light_left) {
-      light.position -= glm::vec3(camera_speed * delta, 0.f, 0.f);
-    }
-    if (e & event_t::light_right) {
-      light.position += glm::vec3(camera_speed * delta, 0.f, 0.f);
-    }
-    if (e & event_t::light_for) {
-      light.position -= glm::vec3(0.f, 0.f, camera_speed * delta);
-    }
-    if (e & event_t::light_back) {
-      light.position += glm::vec3(0.f, 0.f, camera_speed * delta);
-    }
-    glUseProgram(p);
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, texture);
-    glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, texture1);
+        if (e & event_t::increase_fov) {
+            camera.update_fov(1.f);
+        }
+        if (e & event_t::decrease_fov) {
+            camera.update_fov(-1.f);
+        }
+        if (e & event_t::camera_up) {
+            camera.process_movement(CameraMovement::UP, delta);
+        }
+        if (e & event_t::camera_down) {
+            camera.process_movement(CameraMovement::DOWN, delta);
+        }
+        if (e & event_t::camera_left) {
+            camera.process_movement(CameraMovement::LEFT, delta);
+        }
+        if (e & event_t::camera_right) {
+            camera.process_movement(CameraMovement::RIGHT, delta);
+        }
+        if (e & event_t::camera_for) {
+            camera.process_movement(CameraMovement::FORWARD, delta);
+        }
+        if (e & event_t::camera_back) {
+            camera.process_movement(CameraMovement::BACKWARD, delta);
+        }
+        if (e & event_t::camera_yaw_left) {
+            camera.process_rotation(120 * -camera_speed * delta, 0.f);
+        }
+        if (e & event_t::camera_yaw_right) {
+            camera.process_rotation(120 * camera_speed * delta, 0.f);
+        }
+        if (e & event_t::light_up) {
+            light.position += glm::vec3(0.f, 0.f, camera_speed * delta);
+        }
+        if (e & event_t::light_down) {
+            light.position -= glm::vec3(0.f, 0.f, camera_speed * delta);
+        }
+        if (e & event_t::light_up) {
+            light.position += glm::vec3(0.f, camera_speed * delta, 0.f);
+        }
+        if (e & event_t::light_down) {
+            light.position -= glm::vec3(0.f, camera_speed * delta, 0.f);
+        }
+        if (e & event_t::light_left) {
+            light.position -= glm::vec3(camera_speed * delta, 0.f, 0.f);
+        }
+        if (e & event_t::light_right) {
+            light.position += glm::vec3(camera_speed * delta, 0.f, 0.f);
+        }
+        if (e & event_t::light_for) {
+            light.position -= glm::vec3(0.f, 0.f, camera_speed * delta);
+        }
+        if (e & event_t::light_back) {
+            light.position += glm::vec3(0.f, 0.f, camera_speed * delta);
+        }
+        glUseProgram(p);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, texture);
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, texture1);
 
-    glm::mat4 model;
+        glm::mat4 model;
 
-    glm::mat4 view = camera.get_view_matrix();
+        glm::mat4 view = camera.get_view_matrix();
 
-    glm::mat4 projection =
-        glm::perspective(glm::radians(camera.fov),
-                         static_cast<float>(viewport.width) /
-                             static_cast<float>(viewport.height),
-                         .1f, 100.f);
+        glm::mat4 projection = glm::perspective(
+            glm::radians(camera.fov),
+            static_cast<float>(viewport.width) /
+                static_cast<float>(viewport.height),
+            .1f, 100.f
+        );
 
-    set_mat4(p, "view", view);
-    set_mat4(p, "projection", projection);
-    set_vec3(p, "light_pos", light.position);
-    set_vec3(p, "view_pos", camera.position);
-    set_material(p, "material", material);
-    set_light(p, "light", light);
+        set_mat4(p, "view", view);
+        set_mat4(p, "projection", projection);
+        set_vec3(p, "light_pos", light.position);
+        set_vec3(p, "view_pos", camera.position);
+        set_material(p, "material", material);
+        set_light(p, "light", light);
 
-    glBindVertexArray(cube_vao);
+        glBindVertexArray(cube_vao);
 
-    glUseProgram(light_id);
+        glUseProgram(light_id);
 
-    set_mat4(light_id, "view", view);
-    set_mat4(light_id, "projection", projection);
-    set_light(light_id, "light", light);
+        set_mat4(light_id, "view", view);
+        set_mat4(light_id, "projection", projection);
+        set_light(light_id, "light", light);
 
-    float angle;
-    for (unsigned int i = 0; i < 10; ++i) {
-      angle = glfwGetTime() * (i % 3) * 25.f;
-      model = glm::translate(glm::mat4(1.f), example_cube_positions[i]);
-      model = glm::rotate(model, glm::radians(angle), glm::vec3(1.f, .3f, .5f));
+        float angle;
+        for (unsigned int i = 0; i < 10; ++i) {
+            angle = glfwGetTime() * (i % 3) * 25.f;
+            model = glm::translate(glm::mat4(1.f), example_cube_positions[i]);
+            model = glm::rotate(
+                model, glm::radians(angle), glm::vec3(1.f, .3f, .5f)
+            );
 
-      glUseProgram(p);
-      set_mat4(p, "model", model);
-      glDrawArrays(GL_TRIANGLES, 0, 36);
-    }
+            glUseProgram(p);
+            set_mat4(p, "model", model);
+            glDrawArrays(GL_TRIANGLES, 0, 36);
+        }
 
-    model = glm::mat4(1.f);
-    model = glm::translate(model, light.position);
-    model = glm::scale(model, glm::vec3(.2f));
+        model = glm::mat4(1.f);
+        model = glm::translate(model, light.position);
+        model = glm::scale(model, glm::vec3(.2f));
 
-    glUseProgram(light_id);
-    set_mat4(light_id, "model", model);
-    glDrawArrays(GL_TRIANGLES, 0, 36);
-  };
+        glUseProgram(light_id);
+        set_mat4(light_id, "model", model);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+    };
 
-  shader->use();
-  shader->set_int("texture1", 0);
-  shader->set_int("texture2", 1);
+    shader->use();
+    shader->set_int("texture1", 0);
+    shader->set_int("texture2", 1);
 
-  cbs_t v{f};
-  return hooks_t{.callbacks = v, .cleanup = vaos.cleanup};
+    cbs_t v{f};
+    return hooks_t{.callbacks = v, .cleanup = vaos.cleanup};
 }
 
 void strobe_light(light_t &light, double now) {
-  glm::vec3 color{sin(now) * 2.f, sin(now) * .7f, sin(now) * 1.3f};
-  light.diffuse = color * glm::vec3(.5f);
-  light.ambient = light.diffuse * glm::vec3(.2f);
+    glm::vec3 color{sin(now) * 2.f, sin(now) * .7f, sin(now) * 1.3f};
+    light.diffuse = color * glm::vec3(.5f);
+    light.ambient = light.diffuse * glm::vec3(.2f);
 }
 
 buffers_t buffers() {
-  unsigned int cube_vao;
-  unsigned int vbo;
-  glGenVertexArrays(1, &cube_vao);
-  glGenBuffers(1, &vbo);
+    unsigned int cube_vao;
+    unsigned int vbo;
+    glGenVertexArrays(1, &cube_vao);
+    glGenBuffers(1, &vbo);
 
-  glBindVertexArray(cube_vao);
+    glBindVertexArray(cube_vao);
 
-  glBindBuffer(GL_ARRAY_BUFFER, vbo);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(cube_vertices), cube_vertices.data(),
-               GL_STATIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    glBufferData(
+        GL_ARRAY_BUFFER, sizeof(cube_vertices), cube_vertices.data(),
+        GL_STATIC_DRAW
+    );
 
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(vertex_t),
-                        reinterpret_cast<void *>(offsetof(vertex_t, position)));
-  glEnableVertexAttribArray(0);
-  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(vertex_t),
-                        reinterpret_cast<void *>(offsetof(vertex_t, normal)));
-  glEnableVertexAttribArray(1);
-  glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(vertex_t),
-                        reinterpret_cast<void *>(offsetof(vertex_t, texcoord)));
-  glEnableVertexAttribArray(2);
+    glVertexAttribPointer(
+        0, 3, GL_FLOAT, GL_FALSE, sizeof(vertex_t),
+        reinterpret_cast<void *>(offsetof(vertex_t, position))
+    );
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(
+        1, 3, GL_FLOAT, GL_FALSE, sizeof(vertex_t),
+        reinterpret_cast<void *>(offsetof(vertex_t, normal))
+    );
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(
+        2, 2, GL_FLOAT, GL_FALSE, sizeof(vertex_t),
+        reinterpret_cast<void *>(offsetof(vertex_t, tex_coord))
+    );
+    glEnableVertexAttribArray(2);
 
-  unsigned int light_vao;
-  glGenVertexArrays(1, &light_vao);
-  glBindVertexArray(light_vao);
-  glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    unsigned int light_vao;
+    glGenVertexArrays(1, &light_vao);
+    glBindVertexArray(light_vao);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
 
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(vertex_t),
-                        reinterpret_cast<void *>(offsetof(vertex_t, position)));
-  glEnableVertexAttribArray(0);
+    glVertexAttribPointer(
+        0, 3, GL_FLOAT, GL_FALSE, sizeof(vertex_t),
+        reinterpret_cast<void *>(offsetof(vertex_t, position))
+    );
+    glEnableVertexAttribArray(0);
 
-  auto cleanup = [cube_vao, light_vao, vbo]() {
-    glDeleteVertexArrays(1, &cube_vao);
-    glDeleteVertexArrays(1, &light_vao);
-    glDeleteBuffers(1, &vbo);
-  };
+    auto cleanup = [cube_vao, light_vao, vbo]() {
+        glDeleteVertexArrays(1, &cube_vao);
+        glDeleteVertexArrays(1, &light_vao);
+        glDeleteBuffers(1, &vbo);
+    };
 
-  return {.cube_vao = cube_vao, .light_vao = light_vao, .cleanup = cleanup};
+    return {.cube_vao = cube_vao, .light_vao = light_vao, .cleanup = cleanup};
 }
 
 void process_input(GLFWwindow *window, uint64_t &e);
 
 struct frame_time_t {
-  float last_time; // Time of last frame
-  float delta;     // Time between current frame and last frame
+    float last_time; // Time of last frame
+    float delta;     // Time between current frame and last frame
 };
 
 void update_delta(frame_time_t &delta) {
-  float now = glfwGetTime();
-  delta.delta = now - delta.last_time;
-  delta.last_time = now;
+    float now = glfwGetTime();
+    delta.delta = now - delta.last_time;
+    delta.last_time = now;
 }
 
-void event_loop(GLFWwindow *window,
-                std::vector<std::function<void(uint64_t, float)>> cbs) {
-  uint64_t e;
+void event_loop(
+    GLFWwindow *window, std::vector<std::function<void(uint64_t, float)>> cbs
+) {
+    uint64_t e;
 
-  frame_time_t delta{};
+    frame_time_t delta{};
 
-  while (!glfwWindowShouldClose(window)) {
-    update_delta(delta);
+    while (!glfwWindowShouldClose(window)) {
+        update_delta(delta);
 
-    e = event_t::NONE;
-    process_input(window, e);
-    glClearColor(.2f, .3f, .3f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        e = event_t::NONE;
+        process_input(window, e);
+        glClearColor(.2f, .3f, .3f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    for (auto cb : cbs) {
-      cb(e, delta.delta);
+        for (auto cb : cbs) {
+            cb(e, delta.delta);
+        }
+
+        glfwSwapBuffers(window);
+        glfwPollEvents();
     }
-
-    glfwSwapBuffers(window);
-    glfwPollEvents();
-  }
 }
 
 void process_input(GLFWwindow *window, uint64_t &e) {
-  if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
-    glfwSetWindowShouldClose(window, true);
-  }
-  if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
-    e |= event_t::increase_fov;
-  }
-  if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
-    e |= event_t::decrease_fov;
-  }
-  if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS) {
-    e |= event_t::camera_up;
-  }
-  if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS) {
-    e |= event_t::camera_down;
-  }
-  if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-    e |= event_t::camera_left;
-  }
-  if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-    e |= event_t::camera_right;
-  }
-  if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-    e |= event_t::camera_for;
-  }
-  if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-    e |= event_t::camera_back;
-  }
-  if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) {
-    e |= event_t::camera_yaw_left;
-  }
-  if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) {
-    e |= event_t::camera_yaw_right;
-  }
-  if (glfwGetKey(window, GLFW_KEY_I) == GLFW_PRESS) {
-    e |= event_t::light_for;
-  }
-  if (glfwGetKey(window, GLFW_KEY_K) == GLFW_PRESS) {
-    e |= event_t::light_back;
-  }
-  if (glfwGetKey(window, GLFW_KEY_J) == GLFW_PRESS) {
-    e |= event_t::light_left;
-  }
-  if (glfwGetKey(window, GLFW_KEY_L) == GLFW_PRESS) {
-    e |= event_t::light_right;
-  }
-  if (glfwGetKey(window, GLFW_KEY_Y) == GLFW_PRESS) {
-    e |= event_t::light_up;
-  }
-  if (glfwGetKey(window, GLFW_KEY_H) == GLFW_PRESS) {
-    e |= event_t::light_down;
-  }
+    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
+        glfwSetWindowShouldClose(window, true);
+    }
+    if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
+        e |= event_t::increase_fov;
+    }
+    if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
+        e |= event_t::decrease_fov;
+    }
+    if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS) {
+        e |= event_t::camera_up;
+    }
+    if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS) {
+        e |= event_t::camera_down;
+    }
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+        e |= event_t::camera_left;
+    }
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+        e |= event_t::camera_right;
+    }
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+        e |= event_t::camera_for;
+    }
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+        e |= event_t::camera_back;
+    }
+    if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) {
+        e |= event_t::camera_yaw_left;
+    }
+    if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) {
+        e |= event_t::camera_yaw_right;
+    }
+    if (glfwGetKey(window, GLFW_KEY_I) == GLFW_PRESS) {
+        e |= event_t::light_for;
+    }
+    if (glfwGetKey(window, GLFW_KEY_K) == GLFW_PRESS) {
+        e |= event_t::light_back;
+    }
+    if (glfwGetKey(window, GLFW_KEY_J) == GLFW_PRESS) {
+        e |= event_t::light_left;
+    }
+    if (glfwGetKey(window, GLFW_KEY_L) == GLFW_PRESS) {
+        e |= event_t::light_right;
+    }
+    if (glfwGetKey(window, GLFW_KEY_Y) == GLFW_PRESS) {
+        e |= event_t::light_up;
+    }
+    if (glfwGetKey(window, GLFW_KEY_H) == GLFW_PRESS) {
+        e |= event_t::light_down;
+    }
 }
 
 const float MOUSE_SENSITIVITY = .1f;
 
 void mouse_callback(GLFWwindow *window, double x_pos, double y_pos) {
-  static float x = viewport.width / 2;
-  static float y = viewport.height / 2;
+    static float x = viewport.width / 2;
+    static float y = viewport.height / 2;
 
-  if (mouse_new_focus) {
+    if (mouse_new_focus) {
+        x = x_pos;
+        y = y_pos;
+        mouse_new_focus = false;
+    }
+
+    float x_offset = x_pos - x;
+    float y_offset = y - y_pos;
     x = x_pos;
     y = y_pos;
-    mouse_new_focus = false;
-  }
-
-  float x_offset = x_pos - x;
-  float y_offset = y - y_pos;
-  x = x_pos;
-  y = y_pos;
-  camera.process_rotation(x_offset, y_offset);
+    camera.process_rotation(x_offset, y_offset);
 }
 
 void scroll_callback(GLFWwindow *window, double x_offset, double y_offset) {
-  camera.update_fov(static_cast<float>(y_offset));
+    camera.update_fov(static_cast<float>(y_offset));
 }

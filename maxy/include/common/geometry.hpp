@@ -6,7 +6,7 @@
 struct vertex_t {
     glm::vec3 position;
     glm::vec3 normal;
-    glm::vec2 texcoord;
+    glm::vec2 tex_coord;
 };
 
 // Unit cube: 36 vertices (6 faces × 2 triangles × 3), no index buffer.

@@ -1,5 +1,6 @@
 #include <format>
 
+#include "common/helpers.hpp"
 #include "common/light.hpp"
 #include "common/shader.hpp"
 
@@ -65,4 +66,49 @@ void set_flashlight(
     set_float(id, std::format("{}.constant", name), value.constant);
     set_float(id, std::format("{}.linear", name), value.linear);
     set_float(id, std::format("{}.quadratic", name), value.quadratic);
+}
+
+light_positional_t random_positional_light() {
+    glm::vec3 color{
+        random_float(0.1f, 1.f), random_float(0.1f, 1.f),
+        random_float(0.1f, 1.f)
+    };
+    return {
+        .position =
+            {random_float(-5.f, 5.f), random_float(-5.f, 5.f),
+             random_float(-5.f, 5.f)},
+        .ambient = color * 0.1f,
+        .diffuse = color,
+        .specular = color,
+        .constant = 1.f,
+        .linear = random_float(0.07f, 0.22f),
+        .quadratic = random_float(0.017f, 0.07f),
+    };
+}
+
+light_spot_t random_spot_light() {
+    glm::vec3 color{
+        random_float(0.1f, 1.f), random_float(0.1f, 1.f),
+        random_float(0.1f, 1.f)
+    };
+    float cutoff_deg = random_float(10.f, 25.f);
+    float outer_cutoff_deg = cutoff_deg + random_float(2.f, 8.f);
+    glm::vec3 dir{
+        random_float(-1.f, 1.f), random_float(-1.f, 1.f),
+        random_float(-1.f, 1.f)
+    };
+    return {
+        .position =
+            {random_float(-5.f, 5.f), random_float(-5.f, 5.f),
+             random_float(-5.f, 5.f)},
+        .direction = glm::normalize(dir),
+        .ambient = color * 0.05f,
+        .diffuse = color,
+        .specular = color,
+        .cutoff = glm::cos(glm::radians(cutoff_deg)),
+        .outer_cutoff = glm::cos(glm::radians(outer_cutoff_deg)),
+        .constant = 1.f,
+        .linear = random_float(0.07f, 0.22f),
+        .quadratic = random_float(0.017f, 0.07f),
+    };
 }

@@ -74,3 +74,6 @@ void set_spot_light(
 void set_flashlight(
     id_t id, const std::string &name, const flashlight_t &value
 );
+
+light_positional_t random_positional_light();
+light_spot_t random_spot_light();

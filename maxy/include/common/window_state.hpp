@@ -1,5 +1,8 @@
 #pragma once
 
+#include <functional>
+#include <optional>
+
 #include <glad/gl.h>
 
 #include <GLFW/glfw3.h>
@@ -20,6 +23,8 @@ struct window_state_t {
     bool mouse_new_focus{true};
     float last_mouse_x{};
     float last_mouse_y{};
+    std::optional<std::function<void(int, int)>> on_resize_callback =
+        std::nullopt;
 };
 
 inline void
@@ -29,6 +34,10 @@ framebuffer_size_callback(GLFWwindow *window, int width, int height) {
     window_state->viewport.width = static_cast<float>(width);
     window_state->viewport.height = static_cast<float>(height);
     glViewport(0, 0, width, height);
+
+    if (window_state->on_resize_callback.has_value()) {
+        (*window_state->on_resize_callback)(width, height);
+    }
 }
 
 inline void window_focus_callback(GLFWwindow *window, int focused) {
