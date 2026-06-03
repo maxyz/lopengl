@@ -26,6 +26,13 @@ find_package(assimp REQUIRED)
 set(LIBS ${LIBS} ${ASSIMP_LIBRARIES})
 include_directories(${ASSIMP_INCLUDE_DIRS})
 
+find_package(SDL3)
+if(SDL3_FOUND)
+  message(STATUS "SDL3 ${SDL3_VERSION} found -- SDL3 examples will be built")
+else()
+  message(STATUS "SDL3 not found -- SDL3 examples will be skipped")
+endif()
+
 find_package(PkgConfig REQUIRED)
 
 pkg_check_modules(STB REQUIRED IMPORTED_TARGET stb)

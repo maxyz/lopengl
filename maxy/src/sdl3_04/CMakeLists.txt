@@ -1,0 +1,2 @@
+add_executable(sdl3_04_hello_window hello_window.cpp)
+target_link_libraries(sdl3_04_hello_window sdl3_engine)
