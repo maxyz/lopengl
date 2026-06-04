@@ -97,3 +97,15 @@ create_vertex_buffer(engine_t const &engine, void const *data, Uint32 size);
 // Allocates a GPU index buffer and uploads data via a one-shot copy pass.
 std::expected<gpu_buffer_t, std::string>
 create_index_buffer(engine_t const &engine, void const *data, Uint32 size);
+
+// Describes the shaders and resource bindings for a graphics pipeline.
+// Vertex layout is fixed: one vertex_t (float3 position) at location 0.
+struct pipeline_desc_t {
+    std::string_view vertex_shader;
+    std::string_view fragment_shader;
+    Uint32 num_uniform_buffers = 0; // vertex stage
+    Uint32 num_samplers        = 0; // fragment stage
+};
+
+std::expected<gpu_pipeline_t, std::string>
+create_pipeline(engine_t const &engine, pipeline_desc_t const &desc);

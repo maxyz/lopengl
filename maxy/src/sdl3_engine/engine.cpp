@@ -1,4 +1,5 @@
 #include "engine.hpp"
+#include "geometry.hpp"
 
 #include <format>
 #include <fstream>
@@ -194,4 +195,45 @@ create_vertex_buffer(engine_t const &engine, void const *data, Uint32 size) {
 std::expected<gpu_buffer_t, std::string>
 create_index_buffer(engine_t const &engine, void const *data, Uint32 size) {
     return create_buffer(engine, SDL_GPU_BUFFERUSAGE_INDEX, data, size);
+}
+
+std::expected<gpu_pipeline_t, std::string>
+create_pipeline(engine_t const &engine, pipeline_desc_t const &desc) {
+    auto vert = load_shader(engine, desc.vertex_shader, SDL_GPU_SHADERSTAGE_VERTEX,
+                            desc.num_uniform_buffers);
+    if (!vert) return std::unexpected(vert.error());
+
+    auto frag = load_shader(engine, desc.fragment_shader, SDL_GPU_SHADERSTAGE_FRAGMENT,
+                            0, desc.num_samplers);
+    if (!frag) return std::unexpected(frag.error());
+
+    SDL_GPUVertexBufferDescription buffer_desc = {};
+    buffer_desc.slot       = 0;
+    buffer_desc.pitch      = sizeof(vertex_t);
+    buffer_desc.input_rate = SDL_GPU_VERTEXINPUTRATE_VERTEX;
+
+    SDL_GPUVertexAttribute attribute = {};
+    attribute.location    = 0;
+    attribute.buffer_slot = 0;
+    attribute.format      = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3;
+    attribute.offset      = 0;
+
+    SDL_GPUColorTargetDescription color_target = {};
+    color_target.format = SDL_GetGPUSwapchainTextureFormat(engine.gpu_device, engine.window);
+
+    SDL_GPUGraphicsPipelineCreateInfo info = {};
+    info.vertex_shader   = vert->get();
+    info.fragment_shader = frag->get();
+    info.vertex_input_state.vertex_buffer_descriptions = &buffer_desc;
+    info.vertex_input_state.num_vertex_buffers         = 1;
+    info.vertex_input_state.vertex_attributes          = &attribute;
+    info.vertex_input_state.num_vertex_attributes      = 1;
+    info.primitive_type                                = SDL_GPU_PRIMITIVETYPE_TRIANGLELIST;
+    info.target_info.color_target_descriptions         = &color_target;
+    info.target_info.num_color_targets                 = 1;
+
+    gpu_pipeline_t pipeline{engine.gpu_device,
+                            SDL_CreateGPUGraphicsPipeline(engine.gpu_device, &info)};
+    if (!pipeline) return sdl_error("SDL_CreateGPUGraphicsPipeline failed");
+    return pipeline;
 }
