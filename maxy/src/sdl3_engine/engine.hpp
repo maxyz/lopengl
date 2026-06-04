@@ -1,11 +1,13 @@
 #pragma once
 #include <expected>
 #include <functional>
+#include <span>
 #include <string>
 #include <string_view>
 #include <utility>
 
 #include <SDL3/SDL.h>
+#include <glm/glm.hpp>
 
 // Generic RAII owner for any SDL GPU object released via Release(device,
 // handle). Move-only; destructor fires the release call.
@@ -103,9 +105,38 @@ create_index_buffer(engine_t const &engine, void const *data, Uint32 size);
 struct pipeline_desc_t {
     std::string_view vertex_shader;
     std::string_view fragment_shader;
-    Uint32 num_uniform_buffers = 0; // vertex stage
-    Uint32 num_samplers        = 0; // fragment stage
+    Uint32 vertex_uniform_buffers = 0;
+    Uint32 fragment_uniform_buffers = 0;
+    Uint32 fragment_samplers = 0;
+    // When empty, defaults to one vertex_t (float3) at location 0.
+    std::span<SDL_GPUVertexBufferDescription const> vertex_buffer_descs = {};
+    std::span<SDL_GPUVertexAttribute const> vertex_attributes = {};
 };
 
 std::expected<gpu_pipeline_t, std::string>
 create_pipeline(engine_t const &engine, pipeline_desc_t const &desc);
+
+// Push a uniform value into the command buffer for the next draw call.
+// Works for float, glm::vec4, glm::mat4, SDL_FColor, and any other type
+// whose sizeof() matches its std140 size.
+template <typename T>
+void push_vertex_uniform(SDL_GPUCommandBuffer *cmd, Uint32 slot, T const &v) {
+    SDL_PushGPUVertexUniformData(cmd, slot, &v, sizeof(T));
+}
+
+template <typename T>
+void push_fragment_uniform(SDL_GPUCommandBuffer *cmd, Uint32 slot, T const &v) {
+    SDL_PushGPUFragmentUniformData(cmd, slot, &v, sizeof(T));
+}
+
+// glm::vec3 overloads: std140 requires 16-byte alignment for vec3, but
+// sizeof(glm::vec3) is only 12. These overloads pad to vec4 transparently.
+inline void push_vertex_uniform(SDL_GPUCommandBuffer *cmd, Uint32 slot, glm::vec3 const &v) {
+    glm::vec4 padded{v, 0.0f};
+    SDL_PushGPUVertexUniformData(cmd, slot, &padded, sizeof(glm::vec4));
+}
+
+inline void push_fragment_uniform(SDL_GPUCommandBuffer *cmd, Uint32 slot, glm::vec3 const &v) {
+    glm::vec4 padded{v, 0.0f};
+    SDL_PushGPUFragmentUniformData(cmd, slot, &padded, sizeof(glm::vec4));
+}

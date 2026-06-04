@@ -7,6 +7,15 @@ struct vertex_t {
     float x, y, z;
 };
 
+struct color_t {
+    float r, g, b;
+};
+
+struct colored_vertex_t {
+    vertex_t position; // location 0
+    color_t color;     // location 1
+};
+
 // Returns an equilateral triangle inscribed in a circle of the given
 // circumradius, top vertex pointing up.
 constexpr std::array<vertex_t, 3> make_equilateral_triangle(float circumradius) {

@@ -11,15 +11,32 @@ constexpr int WINDOW_HEIGHT = 600;
 
 constexpr SDL_FColor background_color = {0.2f, 0.3f, 0.3f, 1.0f};
 
-constexpr auto triangle_vertices = make_equilateral_triangle(0.5f);
+constexpr float h = std::numbers::sqrt3_v<float> / 2.0f;
 
-constexpr float rotation_rpm = 1.0f;
-constexpr float radians_per_second = rotation_rpm * 2.0f * std::numbers::pi_v<float> / 60.0f;
+constexpr std::array<colored_vertex_t, 3> triangle = {{
+    {{0.5f, -h / 2.0f, 0.0f}, {1.0f, 0.0f, 0.0f}},  // bottom right - red
+    {{-0.5f, -h / 2.0f, 0.0f}, {0.0f, 1.0f, 0.0f}}, // bottom left  - green
+    {{0.0f, h / 2.0f, 0.0f}, {0.0f, 0.0f, 1.0f}},   // top          - blue
+}};
+
+constexpr SDL_GPUVertexBufferDescription buffer_descs[] = {{
+    .slot = 0,
+    .pitch = sizeof(colored_vertex_t),
+    .input_rate = SDL_GPU_VERTEXINPUTRATE_VERTEX,
+}};
+
+constexpr SDL_GPUVertexAttribute vertex_attributes[] = {
+    {.location = 0, .buffer_slot = 0, .format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3, .offset = 0},
+    {.location = 1,
+     .buffer_slot = 0,
+     .format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
+     .offset = static_cast<Uint32>(offsetof(colored_vertex_t, color))},
+};
 
 int main(int argc, char *argv[]) {
     auto config = parse_engine_args(argc, argv);
     auto engine_result =
-        create_engine("LOpenGL SDL3 - Rotating Triangle", WINDOW_WIDTH, WINDOW_HEIGHT, config);
+        create_engine("SDL3 ex 6.8.1 - Upside Down", WINDOW_WIDTH, WINDOW_HEIGHT, config);
     if (!engine_result) {
         std::println(stderr, "Engine init failed: {}", engine_result.error());
         return 1;
@@ -28,9 +45,10 @@ int main(int argc, char *argv[]) {
 
     auto pipeline_result = create_pipeline(
         engine, {
-                    .vertex_shader = "shaders/sdl3_05/rotating_triangle.vert.spv",
-                    .fragment_shader = "shaders/sdl3_05/rotating_triangle.frag.spv",
-                    .vertex_uniform_buffers = 1,
+                    .vertex_shader = "shaders/sdl3_06/ex_6_8_1.vert.spv",
+                    .fragment_shader = "shaders/sdl3_06/attributes.frag.spv",
+                    .vertex_buffer_descs = buffer_descs,
+                    .vertex_attributes = vertex_attributes,
                 }
     );
     if (!pipeline_result) {
@@ -40,35 +58,24 @@ int main(int argc, char *argv[]) {
     gpu_pipeline_t pipeline = std::move(*pipeline_result);
 
     constexpr Uint32 vertex_data_size =
-        static_cast<Uint32>(triangle_vertices.size() * sizeof(vertex_t));
-    auto buffer_result = create_vertex_buffer(engine, triangle_vertices.data(), vertex_data_size);
+        static_cast<Uint32>(triangle.size() * sizeof(colored_vertex_t));
+    auto buffer_result = create_vertex_buffer(engine, triangle.data(), vertex_data_size);
     if (!buffer_result) {
         std::println(stderr, "Vertex buffer failed: {}", buffer_result.error());
         return 1;
     }
     gpu_buffer_t vertex_buffer = std::move(*buffer_result);
 
-    float elapsed = 0.0f;
-
     while (poll_events()) {
-        float dt = tick(engine);
-        elapsed += dt;
-
         const bool *keys = SDL_GetKeyboardState(nullptr);
         if (keys[SDL_SCANCODE_ESCAPE]) break;
 
-        float angle = elapsed * radians_per_second;
-
-        // The pipeline never changes between frames -- only the angle pushed
-        // into the command buffer changes. This is the key difference from
-        // OpenGL's glUniform: the pipeline is immutable, data flows through it.
         auto frame = render_frame(
-            engine, background_color, [&](SDL_GPUCommandBuffer *cmd_buf, SDL_GPURenderPass *pass) {
+            engine, background_color, [&](SDL_GPUCommandBuffer *, SDL_GPURenderPass *pass) {
                 SDL_BindGPUGraphicsPipeline(pass, pipeline.get());
                 SDL_GPUBufferBinding binding = {vertex_buffer.get(), 0};
                 SDL_BindGPUVertexBuffers(pass, 0, &binding, 1);
-                push_vertex_uniform(cmd_buf, 0, angle);
-                SDL_DrawGPUPrimitives(pass, triangle_vertices.size(), 1, 0, 0);
+                SDL_DrawGPUPrimitives(pass, triangle.size(), 1, 0, 0);
             }
         );
         if (!frame) {

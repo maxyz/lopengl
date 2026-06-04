@@ -1,0 +1,27 @@
+add_executable(sdl3_06_shader_share shader_share.cpp)
+target_link_libraries(sdl3_06_shader_share sdl3_engine)
+chapter_spv_shaders(sdl3_06_shader_share)
+
+add_executable(sdl3_06_uniforms uniforms.cpp)
+target_link_libraries(sdl3_06_uniforms sdl3_engine)
+chapter_spv_shaders(sdl3_06_uniforms)
+
+add_executable(sdl3_06_attributes attributes.cpp)
+target_link_libraries(sdl3_06_attributes sdl3_engine)
+chapter_spv_shaders(sdl3_06_attributes)
+
+add_executable(sdl3_06_shaders_class shaders_class.cpp)
+target_link_libraries(sdl3_06_shaders_class sdl3_engine)
+chapter_spv_shaders(sdl3_06_shaders_class)
+
+add_executable(sdl3_ex_6_8_1 ex_6_8_1.cpp)
+target_link_libraries(sdl3_ex_6_8_1 sdl3_engine)
+chapter_spv_shaders(sdl3_ex_6_8_1)
+
+add_executable(sdl3_ex_6_8_2 ex_6_8_2.cpp)
+target_link_libraries(sdl3_ex_6_8_2 sdl3_engine)
+chapter_spv_shaders(sdl3_ex_6_8_2)
+
+add_executable(sdl3_ex_6_8_3 ex_6_8_3.cpp)
+target_link_libraries(sdl3_ex_6_8_3 sdl3_engine)
+chapter_spv_shaders(sdl3_ex_6_8_3)

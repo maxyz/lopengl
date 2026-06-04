@@ -199,41 +199,46 @@ create_index_buffer(engine_t const &engine, void const *data, Uint32 size) {
 
 std::expected<gpu_pipeline_t, std::string>
 create_pipeline(engine_t const &engine, pipeline_desc_t const &desc) {
-    auto vert = load_shader(engine, desc.vertex_shader, SDL_GPU_SHADERSTAGE_VERTEX,
-                            desc.num_uniform_buffers);
+    auto vert = load_shader(
+        engine, desc.vertex_shader, SDL_GPU_SHADERSTAGE_VERTEX, desc.vertex_uniform_buffers
+    );
     if (!vert) return std::unexpected(vert.error());
 
-    auto frag = load_shader(engine, desc.fragment_shader, SDL_GPU_SHADERSTAGE_FRAGMENT,
-                            0, desc.num_samplers);
+    auto frag = load_shader(
+        engine, desc.fragment_shader, SDL_GPU_SHADERSTAGE_FRAGMENT, desc.fragment_uniform_buffers,
+        desc.fragment_samplers
+    );
     if (!frag) return std::unexpected(frag.error());
 
-    SDL_GPUVertexBufferDescription buffer_desc = {};
-    buffer_desc.slot       = 0;
-    buffer_desc.pitch      = sizeof(vertex_t);
-    buffer_desc.input_rate = SDL_GPU_VERTEXINPUTRATE_VERTEX;
-
-    SDL_GPUVertexAttribute attribute = {};
-    attribute.location    = 0;
-    attribute.buffer_slot = 0;
-    attribute.format      = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3;
-    attribute.offset      = 0;
+    // Default vertex layout: one vertex_t (float3 position) at location 0.
+    SDL_GPUVertexBufferDescription default_buffer_desc = {
+        .slot = 0, .pitch = sizeof(vertex_t), .input_rate = SDL_GPU_VERTEXINPUTRATE_VERTEX
+    };
+    SDL_GPUVertexAttribute default_attribute = {
+        .location = 0, .buffer_slot = 0, .format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3, .offset = 0
+    };
+    auto buffer_descs = desc.vertex_buffer_descs.empty() ? std::span{&default_buffer_desc, 1}
+                                                         : desc.vertex_buffer_descs;
+    auto attrs =
+        desc.vertex_attributes.empty() ? std::span{&default_attribute, 1} : desc.vertex_attributes;
 
     SDL_GPUColorTargetDescription color_target = {};
     color_target.format = SDL_GetGPUSwapchainTextureFormat(engine.gpu_device, engine.window);
 
     SDL_GPUGraphicsPipelineCreateInfo info = {};
-    info.vertex_shader   = vert->get();
+    info.vertex_shader = vert->get();
     info.fragment_shader = frag->get();
-    info.vertex_input_state.vertex_buffer_descriptions = &buffer_desc;
-    info.vertex_input_state.num_vertex_buffers         = 1;
-    info.vertex_input_state.vertex_attributes          = &attribute;
-    info.vertex_input_state.num_vertex_attributes      = 1;
-    info.primitive_type                                = SDL_GPU_PRIMITIVETYPE_TRIANGLELIST;
-    info.target_info.color_target_descriptions         = &color_target;
-    info.target_info.num_color_targets                 = 1;
+    info.vertex_input_state.vertex_buffer_descriptions = buffer_descs.data();
+    info.vertex_input_state.num_vertex_buffers = static_cast<Uint32>(buffer_descs.size());
+    info.vertex_input_state.vertex_attributes = attrs.data();
+    info.vertex_input_state.num_vertex_attributes = static_cast<Uint32>(attrs.size());
+    info.primitive_type = SDL_GPU_PRIMITIVETYPE_TRIANGLELIST;
+    info.target_info.color_target_descriptions = &color_target;
+    info.target_info.num_color_targets = 1;
 
-    gpu_pipeline_t pipeline{engine.gpu_device,
-                            SDL_CreateGPUGraphicsPipeline(engine.gpu_device, &info)};
+    gpu_pipeline_t pipeline{
+        engine.gpu_device, SDL_CreateGPUGraphicsPipeline(engine.gpu_device, &info)
+    };
     if (!pipeline) return sdl_error("SDL_CreateGPUGraphicsPipeline failed");
     return pipeline;
 }

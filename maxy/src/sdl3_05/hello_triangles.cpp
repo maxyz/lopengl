@@ -22,10 +22,12 @@ int main(int argc, char *argv[]) {
     }
     engine_t &engine = *engine_result;
 
-    auto pipeline_result = create_pipeline(engine, {
-        .vertex_shader   = "shaders/sdl3_05/hello_triangle.vert.spv",
-        .fragment_shader = "shaders/sdl3_05/hello_triangle.frag.spv",
-    });
+    auto pipeline_result = create_pipeline(
+        engine, {
+                    .vertex_shader = "shaders/sdl3_05/hello_triangle.vert.spv",
+                    .fragment_shader = "shaders/sdl3_05/hello_triangle.frag.spv",
+                }
+    );
     if (!pipeline_result) {
         std::println(stderr, "Pipeline creation failed: {}", pipeline_result.error());
         return 1;

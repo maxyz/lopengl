@@ -11,9 +11,9 @@ void main() {
     float c = cos(angle);
     float s = sin(angle);
     gl_Position = vec4(
-        position.x * c - position.y * s,
-        position.x * s + position.y * c,
-        position.z,
-        1.0
-    );
+            position.x * c - position.y * s,
+            position.x * s + position.y * c,
+            position.z,
+            1.0
+        );
 }

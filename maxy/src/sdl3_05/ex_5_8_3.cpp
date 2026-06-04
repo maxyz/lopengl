@@ -32,22 +32,26 @@ int main(int argc, char *argv[]) {
     }
     engine_t &engine = *engine_result;
 
-    auto orange_result = create_pipeline(engine, {
-        .vertex_shader       = "shaders/sdl3_05/ex_5_8_2.vert.spv",
-        .fragment_shader     = "shaders/sdl3_05/hello_triangle.frag.spv",
-        .num_uniform_buffers = 1,
-    });
+    auto orange_result = create_pipeline(
+        engine, {
+                    .vertex_shader = "shaders/sdl3_05/ex_5_8_2.vert.spv",
+                    .fragment_shader = "shaders/sdl3_05/hello_triangle.frag.spv",
+                    .vertex_uniform_buffers = 1,
+                }
+    );
     if (!orange_result) {
         std::println(stderr, "Orange pipeline failed: {}", orange_result.error());
         return 1;
     }
     gpu_pipeline_t orange_pipeline = std::move(*orange_result);
 
-    auto yellow_result = create_pipeline(engine, {
-        .vertex_shader       = "shaders/sdl3_05/ex_5_8_2.vert.spv",
-        .fragment_shader     = "shaders/sdl3_05/ex_5_8_3_yellow.frag.spv",
-        .num_uniform_buffers = 1,
-    });
+    auto yellow_result = create_pipeline(
+        engine, {
+                    .vertex_shader = "shaders/sdl3_05/ex_5_8_2.vert.spv",
+                    .fragment_shader = "shaders/sdl3_05/ex_5_8_3_yellow.frag.spv",
+                    .vertex_uniform_buffers = 1,
+                }
+    );
     if (!yellow_result) {
         std::println(stderr, "Yellow pipeline failed: {}", yellow_result.error());
         return 1;
@@ -74,12 +78,12 @@ int main(int argc, char *argv[]) {
                 // In OpenGL: glUseProgram(orange); glDraw...
                 // In SDL3_GPU: bind the pipeline, push uniforms, draw.
                 SDL_BindGPUGraphicsPipeline(pass, orange_pipeline.get());
-                SDL_PushGPUVertexUniformData(cmd_buf, 0, &left_offset, sizeof(vec2_t));
+                push_vertex_uniform(cmd_buf, 0, left_offset);
                 SDL_DrawGPUPrimitives(pass, triangle.size(), 1, 0, 0);
 
                 // In OpenGL: glUseProgram(yellow); glDraw...
                 SDL_BindGPUGraphicsPipeline(pass, yellow_pipeline.get());
-                SDL_PushGPUVertexUniformData(cmd_buf, 0, &right_offset, sizeof(vec2_t));
+                push_vertex_uniform(cmd_buf, 0, right_offset);
                 SDL_DrawGPUPrimitives(pass, triangle.size(), 1, 0, 0);
             }
         );
