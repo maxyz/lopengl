@@ -1,3 +1,7 @@
 add_executable(sdl3_05_hello_triangle hello_triangle.cpp)
 target_link_libraries(sdl3_05_hello_triangle sdl3_engine)
 chapter_spv_shaders(sdl3_05_hello_triangle)
+
+add_executable(sdl3_05_rotating_triangle rotating_triangle.cpp)
+target_link_libraries(sdl3_05_rotating_triangle sdl3_engine)
+chapter_spv_shaders(sdl3_05_rotating_triangle)
