@@ -33,11 +33,10 @@ view_t viewport;
 Camera camera = Camera(glm::vec3(0.f, 0.f, 3.f));
 
 const std::vector<material_t> materials = {
-    emerald,     jade,          obsidian,       pearl,        ruby,
-    turquoise,   brass,         bronze,         chrome,       copper,
-    gold,        silver,        black_plastic,  cyan_plastic, green_plastic,
-    red_plastic, white_plastic, yellow_plastic, black_rubber, green_rubber,
-    red_rubber,  white_rubber,  yellow_rubber
+    emerald,       jade,         obsidian,      pearl,        ruby,          turquoise,
+    brass,         bronze,       chrome,        copper,       gold,          silver,
+    black_plastic, cyan_plastic, green_plastic, red_plastic,  white_plastic, yellow_plastic,
+    black_rubber,  green_rubber, red_rubber,    white_rubber, yellow_rubber
 };
 
 size_t current_material = 0;
@@ -103,9 +102,7 @@ void cleanup(cleanup_t cleanup_) {
     glfwTerminate();
 }
 
-void key_callback(
-    GLFWwindow *window, int key, int scancode, int action, int mods
-);
+void key_callback(GLFWwindow *window, int key, int scancode, int action, int mods);
 bool mouse_new_focus = true;
 void mouse_callback(GLFWwindow *window, double x_pos, double y_pos);
 void scroll_callback(GLFWwindow *window, double x_offset, double y_offset);
@@ -119,8 +116,7 @@ std::expected<GLFWwindow *, std::string> init_window() {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    GLFWwindow *window =
-        glfwCreateWindow(viewport.width, viewport.height, TITLE, NULL, NULL);
+    GLFWwindow *window = glfwCreateWindow(viewport.width, viewport.height, TITLE, NULL, NULL);
     if (window == NULL) {
         glfwTerminate();
         return std::unexpected("failed to create GLFW window");
@@ -180,15 +176,12 @@ unsigned int create_texture_empty();
 void strobe_light(light_t &light, double now);
 
 std::expected<hooks_t, std::string> init_shaders() {
-    auto shader = Shader::build(
-        "shaders/14_view_strobe.vert", "shaders/14_view_strobe.frag"
-    );
+    auto shader = Shader::build("shaders/14_view_strobe.vert", "shaders/14_view_strobe.frag");
     if (!shader) {
         return std::unexpected(shader.error());
     }
-    auto light_shader = Shader::build(
-        "shaders/14_light_strobe.vert", "shaders/14_light_strobe.frag"
-    );
+    auto light_shader =
+        Shader::build("shaders/14_light_strobe.vert", "shaders/14_light_strobe.frag");
     if (!light_shader) {
         return std::unexpected(light_shader.error());
     }
@@ -272,13 +265,9 @@ std::expected<hooks_t, std::string> init_shaders() {
         }
         glUseProgram(p);
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(
-            GL_TEXTURE_2D, textures_enabled ? texture : texture_empty
-        );
+        glBindTexture(GL_TEXTURE_2D, textures_enabled ? texture : texture_empty);
         glActiveTexture(GL_TEXTURE1);
-        glBindTexture(
-            GL_TEXTURE_2D, textures_enabled ? texture1 : texture_empty
-        );
+        glBindTexture(GL_TEXTURE_2D, textures_enabled ? texture1 : texture_empty);
 
         glm::mat4 model;
 
@@ -286,9 +275,7 @@ std::expected<hooks_t, std::string> init_shaders() {
 
         glm::mat4 projection = glm::perspective(
             glm::radians(camera.fov),
-            static_cast<float>(viewport.width) /
-                static_cast<float>(viewport.height),
-            .1f, 100.f
+            static_cast<float>(viewport.width) / static_cast<float>(viewport.height), .1f, 100.f
         );
 
         set_mat4(p, "view", view);
@@ -310,9 +297,7 @@ std::expected<hooks_t, std::string> init_shaders() {
         for (unsigned int i = 0; i < 10; ++i) {
             angle = glfwGetTime() * (i % 3) * 25.f;
             model = glm::translate(glm::mat4(1.f), example_cube_positions[i]);
-            model = glm::rotate(
-                model, glm::radians(angle), glm::vec3(1.f, .3f, .5f)
-            );
+            model = glm::rotate(model, glm::radians(angle), glm::vec3(1.f, .3f, .5f));
 
             glUseProgram(p);
             set_mat4(p, "model", model);
@@ -351,10 +336,7 @@ buffers_t buffers() {
     glBindVertexArray(cube_vao);
 
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(
-        GL_ARRAY_BUFFER, sizeof(cube_vertices), cube_vertices.data(),
-        GL_STATIC_DRAW
-    );
+    glBufferData(GL_ARRAY_BUFFER, sizeof(cube_vertices), cube_vertices.data(), GL_STATIC_DRAW);
 
     glVertexAttribPointer(
         0, 3, GL_FLOAT, GL_FALSE, sizeof(vertex_t),
@@ -399,16 +381,9 @@ unsigned int create_texture_empty() {
     auto format = GL_RGB;
     glGenTextures(1, &texture);
     glBindTexture(GL_TEXTURE_2D, texture);
-    glTexParameteri(
-        GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR
-    );
-    glTexParameteri(
-        GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR
-    );
-    glTexImage2D(
-        GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, format, GL_UNSIGNED_BYTE,
-        white
-    );
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, format, GL_UNSIGNED_BYTE, white);
     return texture;
 }
 
@@ -425,9 +400,7 @@ void update_delta(frame_time_t &delta) {
     delta.last_time = now;
 }
 
-void event_loop(
-    GLFWwindow *window, std::vector<std::function<void(uint64_t, float)>> cbs
-) {
+void event_loop(GLFWwindow *window, std::vector<std::function<void(uint64_t, float)>> cbs) {
     uint64_t e;
 
     frame_time_t delta{};
@@ -509,9 +482,7 @@ void process_input(GLFWwindow *window, uint64_t &e) {
 void material_next();
 void material_prev();
 
-void key_callback(
-    GLFWwindow *window, int key, int scancode, int action, int mods
-) {
+void key_callback(GLFWwindow *window, int key, int scancode, int action, int mods) {
     if (key == GLFW_KEY_M && action == GLFW_PRESS) {
         if (mods == GLFW_MOD_SHIFT) {
             material_prev();
@@ -551,6 +522,5 @@ void material_next() {
     current_material = (current_material + 1) % materials.size();
 }
 void material_prev() {
-    current_material =
-        (current_material - 1 + materials.size()) % materials.size();
+    current_material = (current_material - 1 + materials.size()) % materials.size();
 }

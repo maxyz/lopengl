@@ -104,10 +104,8 @@ public:
     SceneRenderer(const SceneRenderer &) = delete;
     SceneRenderer &operator=(const SceneRenderer &) = delete;
     SceneRenderer(SceneRenderer &&o) noexcept
-        : m_programs(std::exchange(o.m_programs, {})),
-          m_vaos(std::exchange(o.m_vaos, {})),
-          m_textures(std::exchange(o.m_textures, {})),
-          m_vbo(std::exchange(o.m_vbo, 0)),
+        : m_programs(std::exchange(o.m_programs, {})), m_vaos(std::exchange(o.m_vaos, {})),
+          m_textures(std::exchange(o.m_textures, {})), m_vbo(std::exchange(o.m_vbo, 0)),
           m_pyramid_vbo(std::exchange(o.m_pyramid_vbo, 0)),
           m_pyramid_ebo(std::exchange(o.m_pyramid_ebo, 0)),
           m_window(std::exchange(o.m_window, nullptr)) {}
@@ -166,15 +164,12 @@ int main() {
     return 0;
 }
 
-std::expected<SceneRenderer, std::string>
-SceneRenderer::create(GLFWwindow *window) {
-    auto shader =
-        Shader::build("shaders/17_multiple.vert", "shaders/17_multiple.frag");
+std::expected<SceneRenderer, std::string> SceneRenderer::create(GLFWwindow *window) {
+    auto shader = Shader::build("shaders/17_multiple.vert", "shaders/17_multiple.frag");
     if (!shader) {
         return std::unexpected(shader.error());
     }
-    auto light_shader =
-        Shader::build("shaders/17_light.vert", "shaders/17_light.frag");
+    auto light_shader = Shader::build("shaders/17_light.vert", "shaders/17_light.frag");
     if (!light_shader) {
         return std::unexpected(light_shader.error());
     }
@@ -183,8 +178,7 @@ SceneRenderer::create(GLFWwindow *window) {
     if (!load_texture_res) {
         return std::unexpected(load_texture_res.error());
     }
-    auto load_texture_specular_res =
-        load_texture("textures/container2_specular.png");
+    auto load_texture_specular_res = load_texture("textures/container2_specular.png");
     if (!load_texture_specular_res) {
         return std::unexpected(load_texture_specular_res.error());
     }
@@ -197,10 +191,7 @@ SceneRenderer::create(GLFWwindow *window) {
     glBindVertexArray(cube_vao);
 
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(
-        GL_ARRAY_BUFFER, sizeof(cube_vertices), cube_vertices.data(),
-        GL_STATIC_DRAW
-    );
+    glBufferData(GL_ARRAY_BUFFER, sizeof(cube_vertices), cube_vertices.data(), GL_STATIC_DRAW);
 
     glVertexAttribPointer(
         0, 3, GL_FLOAT, GL_FALSE, sizeof(vertex_t),
@@ -238,24 +229,14 @@ SceneRenderer::create(GLFWwindow *window) {
     glBindVertexArray(pyramid_vao);
 
     glBindBuffer(GL_ARRAY_BUFFER, pyramid_vbo);
-    glBufferData(
-        GL_ARRAY_BUFFER, sizeof(pyramid_vertices), pyramid_vertices,
-        GL_STATIC_DRAW
-    );
+    glBufferData(GL_ARRAY_BUFFER, sizeof(pyramid_vertices), pyramid_vertices, GL_STATIC_DRAW);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, pyramid_ebo);
-    glBufferData(
-        GL_ELEMENT_ARRAY_BUFFER, sizeof(pyramid_indices), pyramid_indices,
-        GL_STATIC_DRAW
-    );
-    glVertexAttribPointer(
-        0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), reinterpret_cast<void *>(0)
-    );
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(pyramid_indices), pyramid_indices, GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), reinterpret_cast<void *>(0));
     glEnableVertexAttribArray(0);
 
     SceneRenderer r;
-    r.m_programs = {
-        .view = std::move(*shader), .light = std::move(*light_shader)
-    };
+    r.m_programs = {.view = std::move(*shader), .light = std::move(*light_shader)};
     r.m_vaos = {.cube = cube_vao, .pyramid = pyramid_vao, .light = light_vao};
     r.m_textures = {
         .diffuse = *load_texture_res,
@@ -305,25 +286,19 @@ void SceneRenderer::render_scene() {
 
     set_mat4(m_programs.view.program_id(), "view", view);
     set_mat4(m_programs.view.program_id(), "projection", projection);
-    set_vec3(
-        m_programs.view.program_id(), "view_pos", state.window.camera.position
-    );
+    set_vec3(m_programs.view.program_id(), "view_pos", state.window.camera.position);
     set_specular_map(m_programs.view.program_id(), "material", specular_map);
-    set_directional_light(
-        m_programs.view.program_id(), "dir_light", state.dir_light
-    );
+    set_directional_light(m_programs.view.program_id(), "dir_light", state.dir_light);
 
     glBindVertexArray(m_vaos.cube);
     for (unsigned int i = 0; i < state.pos_lights.size(); ++i) {
         set_positional_light(
-            m_programs.view.program_id(), std::format("pos_lights[{}]", i),
-            state.pos_lights[i]
+            m_programs.view.program_id(), std::format("pos_lights[{}]", i), state.pos_lights[i]
         );
     }
     for (unsigned int i = 0; i < state.spot_lights.size(); ++i) {
         set_spot_light(
-            m_programs.view.program_id(), std::format("spot_lights[{}]", i),
-            state.spot_lights[i]
+            m_programs.view.program_id(), std::format("spot_lights[{}]", i), state.spot_lights[i]
         );
     }
 
@@ -332,8 +307,7 @@ void SceneRenderer::render_scene() {
     for (unsigned int i = 0; i < 10; ++i) {
         angle = glfwGetTime() * (i % 3) * 25.f;
         model = glm::translate(glm::mat4(1.f), example_cube_positions[i]);
-        model =
-            glm::rotate(model, glm::radians(angle), glm::vec3(1.f, .3f, .5f));
+        model = glm::rotate(model, glm::radians(angle), glm::vec3(1.f, .3f, .5f));
 
         set_mat4(m_programs.view.program_id(), "model", model);
         glDrawArrays(GL_TRIANGLES, 0, 36);
@@ -351,8 +325,7 @@ void SceneRenderer::render_scene() {
 
         set_mat4(m_programs.light.program_id(), "model", model);
         set_positional_light(
-            m_programs.light.program_id(), std::format("pos_lights[{}]", i),
-            state.pos_lights[i]
+            m_programs.light.program_id(), std::format("pos_lights[{}]", i), state.pos_lights[i]
         );
         glDrawArrays(GL_TRIANGLES, 0, 36);
     }
@@ -361,16 +334,13 @@ void SceneRenderer::render_scene() {
     for (unsigned int i = 0; i < state.spot_lights.size(); ++i) {
         model = glm::mat4(1.f);
         model = glm::translate(model, state.spot_lights[i].position);
-        glm::mat4 look_at_rotation = glm::lookAt(
-            glm::vec3(0.f), state.spot_lights[i].direction, glm::vec3(0, 1, 0)
-        );
+        glm::mat4 look_at_rotation =
+            glm::lookAt(glm::vec3(0.f), state.spot_lights[i].direction, glm::vec3(0, 1, 0));
         model = model * glm::inverse(look_at_rotation);
         model = glm::scale(model, glm::vec3(.2f));
 
         set_mat4(m_programs.light.program_id(), "model", model);
-        set_spot_light(
-            m_programs.light.program_id(), "light", state.spot_lights[i]
-        );
+        set_spot_light(m_programs.light.program_id(), "light", state.spot_lights[i]);
         glDrawElements(GL_TRIANGLES, 18, GL_UNSIGNED_INT, 0);
     }
 }
@@ -386,9 +356,7 @@ void SceneRenderer::render_imgui() {
         mode_GUI,
     };
     mode_t mode =
-        (glfwGetInputMode(m_window, GLFW_CURSOR) == GLFW_CURSOR_DISABLED)
-            ? mode_CAM
-            : mode_GUI;
+        (glfwGetInputMode(m_window, GLFW_CURSOR) == GLFW_CURSOR_DISABLED) ? mode_CAM : mode_GUI;
 
     if (mode == mode_CAM) {
         io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;
@@ -401,8 +369,8 @@ void SceneRenderer::render_imgui() {
     ImGui::PushItemWidth(150.0f);
 
     ImGui::LabelText(
-        "Pos", "(%.2f, %.2f, %.2f)", state.window.camera.position.x,
-        state.window.camera.position.y, state.window.camera.position.z
+        "Pos", "(%.2f, %.2f, %.2f)", state.window.camera.position.x, state.window.camera.position.y,
+        state.window.camera.position.z
     );
     double x, y;
     glfwGetCursorPos(m_window, &x, &y);
@@ -416,8 +384,7 @@ void SceneRenderer::render_imgui() {
 }
 
 SceneRenderer::~SceneRenderer() {
-    if (!m_vbo)
-        return;
+    if (!m_vbo) return;
     glDeleteVertexArrays(1, &m_vaos.cube);
     glDeleteVertexArrays(1, &m_vaos.light);
     glDeleteVertexArrays(1, &m_vaos.pyramid);

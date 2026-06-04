@@ -41,10 +41,8 @@ public:
     SceneRenderer(const SceneRenderer &) = delete;
     SceneRenderer &operator=(const SceneRenderer &) = delete;
     SceneRenderer(SceneRenderer &&o) noexcept
-        : m_programs(std::exchange(o.m_programs, {})),
-          m_vaos(std::exchange(o.m_vaos, {})),
-          m_textures(std::exchange(o.m_textures, {})),
-          m_vbo(std::exchange(o.m_vbo, 0)),
+        : m_programs(std::exchange(o.m_programs, {})), m_vaos(std::exchange(o.m_vaos, {})),
+          m_textures(std::exchange(o.m_textures, {})), m_vbo(std::exchange(o.m_vbo, 0)),
           m_window(std::exchange(o.m_window, nullptr)) {}
     SceneRenderer &operator=(SceneRenderer &&) = delete;
 
@@ -100,14 +98,12 @@ int main() {
 void process_events(input_t input, float delta);
 void strobe_light(light_t &light, double now);
 
-std::expected<SceneRenderer, std::string>
-SceneRenderer::create(GLFWwindow *window) {
+std::expected<SceneRenderer, std::string> SceneRenderer::create(GLFWwindow *window) {
     auto shader = Shader::build("shaders/15_view.vert", "shaders/15_view.frag");
     if (!shader) {
         return std::unexpected(shader.error());
     }
-    auto light_shader =
-        Shader::build("shaders/15_light.vert", "shaders/15_light.frag");
+    auto light_shader = Shader::build("shaders/15_light.vert", "shaders/15_light.frag");
     if (!light_shader) {
         return std::unexpected(light_shader.error());
     }
@@ -125,10 +121,7 @@ SceneRenderer::create(GLFWwindow *window) {
     glBindVertexArray(cube_vao);
 
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(
-        GL_ARRAY_BUFFER, sizeof(cube_vertices), cube_vertices.data(),
-        GL_STATIC_DRAW
-    );
+    glBufferData(GL_ARRAY_BUFFER, sizeof(cube_vertices), cube_vertices.data(), GL_STATIC_DRAW);
 
     glVertexAttribPointer(
         0, 3, GL_FLOAT, GL_FALSE, sizeof(vertex_t),
@@ -158,9 +151,7 @@ SceneRenderer::create(GLFWwindow *window) {
     glEnableVertexAttribArray(0);
 
     SceneRenderer r;
-    r.m_programs = {
-        .view = std::move(*shader), .light = std::move(*light_shader)
-    };
+    r.m_programs = {.view = std::move(*shader), .light = std::move(*light_shader)};
     r.m_vaos = {.cube = cube_vao, .light = light_vao};
     r.m_textures = {.diffuse = *load_texture_res};
     r.m_vbo = vbo;
@@ -206,9 +197,7 @@ void SceneRenderer::render_scene() {
     set_mat4(m_programs.view.program_id(), "view", view);
     set_mat4(m_programs.view.program_id(), "projection", projection);
     set_vec3(m_programs.view.program_id(), "light_pos", state.light.position);
-    set_vec3(
-        m_programs.view.program_id(), "view_pos", state.window.camera.position
-    );
+    set_vec3(m_programs.view.program_id(), "view_pos", state.window.camera.position);
     set_light(m_programs.view.program_id(), "light", state.light);
     set_diffuse_map(m_programs.view.program_id(), "diffuse_map", diffuse_map);
 
@@ -224,8 +213,7 @@ void SceneRenderer::render_scene() {
     for (unsigned int i = 0; i < 10; ++i) {
         angle = glfwGetTime() * (i % 3) * 25.f;
         model = glm::translate(glm::mat4(1.f), example_cube_positions[i]);
-        model =
-            glm::rotate(model, glm::radians(angle), glm::vec3(1.f, .3f, .5f));
+        model = glm::rotate(model, glm::radians(angle), glm::vec3(1.f, .3f, .5f));
 
         m_programs.view.use();
         set_mat4(m_programs.view.program_id(), "model", model);
@@ -250,8 +238,8 @@ void SceneRenderer::render_imgui() {
     ImGui::PushItemWidth(150.0f);
 
     ImGui::LabelText(
-        "Pos", "(%.2f, %.2f, %.2f)", state.window.camera.position.x,
-        state.window.camera.position.y, state.window.camera.position.z
+        "Pos", "(%.2f, %.2f, %.2f)", state.window.camera.position.x, state.window.camera.position.y,
+        state.window.camera.position.z
     );
 
     ImGui::PopItemWidth();
@@ -262,8 +250,7 @@ void SceneRenderer::render_imgui() {
 }
 
 SceneRenderer::~SceneRenderer() {
-    if (!m_vbo)
-        return;
+    if (!m_vbo) return;
     glDeleteVertexArrays(1, &m_vaos.cube);
     glDeleteVertexArrays(1, &m_vaos.light);
     glDeleteBuffers(1, &m_vbo);

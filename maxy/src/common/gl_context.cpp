@@ -15,16 +15,13 @@ init_glfw(int width, int height, const char *title) {
     if (glfwInit() == GLFW_FALSE) {
         char *error_description;
         glfwGetError((const char **)&error_description);
-        return std::unexpected(
-            std::format("failed to init GLFW: {}", error_description)
-        );
+        return std::unexpected(std::format("failed to init GLFW: {}", error_description));
     }
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    GLFWwindow *window =
-        glfwCreateWindow(width, height, title, nullptr, nullptr);
+    GLFWwindow *window = glfwCreateWindow(width, height, title, nullptr, nullptr);
     if (!window) {
         glfwTerminate();
         return std::unexpected("failed to create GLFW window");
@@ -61,8 +58,7 @@ static std::expected<void, std::string> init_imgui(GLFWwindow *w) {
     return {};
 }
 
-std::expected<GLContext, std::string>
-GLContext::create(int width, int height, const char *title) {
+std::expected<GLContext, std::string> GLContext::create(int width, int height, const char *title) {
     auto window = init_glfw(width, height, title);
     if (!window) {
         return std::unexpected(window.error());
@@ -76,8 +72,7 @@ GLContext::create(int width, int height, const char *title) {
 }
 
 GLContext::~GLContext() {
-    if (!m_window)
-        return;
+    if (!m_window) return;
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();

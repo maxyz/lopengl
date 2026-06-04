@@ -9,3 +9,15 @@ chapter_spv_shaders(sdl3_05_rotating_triangle)
 add_executable(sdl3_05_hello_triangles hello_triangles.cpp)
 target_link_libraries(sdl3_05_hello_triangles sdl3_engine)
 chapter_spv_shaders(sdl3_05_hello_triangles)
+
+add_executable(sdl3_ex_5_8_1 ex_5_8_1.cpp)
+target_link_libraries(sdl3_ex_5_8_1 sdl3_engine)
+chapter_spv_shaders(sdl3_ex_5_8_1)
+
+add_executable(sdl3_ex_5_8_2 ex_5_8_2.cpp)
+target_link_libraries(sdl3_ex_5_8_2 sdl3_engine)
+chapter_spv_shaders(sdl3_ex_5_8_2)
+
+add_executable(sdl3_ex_5_8_3 ex_5_8_3.cpp)
+target_link_libraries(sdl3_ex_5_8_3 sdl3_engine)
+chapter_spv_shaders(sdl3_ex_5_8_3)

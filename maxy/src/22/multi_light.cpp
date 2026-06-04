@@ -347,9 +347,7 @@ state_t state;
 void init_state() {
     const auto &preset = presets[state.preset_index];
     state.pos_lights.assign(preset.pos_lights.begin(), preset.pos_lights.end());
-    state.spot_lights.assign(
-        preset.spot_lights.begin(), preset.spot_lights.end()
-    );
+    state.spot_lights.assign(preset.spot_lights.begin(), preset.spot_lights.end());
 }
 
 class SceneRenderer {
@@ -359,10 +357,8 @@ public:
     SceneRenderer(const SceneRenderer &) = delete;
     SceneRenderer &operator=(const SceneRenderer &) = delete;
     SceneRenderer(SceneRenderer &&o) noexcept
-        : m_programs(std::exchange(o.m_programs, {})),
-          m_vaos(std::exchange(o.m_vaos, {})),
-          m_textures(std::exchange(o.m_textures, {})),
-          m_vbo(std::exchange(o.m_vbo, 0)),
+        : m_programs(std::exchange(o.m_programs, {})), m_vaos(std::exchange(o.m_vaos, {})),
+          m_textures(std::exchange(o.m_textures, {})), m_vbo(std::exchange(o.m_vbo, 0)),
           m_pyramid_vbo(std::exchange(o.m_pyramid_vbo, 0)),
           m_pyramid_ebo(std::exchange(o.m_pyramid_ebo, 0)),
           m_window(std::exchange(o.m_window, nullptr)) {}
@@ -397,18 +393,14 @@ private:
 
     SceneRenderer() = default;
 
-    static SceneRenderer setup_gl(
-        GLFWwindow *window, Shader shader, Shader light_shader, id_t diffuse,
-        id_t specular
-    );
+    static SceneRenderer
+    setup_gl(GLFWwindow *window, Shader shader, Shader light_shader, id_t diffuse, id_t specular);
     void render_scene();
     void render_scene_bind_textures(
-        const preset_t &preset, const glm::mat4 &view,
-        const glm::mat4 &projection
+        const preset_t &preset, const glm::mat4 &view, const glm::mat4 &projection
     );
     void render_scene_draw_lights(
-        const preset_t &preset, const glm::mat4 &view,
-        const glm::mat4 &projection
+        const preset_t &preset, const glm::mat4 &view, const glm::mat4 &projection
     );
     void render_scene_draw_cubes();
     void render_imgui();
@@ -416,8 +408,7 @@ private:
 
 void process_input(GLFWwindow *window, input_t &input);
 
-std::expected<SceneRenderer, std::string>
-SceneRenderer::create(GLFWwindow *window) {
+std::expected<SceneRenderer, std::string> SceneRenderer::create(GLFWwindow *window) {
     struct build_t {
         Shader shader;
         Shader light_shader;
@@ -429,9 +420,7 @@ SceneRenderer::create(GLFWwindow *window) {
     return Shader::build("shaders/22_multiple.vert", "shaders/22_multiple.frag")
         .transform([](Shader s) { return build_t{.shader = std::move(s)}; })
         .and_then([](build_t b) {
-            return Shader::build(
-                       "shaders/22_light.vert", "shaders/22_light.frag"
-            )
+            return Shader::build("shaders/22_light.vert", "shaders/22_light.frag")
                 .transform([b = std::move(b)](Shader ls) mutable {
                     b.light_shader = std::move(ls);
                     return std::move(b);
@@ -453,15 +442,13 @@ SceneRenderer::create(GLFWwindow *window) {
         })
         .transform([&](build_t b) {
             return setup_gl(
-                window, std::move(b.shader), std::move(b.light_shader),
-                b.diffuse, b.specular
+                window, std::move(b.shader), std::move(b.light_shader), b.diffuse, b.specular
             );
         });
 }
 
 SceneRenderer SceneRenderer::setup_gl(
-    GLFWwindow *window, Shader shader, Shader light_shader, id_t diffuse,
-    id_t specular
+    GLFWwindow *window, Shader shader, Shader light_shader, id_t diffuse, id_t specular
 ) {
     id_t cube_vao;
     id_t vbo;
@@ -470,10 +457,7 @@ SceneRenderer SceneRenderer::setup_gl(
 
     glBindVertexArray(cube_vao);
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(
-        GL_ARRAY_BUFFER, sizeof(cube_vertices), cube_vertices.data(),
-        GL_STATIC_DRAW
-    );
+    glBufferData(GL_ARRAY_BUFFER, sizeof(cube_vertices), cube_vertices.data(), GL_STATIC_DRAW);
     glVertexAttribPointer(
         0, 3, GL_FLOAT, GL_FALSE, sizeof(vertex_t),
         reinterpret_cast<void *>(offsetof(vertex_t, position))
@@ -508,27 +492,17 @@ SceneRenderer SceneRenderer::setup_gl(
     glGenBuffers(1, &pyramid_ebo);
     glBindVertexArray(pyramid_vao);
     glBindBuffer(GL_ARRAY_BUFFER, pyramid_vbo);
-    glBufferData(
-        GL_ARRAY_BUFFER, sizeof(pyramid_vertices), pyramid_vertices,
-        GL_STATIC_DRAW
-    );
+    glBufferData(GL_ARRAY_BUFFER, sizeof(pyramid_vertices), pyramid_vertices, GL_STATIC_DRAW);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, pyramid_ebo);
-    glBufferData(
-        GL_ELEMENT_ARRAY_BUFFER, sizeof(pyramid_indices), pyramid_indices,
-        GL_STATIC_DRAW
-    );
-    glVertexAttribPointer(
-        0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), reinterpret_cast<void *>(0)
-    );
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(pyramid_indices), pyramid_indices, GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), reinterpret_cast<void *>(0));
     glEnableVertexAttribArray(0);
 
     shader.use();
     shader.set_int("material.diffuse", 0);
 
     SceneRenderer r;
-    r.m_programs = {
-        .view = std::move(shader), .light = std::move(light_shader)
-    };
+    r.m_programs = {.view = std::move(shader), .light = std::move(light_shader)};
     r.m_vaos = {.cube = cube_vao, .pyramid = pyramid_vao, .light = light_vao};
     r.m_textures = {.diffuse = diffuse, .specular = specular};
     r.m_vbo = vbo;
@@ -563,37 +537,26 @@ void SceneRenderer::render_scene_bind_textures(
     glBindTexture(GL_TEXTURE_2D, m_textures.specular);
     set_mat4(m_programs.view.program_id(), "view", view);
     set_mat4(m_programs.view.program_id(), "projection", projection);
-    set_vec3(
-        m_programs.view.program_id(), "view_pos", state.window.camera.position
-    );
+    set_vec3(m_programs.view.program_id(), "view_pos", state.window.camera.position);
     set_specular_map(
-        m_programs.view.program_id(), "material",
-        {.diffuse = 0, .specular = 1, .shininess = 64.f}
+        m_programs.view.program_id(), "material", {.diffuse = 0, .specular = 1, .shininess = 64.f}
     );
-    set_directional_light(
-        m_programs.view.program_id(), "dir_light", preset.dir_light
-    );
+    set_directional_light(m_programs.view.program_id(), "dir_light", preset.dir_light);
     set_int(
-        m_programs.view.program_id(), "pos_light_count",
-        static_cast<int>(state.pos_lights.size())
+        m_programs.view.program_id(), "pos_light_count", static_cast<int>(state.pos_lights.size())
     );
     for (unsigned int i = 0; i < state.pos_lights.size(); ++i)
         set_positional_light(
-            m_programs.view.program_id(), std::format("pos_lights[{}]", i),
-            state.pos_lights[i]
+            m_programs.view.program_id(), std::format("pos_lights[{}]", i), state.pos_lights[i]
         );
     set_int(
-        m_programs.view.program_id(), "spot_light_count",
-        static_cast<int>(state.spot_lights.size())
+        m_programs.view.program_id(), "spot_light_count", static_cast<int>(state.spot_lights.size())
     );
     for (unsigned int i = 0; i < state.spot_lights.size(); ++i)
         set_spot_light(
-            m_programs.view.program_id(), std::format("spot_lights[{}]", i),
-            state.spot_lights[i]
+            m_programs.view.program_id(), std::format("spot_lights[{}]", i), state.spot_lights[i]
         );
-    set_flashlight(
-        m_programs.view.program_id(), "flashlight", preset.flashlight
-    );
+    set_flashlight(m_programs.view.program_id(), "flashlight", preset.flashlight);
 }
 
 void SceneRenderer::render_scene_draw_lights(
@@ -606,9 +569,8 @@ void SceneRenderer::render_scene_draw_lights(
     glBindVertexArray(m_vaos.light);
     for (unsigned int i = 0; i < state.pos_lights.size(); ++i) {
         const light_positional_t &pos_light = state.pos_lights[i];
-        glm::mat4 model = glm::scale(
-            glm::translate(glm::mat4(1.f), pos_light.position), glm::vec3(.2f)
-        );
+        glm::mat4 model =
+            glm::scale(glm::translate(glm::mat4(1.f), pos_light.position), glm::vec3(.2f));
         set_mat4(m_programs.light.program_id(), "model", model);
         set_positional_light(m_programs.light.program_id(), "light", pos_light);
         glDrawArrays(GL_TRIANGLES, 0, 36);
@@ -617,12 +579,9 @@ void SceneRenderer::render_scene_draw_lights(
     glBindVertexArray(m_vaos.pyramid);
     for (unsigned int i = 0; i < state.spot_lights.size(); ++i) {
         const light_spot_t &spot_light = state.spot_lights[i];
-        glm::mat4 look_at = glm::lookAt(
-            glm::vec3(0.f), spot_light.direction, glm::vec3(0, 1, 0)
-        );
+        glm::mat4 look_at = glm::lookAt(glm::vec3(0.f), spot_light.direction, glm::vec3(0, 1, 0));
         glm::mat4 model = glm::scale(
-            glm::translate(glm::mat4(1.f), spot_light.position) *
-                glm::inverse(look_at),
+            glm::translate(glm::mat4(1.f), spot_light.position) * glm::inverse(look_at),
             glm::vec3(.2f)
         );
         set_mat4(m_programs.light.program_id(), "model", model);
@@ -637,8 +596,8 @@ void SceneRenderer::render_scene_draw_cubes() {
     for (unsigned int i = 0; i < 10; ++i) {
         float angle = glfwGetTime() * (i % 3) * 25.f;
         glm::mat4 model = glm::rotate(
-            glm::translate(glm::mat4(1.f), example_cube_positions[i]),
-            glm::radians(angle), glm::vec3(1.f, .3f, .5f)
+            glm::translate(glm::mat4(1.f), example_cube_positions[i]), glm::radians(angle),
+            glm::vec3(1.f, .3f, .5f)
         );
         set_mat4(m_programs.view.program_id(), "model", model);
         glDrawArrays(GL_TRIANGLES, 0, 36);
@@ -651,8 +610,7 @@ void SceneRenderer::render_imgui() {
     ImGui::NewFrame();
 
     ImGuiIO &io = ImGui::GetIO();
-    bool cam_mode =
-        glfwGetInputMode(m_window, GLFW_CURSOR) == GLFW_CURSOR_DISABLED;
+    bool cam_mode = glfwGetInputMode(m_window, GLFW_CURSOR) == GLFW_CURSOR_DISABLED;
 
     if (cam_mode) {
         io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;
@@ -665,17 +623,15 @@ void SceneRenderer::render_imgui() {
     ImGui::PushItemWidth(150.0f);
 
     ImGui::LabelText(
-        "Pos", "(%.2f, %.2f, %.2f)", state.window.camera.position.x,
-        state.window.camera.position.y, state.window.camera.position.z
+        "Pos", "(%.2f, %.2f, %.2f)", state.window.camera.position.x, state.window.camera.position.y,
+        state.window.camera.position.z
     );
     if (cam_mode) {
         ImGui::LabelText(
-            "Pos lights", "%d / %d", static_cast<int>(state.pos_lights.size()),
-            MAX_POS_LIGHTS
+            "Pos lights", "%d / %d", static_cast<int>(state.pos_lights.size()), MAX_POS_LIGHTS
         );
         ImGui::LabelText(
-            "Spot lights", "%d / %d",
-            static_cast<int>(state.spot_lights.size()), MAX_SPOT_LIGHTS
+            "Spot lights", "%d / %d", static_cast<int>(state.spot_lights.size()), MAX_SPOT_LIGHTS
         );
     } else {
         int pos_count = static_cast<int>(state.pos_lights.size());
@@ -709,8 +665,7 @@ void SceneRenderer::render(input_t input, float delta) {
 
     const preset_t &preset = presets[state.preset_index];
     glClearColor(
-        preset.clear_color.x, preset.clear_color.y, preset.clear_color.z,
-        preset.clear_color.w
+        preset.clear_color.x, preset.clear_color.y, preset.clear_color.z, preset.clear_color.w
     );
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -720,8 +675,7 @@ void SceneRenderer::render(input_t input, float delta) {
 }
 
 SceneRenderer::~SceneRenderer() {
-    if (!m_vbo)
-        return;
+    if (!m_vbo) return;
     glDeleteVertexArrays(1, &m_vaos.cube);
     glDeleteVertexArrays(1, &m_vaos.light);
     glDeleteVertexArrays(1, &m_vaos.pyramid);
@@ -730,50 +684,38 @@ SceneRenderer::~SceneRenderer() {
     glDeleteBuffers(1, &m_pyramid_ebo);
 }
 
-void key_callback_with_preset(
-    GLFWwindow *window, int key, int scancode, int action, int mods
-) {
+void key_callback_with_preset(GLFWwindow *window, int key, int scancode, int action, int mods) {
     ImGuiIO &io = ImGui::GetIO();
     if (io.WantCaptureKeyboard) {
         return;
     }
     key_callback(window, key, scancode, action, mods);
 
-    if ((key == GLFW_KEY_P) &&
-        (action == GLFW_PRESS || action == GLFW_REPEAT)) {
+    if ((key == GLFW_KEY_P) && (action == GLFW_PRESS || action == GLFW_REPEAT)) {
         if (mods & GLFW_MOD_SHIFT) {
-            state.preset_index =
-                (presets.size() + state.preset_index - 1) % presets.size();
+            state.preset_index = (presets.size() + state.preset_index - 1) % presets.size();
         } else {
             state.preset_index = (state.preset_index + 1) % presets.size();
         }
         const auto &preset = presets[state.preset_index];
-        state.pos_lights.assign(
-            preset.pos_lights.begin(), preset.pos_lights.end()
-        );
-        state.spot_lights.assign(
-            preset.spot_lights.begin(), preset.spot_lights.end()
-        );
+        state.pos_lights.assign(preset.pos_lights.begin(), preset.pos_lights.end());
+        state.spot_lights.assign(preset.spot_lights.begin(), preset.spot_lights.end());
     }
-    if (key == GLFW_KEY_EQUAL &&
-        (action == GLFW_PRESS || action == GLFW_REPEAT)) {
+    if (key == GLFW_KEY_EQUAL && (action == GLFW_PRESS || action == GLFW_REPEAT)) {
         if (mods & GLFW_MOD_SHIFT) {
             if (static_cast<int>(state.pos_lights.size()) < MAX_POS_LIGHTS)
                 state.pos_lights.push_back(random_positional_light());
         }
     }
-    if (key == GLFW_KEY_MINUS &&
-        (action == GLFW_PRESS || action == GLFW_REPEAT)) {
-        if (!state.pos_lights.empty())
-            state.pos_lights.pop_back();
+    if (key == GLFW_KEY_MINUS && (action == GLFW_PRESS || action == GLFW_REPEAT)) {
+        if (!state.pos_lights.empty()) state.pos_lights.pop_back();
     }
     if (key == GLFW_KEY_0 && action == GLFW_PRESS) {
         if (static_cast<int>(state.spot_lights.size()) < MAX_SPOT_LIGHTS)
             state.spot_lights.push_back(random_spot_light());
     }
     if (key == GLFW_KEY_9 && action == GLFW_PRESS) {
-        if (!state.spot_lights.empty())
-            state.spot_lights.pop_back();
+        if (!state.spot_lights.empty()) state.spot_lights.pop_back();
     }
 }
 

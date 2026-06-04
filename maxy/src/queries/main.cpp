@@ -13,41 +13,40 @@ std::expected<GLFWwindow *, std::string> init_window();
 void query();
 
 int main() {
-  auto window = init_window();
-  if (!window.has_value()) {
-    std::cerr << window.error() << std::endl;
-    return -1;
-  }
+    auto window = init_window();
+    if (!window.has_value()) {
+        std::cerr << window.error() << std::endl;
+        return -1;
+    }
 
-  query();
+    query();
 
-  glfwTerminate();
-  return 0;
+    glfwTerminate();
+    return 0;
 }
 
 std::expected<GLFWwindow *, std::string> init_window() {
-  glfwInit();
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    glfwInit();
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-  GLFWwindow *window = glfwCreateWindow(WIDTH, HEIGHT, TITLE, NULL, NULL);
-  if (window == NULL) {
-    glfwTerminate();
-    return std::unexpected("failed to create GLFW window");
-  }
-  glfwMakeContextCurrent(window);
-  int version = gladLoadGL(glfwGetProcAddress);
-  if (version == 0) {
-    return std::unexpected("failed to init glad on top of glfw");
-  }
+    GLFWwindow *window = glfwCreateWindow(WIDTH, HEIGHT, TITLE, NULL, NULL);
+    if (window == NULL) {
+        glfwTerminate();
+        return std::unexpected("failed to create GLFW window");
+    }
+    glfwMakeContextCurrent(window);
+    int version = gladLoadGL(glfwGetProcAddress);
+    if (version == 0) {
+        return std::unexpected("failed to init glad on top of glfw");
+    }
 
-  return window;
+    return window;
 }
 
 void query() {
-  int nrAttributes;
-  glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &nrAttributes);
-  std::cout << "Maximum nr of vertex attributes supported: " << nrAttributes
-            << std::endl;
+    int nrAttributes;
+    glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &nrAttributes);
+    std::cout << "Maximum nr of vertex attributes supported: " << nrAttributes << std::endl;
 }

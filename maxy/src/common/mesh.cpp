@@ -9,20 +9,18 @@ void Mesh::setup_mesh() {
     glBindVertexArray(m_vertex_array);
     glBindBuffer(GL_ARRAY_BUFFER, m_vertex_buffer);
     glBufferData(
-        GL_ARRAY_BUFFER, m_vertices.size() * sizeof(Vertex), &m_vertices[0],
-        GL_STATIC_DRAW
+        GL_ARRAY_BUFFER, m_vertices.size() * sizeof(Vertex), &m_vertices[0], GL_STATIC_DRAW
     );
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_element_buffer);
     glBufferData(
-        GL_ELEMENT_ARRAY_BUFFER, m_indices.size() * sizeof(unsigned int),
-        &m_indices[0], GL_STATIC_DRAW
+        GL_ELEMENT_ARRAY_BUFFER, m_indices.size() * sizeof(unsigned int), &m_indices[0],
+        GL_STATIC_DRAW
     );
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), nullptr);
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(
-        1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
-        reinterpret_cast<void *>(offsetof(Vertex, normal))
+        1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), reinterpret_cast<void *>(offsetof(Vertex, normal))
     );
     glEnableVertexAttribArray(2);
     glVertexAttribPointer(
@@ -34,13 +32,10 @@ void Mesh::setup_mesh() {
 
 constexpr size_t first_texture_number = 1;
 
-static std::string material_uniform_name(
-    std::string_view type, size_t &diffuse_count, size_t &specular_count
-) {
-    if (type == texture_type_diffuse)
-        return std::format("{}{}", type, diffuse_count++);
-    if (type == texture_type_specular)
-        return std::format("{}{}", type, specular_count++);
+static std::string
+material_uniform_name(std::string_view type, size_t &diffuse_count, size_t &specular_count) {
+    if (type == texture_type_diffuse) return std::format("{}{}", type, diffuse_count++);
+    if (type == texture_type_specular) return std::format("{}{}", type, specular_count++);
     return std::string(type);
 }
 
@@ -49,19 +44,12 @@ void Mesh::draw(Shader &shader) {
     size_t specular_count = first_texture_number;
     for (size_t i = 0; i < m_textures.size(); ++i) {
         glActiveTexture(GL_TEXTURE0 + i);
-        shader.set_int(
-            material_uniform_name(
-                m_textures[i].type, diffuse_count, specular_count
-            ),
-            i
-        );
+        shader.set_int(material_uniform_name(m_textures[i].type, diffuse_count, specular_count), i);
         glBindTexture(GL_TEXTURE_2D, m_textures[i].id);
     }
     glActiveTexture(GL_TEXTURE0);
 
     glBindVertexArray(m_vertex_array);
-    glDrawElements(
-        GL_TRIANGLES, static_cast<GLsizei>(m_indices.size()), GL_UNSIGNED_INT, 0
-    );
+    glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(m_indices.size()), GL_UNSIGNED_INT, 0);
     glBindVertexArray(0);
 }

@@ -69,8 +69,7 @@ struct textures_t {
 
 class SceneRenderer {
 public:
-    static std::expected<std::unique_ptr<SceneRenderer>, std::string>
-    create(GLFWwindow *window);
+    static std::expected<std::unique_ptr<SceneRenderer>, std::string> create(GLFWwindow *window);
 
     SceneRenderer(const SceneRenderer &) = delete;
     SceneRenderer &operator=(const SceneRenderer &) = delete;
@@ -91,11 +90,10 @@ private:
     vbos_t m_vbos;
 
     SceneRenderer(
-        GLFWwindow *window, shaders_t shaders, textures_t textures, vaos_t vaos,
-        vbos_t vbos
+        GLFWwindow *window, shaders_t shaders, textures_t textures, vaos_t vaos, vbos_t vbos
     )
-        : m_window{window}, m_shaders{std::move(shaders)}, m_textures(textures),
-          m_vaos{vaos}, m_vbos(vbos) {};
+        : m_window{window}, m_shaders{std::move(shaders)}, m_textures(textures), m_vaos{vaos},
+          m_vbos(vbos) {};
 
     void render_scene();
     void render_fill_pass();
@@ -209,15 +207,12 @@ std::expected<textures_t, std::string> load_textures() {
 }
 
 void load_buffer_vertices(
-    std::span<const vertex_t> vertices, id_t vertex_array_object,
-    id_t vertex_buffer_object
+    std::span<const vertex_t> vertices, id_t vertex_array_object, id_t vertex_buffer_object
 ) {
 
     glBindVertexArray(vertex_array_object);
     glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_object);
-    glBufferData(
-        GL_ARRAY_BUFFER, vertices.size_bytes(), vertices.data(), GL_STATIC_DRAW
-    );
+    glBufferData(GL_ARRAY_BUFFER, vertices.size_bytes(), vertices.data(), GL_STATIC_DRAW);
     glVertexAttribPointer(
         0, 3, GL_FLOAT, GL_FALSE, sizeof(vertex_t),
         reinterpret_cast<void *>(offsetof(vertex_t, position))
@@ -251,8 +246,7 @@ std::pair<vaos_t, vbos_t> load_buffers() {
 
 std::expected<std::unique_ptr<SceneRenderer>, std::string>
 SceneRenderer::create(GLFWwindow *window) {
-    auto shader =
-        Shader::build("shaders/24_grass.vert", "shaders/24_grass.frag");
+    auto shader = Shader::build("shaders/24_grass.vert", "shaders/24_grass.frag");
     if (!shader) {
         return std::unexpected(shader.error());
     }
@@ -277,8 +271,7 @@ void SceneRenderer::render(input_t input, float delta) {
 
     const preset_t &preset = presets[state.preset_index];
     glClearColor(
-        preset.clear_color.x, preset.clear_color.y, preset.clear_color.z,
-        preset.clear_color.w
+        preset.clear_color.x, preset.clear_color.y, preset.clear_color.z, preset.clear_color.w
     );
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
@@ -323,8 +316,7 @@ void SceneRenderer::render_scene_draw_cubes(Shader &shader) {
     for (auto &model_info : preset.cubes) {
         glm::mat4 model_transform = glm::mat4(1.f);
         model_transform = glm::translate(model_transform, model_info.position);
-        model_transform =
-            glm::scale(model_transform, glm::vec3(model_info.scale));
+        model_transform = glm::scale(model_transform, glm::vec3(model_info.scale));
 
         shader.set_mat4("model", model_transform);
         glDrawArrays(GL_TRIANGLES, 0, cube_vertices.size());
@@ -341,16 +333,14 @@ void SceneRenderer::render_scene_draw_windows() {
     glBindTexture(GL_TEXTURE_2D, m_textures.window);
     std::multimap<float, model_preset_t> sorted{};
     for (auto window : preset.windows) {
-        float distance =
-            glm::length(state.window.camera.position - window.position);
+        float distance = glm::length(state.window.camera.position - window.position);
         sorted.insert({distance, window});
     }
 
     for (const auto &[_, model_info] : std::views::reverse(sorted)) {
         glm::mat4 model_transform = glm::mat4(1.f);
         model_transform = glm::translate(model_transform, model_info.position);
-        model_transform =
-            glm::scale(model_transform, glm::vec3(model_info.scale));
+        model_transform = glm::scale(model_transform, glm::vec3(model_info.scale));
 
         m_shaders.shader.set_mat4("model", model_transform);
         glDrawArrays(GL_TRIANGLES, 0, square_vertices.size());
@@ -390,21 +380,17 @@ void SceneRenderer::render_imgui() {
     ImGui::NewFrame();
 
     ImGui::SetNextWindowPos(ImVec2(6.0f, 6.0f), ImGuiCond_Once);
-    ImGui::Begin(
-        "Scene information", nullptr, ImGuiWindowFlags_AlwaysAutoResize
-    );
+    ImGui::Begin("Scene information", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
     ImGui::PushItemWidth(150.0f);
 
     ImGui::LabelText(
-        "Pos", "(%.2f, %.2f, %.2f)", state.window.camera.position.x,
-        state.window.camera.position.y, state.window.camera.position.z
+        "Pos", "(%.2f, %.2f, %.2f)", state.window.camera.position.x, state.window.camera.position.y,
+        state.window.camera.position.z
     );
     double x, y;
     glfwGetCursorPos(m_window, &x, &y);
     ImGui::LabelText("Mouse", "(%.2f, %.2f)", x, y);
-    ImGui::LabelText(
-        "Dept Mode", "%s", depth_modes[state.depth_mode_index].name.c_str()
-    );
+    ImGui::LabelText("Dept Mode", "%s", depth_modes[state.depth_mode_index].name.c_str());
     ImGui::LabelText(
         "Cursor mode", "%s",
         cursor_input_mode == GLFW_CURSOR_DISABLED ? "DISABLED"
@@ -428,24 +414,19 @@ void set_depth_func() {
     glDepthFunc(depth_mode.mode);
 }
 
-void key_callback_with_depth_mode(
-    GLFWwindow *window, int key, int scancode, int action, int mods
-) {
+void key_callback_with_depth_mode(GLFWwindow *window, int key, int scancode, int action, int mods) {
     ImGuiIO &io = ImGui::GetIO();
     if (io.WantCaptureKeyboard) {
         return;
     }
     key_callback(window, key, scancode, action, mods);
 
-    if ((key == GLFW_KEY_M) &&
-        (action == GLFW_PRESS || action == GLFW_REPEAT)) {
+    if ((key == GLFW_KEY_M) && (action == GLFW_PRESS || action == GLFW_REPEAT)) {
         if (mods & GLFW_MOD_SHIFT) {
             state.depth_mode_index =
-                (depth_modes.size() + state.depth_mode_index - 1) %
-                depth_modes.size();
+                (depth_modes.size() + state.depth_mode_index - 1) % depth_modes.size();
         } else {
-            state.depth_mode_index =
-                (state.depth_mode_index + 1) % depth_modes.size();
+            state.depth_mode_index = (state.depth_mode_index + 1) % depth_modes.size();
         }
         set_depth_func();
     }

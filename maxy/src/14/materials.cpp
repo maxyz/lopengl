@@ -103,8 +103,7 @@ std::expected<GLFWwindow *, std::string> init_window() {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    GLFWwindow *window =
-        glfwCreateWindow(viewport.width, viewport.height, TITLE, NULL, NULL);
+    GLFWwindow *window = glfwCreateWindow(viewport.width, viewport.height, TITLE, NULL, NULL);
     if (window == NULL) {
         glfwTerminate();
         return std::unexpected("failed to create GLFW window");
@@ -160,8 +159,7 @@ std::expected<hooks_t, std::string> init_shaders() {
     if (!shader) {
         return std::unexpected(shader.error());
     }
-    auto light_shader =
-        Shader::build("shaders/14_light.vert", "shaders/14_light.frag");
+    auto light_shader = Shader::build("shaders/14_light.vert", "shaders/14_light.frag");
     if (!light_shader) {
         return std::unexpected(light_shader.error());
     }
@@ -253,9 +251,7 @@ std::expected<hooks_t, std::string> init_shaders() {
 
         glm::mat4 projection = glm::perspective(
             glm::radians(camera.fov),
-            static_cast<float>(viewport.width) /
-                static_cast<float>(viewport.height),
-            .1f, 100.f
+            static_cast<float>(viewport.width) / static_cast<float>(viewport.height), .1f, 100.f
         );
 
         set_mat4(p, "view", view);
@@ -275,9 +271,7 @@ std::expected<hooks_t, std::string> init_shaders() {
         for (unsigned int i = 0; i < 10; ++i) {
             angle = glfwGetTime() * (i % 3) * 25.f;
             model = glm::translate(glm::mat4(1.f), example_cube_positions[i]);
-            model = glm::rotate(
-                model, glm::radians(angle), glm::vec3(1.f, .3f, .5f)
-            );
+            model = glm::rotate(model, glm::radians(angle), glm::vec3(1.f, .3f, .5f));
 
             glUseProgram(p);
             set_mat4(p, "model", model);
@@ -312,10 +306,7 @@ buffers_t buffers() {
     glBindVertexArray(cube_vao);
 
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(
-        GL_ARRAY_BUFFER, sizeof(cube_vertices), cube_vertices.data(),
-        GL_STATIC_DRAW
-    );
+    glBufferData(GL_ARRAY_BUFFER, sizeof(cube_vertices), cube_vertices.data(), GL_STATIC_DRAW);
 
     glVertexAttribPointer(
         0, 3, GL_FLOAT, GL_FALSE, sizeof(vertex_t),
@@ -366,9 +357,7 @@ void update_delta(frame_time_t &delta) {
     delta.last_time = now;
 }
 
-void event_loop(
-    GLFWwindow *window, std::vector<std::function<void(uint64_t, float)>> cbs
-) {
+void event_loop(GLFWwindow *window, std::vector<std::function<void(uint64_t, float)>> cbs) {
     uint64_t e;
 
     frame_time_t delta{};
