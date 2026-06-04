@@ -6,6 +6,8 @@
 #include <utility>
 #include <vector>
 
+#include <SDL3_image/SDL_image.h>
+
 std::unexpected<std::string> sdl_error(std::string prefix) {
     return std::unexpected(std::format("{}: {}", prefix, SDL_GetError()));
 }
@@ -18,14 +20,14 @@ std::expected<gpu_buffer_t, std::string> create_buffer(
     using transfer_t = gpu_resource_t<SDL_GPUTransferBuffer, SDL_ReleaseGPUTransferBuffer>;
 
     SDL_GPUBufferCreateInfo buffer_info = {};
-    buffer_info.usage = usage;
-    buffer_info.size = size;
+    buffer_info.usage                   = usage;
+    buffer_info.size                    = size;
     gpu_buffer_t buffer{engine.gpu_device, SDL_CreateGPUBuffer(engine.gpu_device, &buffer_info)};
     if (!buffer) return sdl_error("SDL_CreateGPUBuffer failed");
 
     SDL_GPUTransferBufferCreateInfo transfer_info = {};
-    transfer_info.usage = SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD;
-    transfer_info.size = size;
+    transfer_info.usage                           = SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD;
+    transfer_info.size                            = size;
     transfer_t transfer{
         engine.gpu_device, SDL_CreateGPUTransferBuffer(engine.gpu_device, &transfer_info)
     };
@@ -40,11 +42,11 @@ std::expected<gpu_buffer_t, std::string> create_buffer(
     if (!cmd_buf) return sdl_error("SDL_AcquireGPUCommandBuffer failed");
 
     SDL_GPUTransferBufferLocation source = {};
-    source.transfer_buffer = transfer.get();
+    source.transfer_buffer               = transfer.get();
 
     SDL_GPUBufferRegion destination = {};
-    destination.buffer = buffer.get();
-    destination.size = size;
+    destination.buffer              = buffer.get();
+    destination.size                = size;
 
     SDL_GPUCopyPass *copy_pass = SDL_BeginGPUCopyPass(cmd_buf);
     SDL_UploadToGPUBuffer(copy_pass, &source, &destination, false);
@@ -66,11 +68,11 @@ engine_t::engine_t(engine_t &&other) noexcept
 engine_t &engine_t::operator=(engine_t &&other) noexcept {
     if (this != &other) {
         this->~engine_t();
-        window = std::exchange(other.window, nullptr);
-        gpu_device = std::exchange(other.gpu_device, nullptr);
+        window          = std::exchange(other.window, nullptr);
+        gpu_device      = std::exchange(other.gpu_device, nullptr);
         sdl_initialized = std::exchange(other.sdl_initialized, false);
-        verbose = other.verbose;
-        last_tick = other.last_tick;
+        verbose         = other.verbose;
+        last_tick       = other.last_tick;
     }
     return *this;
 }
@@ -120,8 +122,8 @@ bool poll_events() {
 }
 
 float tick(engine_t &engine) {
-    Uint64 now = SDL_GetTicks();
-    float dt = engine.last_tick == 0 ? 0.0f : (now - engine.last_tick) / 1000.0f;
+    Uint64 now       = SDL_GetTicks();
+    float  dt        = engine.last_tick == 0 ? 0.0f : (now - engine.last_tick) / 1000.0f;
     engine.last_tick = now;
     return dt;
 }
@@ -143,10 +145,10 @@ std::expected<void, std::string> render_frame(
 
     if (swapchain_texture) {
         SDL_GPUColorTargetInfo target = {};
-        target.texture = swapchain_texture;
-        target.clear_color = clear_color;
-        target.load_op = SDL_GPU_LOADOP_CLEAR;
-        target.store_op = SDL_GPU_STOREOP_STORE;
+        target.texture                = swapchain_texture;
+        target.clear_color            = clear_color;
+        target.load_op                = SDL_GPU_LOADOP_CLEAR;
+        target.store_op               = SDL_GPU_STOREOP_STORE;
 
         SDL_GPURenderPass *render_pass =
             SDL_BeginGPURenderPass(command_buffer, &target, 1, nullptr);
@@ -174,13 +176,13 @@ std::expected<gpu_shader_t, std::string> load_shader(
     if (!file) return std::unexpected(std::format("Failed to read shader: {}", spv_path));
 
     SDL_GPUShaderCreateInfo info = {};
-    info.code_size = code.size();
-    info.code = code.data();
-    info.entrypoint = "main";
-    info.format = SDL_GPU_SHADERFORMAT_SPIRV;
-    info.stage = stage;
-    info.num_uniform_buffers = num_uniform_buffers;
-    info.num_samplers = num_samplers;
+    info.code_size               = code.size();
+    info.code                    = code.data();
+    info.entrypoint              = "main";
+    info.format                  = SDL_GPU_SHADERFORMAT_SPIRV;
+    info.stage                   = stage;
+    info.num_uniform_buffers     = num_uniform_buffers;
+    info.num_samplers            = num_samplers;
 
     SDL_GPUShader *shader = SDL_CreateGPUShader(engine.gpu_device, &info);
     if (!shader) return sdl_error("SDL_CreateGPUShader failed");
@@ -225,20 +227,181 @@ create_pipeline(engine_t const &engine, pipeline_desc_t const &desc) {
     SDL_GPUColorTargetDescription color_target = {};
     color_target.format = SDL_GetGPUSwapchainTextureFormat(engine.gpu_device, engine.window);
 
-    SDL_GPUGraphicsPipelineCreateInfo info = {};
-    info.vertex_shader = vert->get();
-    info.fragment_shader = frag->get();
+    SDL_GPUGraphicsPipelineCreateInfo info             = {};
+    info.vertex_shader                                 = vert->get();
+    info.fragment_shader                               = frag->get();
     info.vertex_input_state.vertex_buffer_descriptions = buffer_descs.data();
-    info.vertex_input_state.num_vertex_buffers = static_cast<Uint32>(buffer_descs.size());
-    info.vertex_input_state.vertex_attributes = attrs.data();
-    info.vertex_input_state.num_vertex_attributes = static_cast<Uint32>(attrs.size());
-    info.primitive_type = SDL_GPU_PRIMITIVETYPE_TRIANGLELIST;
-    info.target_info.color_target_descriptions = &color_target;
-    info.target_info.num_color_targets = 1;
+    info.vertex_input_state.num_vertex_buffers         = static_cast<Uint32>(buffer_descs.size());
+    info.vertex_input_state.vertex_attributes          = attrs.data();
+    info.vertex_input_state.num_vertex_attributes      = static_cast<Uint32>(attrs.size());
+    info.primitive_type                                = SDL_GPU_PRIMITIVETYPE_TRIANGLELIST;
+    info.target_info.color_target_descriptions         = &color_target;
+    info.target_info.num_color_targets                 = 1;
 
     gpu_pipeline_t pipeline{
         engine.gpu_device, SDL_CreateGPUGraphicsPipeline(engine.gpu_device, &info)
     };
     if (!pipeline) return sdl_error("SDL_CreateGPUGraphicsPipeline failed");
     return pipeline;
+}
+
+std::expected<gpu_texture_t, std::string>
+load_texture(engine_t const &engine, std::string_view path) {
+    using transfer_t = gpu_resource_t<SDL_GPUTransferBuffer, SDL_ReleaseGPUTransferBuffer>;
+
+    SDL_Surface *raw = IMG_Load(path.data());
+    if (!raw) return std::unexpected(std::format("IMG_Load failed: {}", SDL_GetError()));
+
+    SDL_Surface *rgba = SDL_ConvertSurface(raw, SDL_PIXELFORMAT_RGBA32);
+    SDL_DestroySurface(raw);
+    if (!rgba) return sdl_error("SDL_ConvertSurface failed");
+
+    // SDL3_GPU uses top-left UV origin; flip vertically so images appear
+    // the same way as in OpenGL (which loaded images bottom-row-first).
+    if (!SDL_FlipSurface(rgba, SDL_FLIP_VERTICAL)) {
+        SDL_DestroySurface(rgba);
+        return sdl_error("SDL_FlipSurface failed");
+    }
+
+    Uint32 const data_size = rgba->w * rgba->h * 4;
+
+    SDL_GPUTextureCreateInfo tex_info = {};
+    tex_info.type                     = SDL_GPU_TEXTURETYPE_2D;
+    tex_info.format                   = SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM;
+    tex_info.usage                    = SDL_GPU_TEXTUREUSAGE_SAMPLER;
+    tex_info.width                    = rgba->w;
+    tex_info.height                   = rgba->h;
+    tex_info.layer_count_or_depth     = 1;
+    tex_info.num_levels               = 1;
+
+    gpu_texture_t texture{engine.gpu_device, SDL_CreateGPUTexture(engine.gpu_device, &tex_info)};
+    if (!texture) {
+        SDL_DestroySurface(rgba);
+        return sdl_error("SDL_CreateGPUTexture failed");
+    }
+
+    SDL_GPUTransferBufferCreateInfo transfer_info = {};
+    transfer_info.usage                           = SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD;
+    transfer_info.size                            = data_size;
+    transfer_t transfer{
+        engine.gpu_device, SDL_CreateGPUTransferBuffer(engine.gpu_device, &transfer_info)
+    };
+    if (!transfer) {
+        SDL_DestroySurface(rgba);
+        return sdl_error("SDL_CreateGPUTransferBuffer failed");
+    }
+
+    void *mapped = SDL_MapGPUTransferBuffer(engine.gpu_device, transfer.get(), false);
+    if (!mapped) {
+        SDL_DestroySurface(rgba);
+        return sdl_error("SDL_MapGPUTransferBuffer failed");
+    }
+    SDL_memcpy(mapped, rgba->pixels, data_size);
+    SDL_UnmapGPUTransferBuffer(engine.gpu_device, transfer.get());
+    SDL_DestroySurface(rgba);
+
+    SDL_GPUCommandBuffer *cmd = SDL_AcquireGPUCommandBuffer(engine.gpu_device);
+    if (!cmd) return sdl_error("SDL_AcquireGPUCommandBuffer failed");
+
+    SDL_GPUTextureTransferInfo source = {};
+    source.transfer_buffer            = transfer.get();
+    source.pixels_per_row             = tex_info.width;
+    source.rows_per_layer             = tex_info.height;
+
+    SDL_GPUTextureRegion destination = {};
+    destination.texture              = texture.get();
+    destination.w                    = tex_info.width;
+    destination.h                    = tex_info.height;
+    destination.d                    = 1;
+
+    SDL_GPUCopyPass *copy_pass = SDL_BeginGPUCopyPass(cmd);
+    SDL_UploadToGPUTexture(copy_pass, &source, &destination, false);
+    SDL_EndGPUCopyPass(copy_pass);
+
+    if (!SDL_SubmitGPUCommandBuffer(cmd)) return sdl_error("SDL_SubmitGPUCommandBuffer failed");
+
+    return texture;
+}
+
+std::expected<gpu_sampler_t, std::string> create_sampler(
+    engine_t const &engine, SDL_GPUSamplerAddressMode address_mode, SDL_GPUFilter filter
+) {
+    SDL_GPUSamplerCreateInfo info = {};
+    info.min_filter               = filter;
+    info.mag_filter               = filter;
+    info.mipmap_mode              = SDL_GPU_SAMPLERMIPMAPMODE_NEAREST;
+    info.address_mode_u           = address_mode;
+    info.address_mode_v           = address_mode;
+    info.address_mode_w           = address_mode;
+
+    SDL_GPUSampler *sampler = SDL_CreateGPUSampler(engine.gpu_device, &info);
+    if (!sampler) return sdl_error("SDL_CreateGPUSampler failed");
+    return gpu_sampler_t{engine.gpu_device, sampler};
+}
+
+std::expected<textured_mesh_t, std::string>
+create_textured_mesh(engine_t const &engine, textured_mesh_desc_t desc) {
+    pipeline_desc_t pipeline_desc = {
+        .vertex_shader            = desc.vertex_shader,
+        .fragment_shader          = desc.fragment_shader,
+        .vertex_uniform_buffers   = desc.vertex_uniform_buffers,
+        .fragment_uniform_buffers = desc.fragment_uniform_buffers,
+        .fragment_samplers        = static_cast<Uint32>(desc.texture_paths.size()),
+        .vertex_buffer_descs      = desc.vertex_buffer_descs,
+        .vertex_attributes        = desc.vertex_attributes,
+    };
+    auto pipeline = create_pipeline(engine, pipeline_desc);
+    if (!pipeline) return std::unexpected(pipeline.error());
+
+    auto vertex_buffer =
+        create_buffer(engine, SDL_GPU_BUFFERUSAGE_VERTEX, desc.vertices, desc.vertex_data_size);
+    if (!vertex_buffer) return std::unexpected(vertex_buffer.error());
+
+    Uint32 index_data_size = static_cast<Uint32>(desc.indices.size() * sizeof(uint16_t));
+    auto   index_buffer =
+        create_buffer(engine, SDL_GPU_BUFFERUSAGE_INDEX, desc.indices.data(), index_data_size);
+    if (!index_buffer) return std::unexpected(index_buffer.error());
+
+    std::vector<gpu_texture_t> textures;
+    textures.reserve(desc.texture_paths.size());
+    for (auto const &path : desc.texture_paths) {
+        auto tex = load_texture(engine, path);
+        if (!tex) return std::unexpected(tex.error());
+        textures.push_back(std::move(*tex));
+    }
+
+    std::vector<gpu_sampler_t> samplers;
+    samplers.reserve(desc.texture_paths.size());
+    for (size_t i = 0; i < desc.texture_paths.size(); ++i) {
+        auto mode   = i < desc.address_modes.size() ? desc.address_modes[i]
+                                                    : SDL_GPU_SAMPLERADDRESSMODE_REPEAT;
+        auto filter = i < desc.filter_modes.size() ? desc.filter_modes[i] : SDL_GPU_FILTER_LINEAR;
+        auto s      = create_sampler(engine, mode, filter);
+        if (!s) return std::unexpected(s.error());
+        samplers.push_back(std::move(*s));
+    }
+
+    Uint32 index_count = static_cast<Uint32>(desc.indices.size());
+    return textured_mesh_t{
+        std::move(*pipeline), std::move(*vertex_buffer), std::move(*index_buffer),
+        std::move(textures),  std::move(samplers),       index_count,
+    };
+}
+
+void draw(textured_mesh_t const &mesh, SDL_GPURenderPass *pass) {
+    SDL_BindGPUGraphicsPipeline(pass, mesh.pipeline.get());
+
+    SDL_GPUBufferBinding vbinding = {mesh.vertex_buffer.get(), 0};
+    SDL_BindGPUVertexBuffers(pass, 0, &vbinding, 1);
+
+    SDL_GPUBufferBinding ibinding = {mesh.index_buffer.get(), 0};
+    SDL_BindGPUIndexBuffer(pass, &ibinding, SDL_GPU_INDEXELEMENTSIZE_16BIT);
+
+    std::vector<SDL_GPUTextureSamplerBinding> bindings;
+    bindings.reserve(mesh.textures.size());
+    for (size_t i = 0; i < mesh.textures.size(); ++i)
+        bindings.push_back({mesh.textures[i].get(), mesh.samplers[i].get()});
+    SDL_BindGPUFragmentSamplers(pass, 0, bindings.data(), static_cast<Uint32>(bindings.size()));
+
+    SDL_DrawGPUIndexedPrimitives(pass, mesh.index_count, 1, 0, 0, 0);
 }

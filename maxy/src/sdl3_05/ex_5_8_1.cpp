@@ -6,7 +6,7 @@
 #include "engine.hpp"
 #include "geometry.hpp"
 
-constexpr int WINDOW_WIDTH = 800;
+constexpr int WINDOW_WIDTH  = 800;
 constexpr int WINDOW_HEIGHT = 600;
 
 constexpr SDL_FColor background_color = {0.2f, 0.3f, 0.3f, 1.0f};
@@ -14,7 +14,7 @@ constexpr SDL_FColor background_color = {0.2f, 0.3f, 0.3f, 1.0f};
 // Two equilateral triangles side by side, touching at the bottom centre.
 // Six separate vertices -- no index buffer, matching the glDrawArrays exercise.
 constexpr float side_length = 0.5f;
-constexpr float half = side_length / 2.0f;
+constexpr float half        = side_length / 2.0f;
 constexpr float half_height = side_length * std::numbers::sqrt3_v<float> / 4.0f;
 
 constexpr std::array<vertex_t, 6> vertices = {{
@@ -29,7 +29,7 @@ constexpr std::array<vertex_t, 6> vertices = {{
 }};
 
 int main(int argc, char *argv[]) {
-    auto config = parse_engine_args(argc, argv);
+    auto config        = parse_engine_args(argc, argv);
     auto engine_result = create_engine("SDL3 ex 5.8.1", WINDOW_WIDTH, WINDOW_HEIGHT, config);
     if (!engine_result) {
         std::println(stderr, "Engine init failed: {}", engine_result.error());
@@ -39,7 +39,7 @@ int main(int argc, char *argv[]) {
 
     auto pipeline_result = create_pipeline(
         engine, {
-                    .vertex_shader = "shaders/sdl3_05/hello_triangle.vert.spv",
+                    .vertex_shader   = "shaders/sdl3_05/hello_triangle.vert.spv",
                     .fragment_shader = "shaders/sdl3_05/hello_triangle.frag.spv",
                 }
     );

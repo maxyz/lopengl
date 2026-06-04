@@ -6,11 +6,11 @@
 #include "engine.hpp"
 #include "geometry.hpp"
 
-constexpr int WINDOW_WIDTH = 800;
+constexpr int WINDOW_WIDTH  = 800;
 constexpr int WINDOW_HEIGHT = 600;
 
 constexpr SDL_FColor background_color = {0.2f, 0.3f, 0.3f, 1.0f};
-constexpr auto rhombus = make_equilateral_rhombus(0.5f);
+constexpr auto       rhombus          = make_equilateral_rhombus(0.5f);
 
 int main(int argc, char *argv[]) {
     auto config = parse_engine_args(argc, argv);
@@ -24,7 +24,7 @@ int main(int argc, char *argv[]) {
 
     auto pipeline_result = create_pipeline(
         engine, {
-                    .vertex_shader = "shaders/sdl3_05/hello_triangle.vert.spv",
+                    .vertex_shader   = "shaders/sdl3_05/hello_triangle.vert.spv",
                     .fragment_shader = "shaders/sdl3_05/hello_triangle.frag.spv",
                 }
     );

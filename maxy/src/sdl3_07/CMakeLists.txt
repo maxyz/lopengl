@@ -1,0 +1,27 @@
+add_executable(sdl3_07_texture texture.cpp)
+target_link_libraries(sdl3_07_texture sdl3_engine)
+chapter_spv_shaders(sdl3_07_texture)
+
+add_executable(sdl3_07_texture_disco texture_disco.cpp)
+target_link_libraries(sdl3_07_texture_disco sdl3_engine)
+chapter_spv_shaders(sdl3_07_texture_disco)
+
+add_executable(sdl3_07_combined combined.cpp)
+target_link_libraries(sdl3_07_combined sdl3_engine)
+chapter_spv_shaders(sdl3_07_combined)
+
+add_executable(sdl3_ex_7_8_1 ex_7_8_1.cpp)
+target_link_libraries(sdl3_ex_7_8_1 sdl3_engine)
+chapter_spv_shaders(sdl3_ex_7_8_1)
+
+add_executable(sdl3_ex_7_8_2 ex_7_8_2.cpp)
+target_link_libraries(sdl3_ex_7_8_2 sdl3_engine)
+chapter_spv_shaders(sdl3_ex_7_8_2)
+
+add_executable(sdl3_ex_7_8_3 ex_7_8_3.cpp)
+target_link_libraries(sdl3_ex_7_8_3 sdl3_engine)
+chapter_spv_shaders(sdl3_ex_7_8_3)
+
+add_executable(sdl3_ex_7_8_4 ex_7_8_4.cpp)
+target_link_libraries(sdl3_ex_7_8_4 sdl3_engine)
+chapter_spv_shaders(sdl3_ex_7_8_4)

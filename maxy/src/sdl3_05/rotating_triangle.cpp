@@ -6,14 +6,14 @@
 #include "engine.hpp"
 #include "geometry.hpp"
 
-constexpr int WINDOW_WIDTH = 800;
+constexpr int WINDOW_WIDTH  = 800;
 constexpr int WINDOW_HEIGHT = 600;
 
 constexpr SDL_FColor background_color = {0.2f, 0.3f, 0.3f, 1.0f};
 
 constexpr auto triangle_vertices = make_equilateral_triangle(0.5f);
 
-constexpr float rotation_rpm = 1.0f;
+constexpr float rotation_rpm       = 1.0f;
 constexpr float radians_per_second = rotation_rpm * 2.0f * std::numbers::pi_v<float> / 60.0f;
 
 int main(int argc, char *argv[]) {
@@ -28,8 +28,8 @@ int main(int argc, char *argv[]) {
 
     auto pipeline_result = create_pipeline(
         engine, {
-                    .vertex_shader = "shaders/sdl3_05/rotating_triangle.vert.spv",
-                    .fragment_shader = "shaders/sdl3_05/rotating_triangle.frag.spv",
+                    .vertex_shader          = "shaders/sdl3_05/rotating_triangle.vert.spv",
+                    .fragment_shader        = "shaders/sdl3_05/rotating_triangle.frag.spv",
                     .vertex_uniform_buffers = 1,
                 }
     );

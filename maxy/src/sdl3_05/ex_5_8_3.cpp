@@ -6,13 +6,13 @@
 #include "engine.hpp"
 #include "geometry.hpp"
 
-constexpr int WINDOW_WIDTH = 800;
+constexpr int WINDOW_WIDTH  = 800;
 constexpr int WINDOW_HEIGHT = 600;
 
 constexpr SDL_FColor background_color = {0.2f, 0.3f, 0.3f, 1.0f};
 
 constexpr float circumradius = 0.3f;
-constexpr float side_length = circumradius * std::numbers::sqrt3_v<float>;
+constexpr float side_length  = circumradius * std::numbers::sqrt3_v<float>;
 
 constexpr auto triangle = make_equilateral_triangle(circumradius);
 
@@ -20,11 +20,11 @@ struct vec2_t {
     float x, y;
 };
 
-constexpr vec2_t left_offset = {-side_length / 2.0f, 0.0f};
+constexpr vec2_t left_offset  = {-side_length / 2.0f, 0.0f};
 constexpr vec2_t right_offset = {side_length / 2.0f, 0.0f};
 
 int main(int argc, char *argv[]) {
-    auto config = parse_engine_args(argc, argv);
+    auto config        = parse_engine_args(argc, argv);
     auto engine_result = create_engine("SDL3 ex 5.8.3", WINDOW_WIDTH, WINDOW_HEIGHT, config);
     if (!engine_result) {
         std::println(stderr, "Engine init failed: {}", engine_result.error());
@@ -34,8 +34,8 @@ int main(int argc, char *argv[]) {
 
     auto orange_result = create_pipeline(
         engine, {
-                    .vertex_shader = "shaders/sdl3_05/ex_5_8_2.vert.spv",
-                    .fragment_shader = "shaders/sdl3_05/hello_triangle.frag.spv",
+                    .vertex_shader          = "shaders/sdl3_05/ex_5_8_2.vert.spv",
+                    .fragment_shader        = "shaders/sdl3_05/hello_triangle.frag.spv",
                     .vertex_uniform_buffers = 1,
                 }
     );
@@ -47,8 +47,8 @@ int main(int argc, char *argv[]) {
 
     auto yellow_result = create_pipeline(
         engine, {
-                    .vertex_shader = "shaders/sdl3_05/ex_5_8_2.vert.spv",
-                    .fragment_shader = "shaders/sdl3_05/ex_5_8_3_yellow.frag.spv",
+                    .vertex_shader          = "shaders/sdl3_05/ex_5_8_2.vert.spv",
+                    .fragment_shader        = "shaders/sdl3_05/ex_5_8_3_yellow.frag.spv",
                     .vertex_uniform_buffers = 1,
                 }
     );

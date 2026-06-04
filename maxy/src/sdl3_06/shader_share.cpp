@@ -5,11 +5,11 @@
 #include "engine.hpp"
 #include "geometry.hpp"
 
-constexpr int WINDOW_WIDTH = 800;
+constexpr int WINDOW_WIDTH  = 800;
 constexpr int WINDOW_HEIGHT = 600;
 
 constexpr SDL_FColor background_color = {0.2f, 0.3f, 0.3f, 1.0f};
-constexpr auto triangle = make_equilateral_triangle(0.5f);
+constexpr auto       triangle         = make_equilateral_triangle(0.5f);
 
 int main(int argc, char *argv[]) {
     auto config = parse_engine_args(argc, argv);
@@ -23,7 +23,7 @@ int main(int argc, char *argv[]) {
 
     auto pipeline_result = create_pipeline(
         engine, {
-                    .vertex_shader = "shaders/sdl3_06/shader_share.vert.spv",
+                    .vertex_shader   = "shaders/sdl3_06/shader_share.vert.spv",
                     .fragment_shader = "shaders/sdl3_06/shader_share.frag.spv",
                 }
     );

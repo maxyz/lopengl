@@ -10,47 +10,29 @@ add_executable(query_attributes queries/main.cpp)
 target_link_libraries(query_attributes ${LIBS})
 
 add_subdirectory(4)
-
 add_subdirectory(5)
 add_subdirectory(ex_5.8)
-
 add_subdirectory(6)
 add_subdirectory(ex_6.8)
-
 add_subdirectory(7)
 add_subdirectory(ex_7.8)
-
 add_subdirectory(8)
 add_subdirectory(ex_8.19)
-
 add_subdirectory(9)
 add_subdirectory(ex_9.9)
-
 add_subdirectory(10)
 add_subdirectory(ex_10.10)
-
 add_subdirectory(12)
-
 add_subdirectory(13)
-
 add_subdirectory(14)
-
 add_subdirectory(15)
-
 add_subdirectory(16)
-
 add_subdirectory(17)
-
 add_subdirectory(21)
-
 add_subdirectory(22)
-
 add_subdirectory(23)
-
 add_subdirectory(24)
-
 add_subdirectory(25)
-
 add_subdirectory(26)
 
 if(SDL3_FOUND)
@@ -58,4 +40,5 @@ if(SDL3_FOUND)
   add_subdirectory(sdl3_04)
   add_subdirectory(sdl3_05)
   add_subdirectory(sdl3_06)
+  add_subdirectory(sdl3_07)
 endif()

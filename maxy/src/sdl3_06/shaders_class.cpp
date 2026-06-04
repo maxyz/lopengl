@@ -12,7 +12,7 @@
 // there is no inline-string alternative.  Every SDL3 pipeline is already
 // using the "shader class" pattern.
 
-constexpr int WINDOW_WIDTH = 800;
+constexpr int WINDOW_WIDTH  = 800;
 constexpr int WINDOW_HEIGHT = 600;
 
 constexpr SDL_FColor background_color = {0.2f, 0.3f, 0.3f, 1.0f};
@@ -26,17 +26,17 @@ constexpr std::array<colored_vertex_t, 3> triangle = {{
 }};
 
 constexpr SDL_GPUVertexBufferDescription buffer_descs[] = {{
-    .slot = 0,
-    .pitch = sizeof(colored_vertex_t),
+    .slot       = 0,
+    .pitch      = sizeof(colored_vertex_t),
     .input_rate = SDL_GPU_VERTEXINPUTRATE_VERTEX,
 }};
 
 constexpr SDL_GPUVertexAttribute vertex_attributes[] = {
     {.location = 0, .buffer_slot = 0, .format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3, .offset = 0},
-    {.location = 1,
+    {.location    = 1,
      .buffer_slot = 0,
-     .format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
-     .offset = static_cast<Uint32>(offsetof(colored_vertex_t, color))},
+     .format      = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
+     .offset      = static_cast<Uint32>(offsetof(colored_vertex_t, color))},
 };
 
 int main(int argc, char *argv[]) {
@@ -51,10 +51,10 @@ int main(int argc, char *argv[]) {
 
     auto pipeline_result = create_pipeline(
         engine, {
-                    .vertex_shader = "shaders/sdl3_06/attributes.vert.spv",
-                    .fragment_shader = "shaders/sdl3_06/attributes.frag.spv",
+                    .vertex_shader       = "shaders/sdl3_06/attributes.vert.spv",
+                    .fragment_shader     = "shaders/sdl3_06/attributes.frag.spv",
                     .vertex_buffer_descs = buffer_descs,
-                    .vertex_attributes = vertex_attributes,
+                    .vertex_attributes   = vertex_attributes,
                 }
     );
     if (!pipeline_result) {

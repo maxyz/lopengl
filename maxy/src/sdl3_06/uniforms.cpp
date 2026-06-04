@@ -6,11 +6,11 @@
 #include "engine.hpp"
 #include "geometry.hpp"
 
-constexpr int WINDOW_WIDTH = 800;
+constexpr int WINDOW_WIDTH  = 800;
 constexpr int WINDOW_HEIGHT = 600;
 
 constexpr SDL_FColor background_color = {0.2f, 0.3f, 0.3f, 1.0f};
-constexpr auto triangle = make_equilateral_triangle(0.5f);
+constexpr auto       triangle         = make_equilateral_triangle(0.5f);
 
 int main(int argc, char *argv[]) {
     auto config = parse_engine_args(argc, argv);
@@ -24,8 +24,8 @@ int main(int argc, char *argv[]) {
 
     auto pipeline_result = create_pipeline(
         engine, {
-                    .vertex_shader = "shaders/sdl3_06/uniforms.vert.spv",
-                    .fragment_shader = "shaders/sdl3_06/uniforms.frag.spv",
+                    .vertex_shader            = "shaders/sdl3_06/uniforms.vert.spv",
+                    .fragment_shader          = "shaders/sdl3_06/uniforms.frag.spv",
                     .fragment_uniform_buffers = 1,
                 }
     );
@@ -51,8 +51,8 @@ int main(int argc, char *argv[]) {
         const bool *keys = SDL_GetKeyboardState(nullptr);
         if (keys[SDL_SCANCODE_ESCAPE]) break;
 
-        float green_value = (std::sin(elapsed) / 2.0f) + 0.5f;
-        SDL_FColor our_color = {0.0f, green_value, 0.0f, 1.0f};
+        float      green_value = (std::sin(elapsed) / 2.0f) + 0.5f;
+        SDL_FColor our_color   = {0.0f, green_value, 0.0f, 1.0f};
 
         auto frame = render_frame(
             engine, background_color, [&](SDL_GPUCommandBuffer *cmd_buf, SDL_GPURenderPass *pass) {
