@@ -6,20 +6,22 @@
 #include "engine.hpp"
 #include "geometry.hpp"
 
+constexpr int WINDOW_WIDTH = 800;
+constexpr int WINDOW_HEIGHT = 600;
+
 constexpr SDL_FColor background_color = {0.2f, 0.3f, 0.3f, 1.0f};
 
 constexpr auto triangle_vertices = make_equilateral_triangle(0.5f);
 
-constexpr float rotation_rpm        = 1.0f;
-constexpr float radians_per_second  = rotation_rpm * 2.0f * std::numbers::pi_v<float> / 60.0f;
+constexpr float rotation_rpm = 1.0f;
+constexpr float radians_per_second = rotation_rpm * 2.0f * std::numbers::pi_v<float> / 60.0f;
 
 namespace {
 
 std::expected<gpu_pipeline_t, std::string> create_pipeline(engine_t const &engine) {
     // num_uniform_buffers=1: the vertex shader reads one uniform buffer (the angle)
     auto vert = load_shader(
-        engine, "shaders/sdl3_05/rotating_triangle.vert.spv",
-        SDL_GPU_SHADERSTAGE_VERTEX, 1
+        engine, "shaders/sdl3_05/rotating_triangle.vert.spv", SDL_GPU_SHADERSTAGE_VERTEX, 1
     );
     if (!vert) return std::unexpected(vert.error());
 
@@ -53,8 +55,9 @@ std::expected<gpu_pipeline_t, std::string> create_pipeline(engine_t const &engin
     info.target_info.color_target_descriptions = &color_target;
     info.target_info.num_color_targets = 1;
 
-    gpu_pipeline_t pipeline{engine.gpu_device,
-                            SDL_CreateGPUGraphicsPipeline(engine.gpu_device, &info)};
+    gpu_pipeline_t pipeline{
+        engine.gpu_device, SDL_CreateGPUGraphicsPipeline(engine.gpu_device, &info)
+    };
     if (!pipeline) return sdl_error("SDL_CreateGPUGraphicsPipeline failed");
     return pipeline;
 }
@@ -64,7 +67,7 @@ std::expected<gpu_pipeline_t, std::string> create_pipeline(engine_t const &engin
 int main(int argc, char *argv[]) {
     auto config = parse_engine_args(argc, argv);
     auto engine_result =
-        create_engine("LOpenGL SDL3 - Rotating Triangle", 800, 600, config);
+        create_engine("LOpenGL SDL3 - Rotating Triangle", WINDOW_WIDTH, WINDOW_HEIGHT, config);
     if (!engine_result) {
         std::println(stderr, "Engine init failed: {}", engine_result.error());
         return 1;
@@ -80,8 +83,7 @@ int main(int argc, char *argv[]) {
 
     constexpr Uint32 vertex_data_size =
         static_cast<Uint32>(triangle_vertices.size() * sizeof(vertex_t));
-    auto buffer_result =
-        create_vertex_buffer(engine, triangle_vertices.data(), vertex_data_size);
+    auto buffer_result = create_vertex_buffer(engine, triangle_vertices.data(), vertex_data_size);
     if (!buffer_result) {
         std::println(stderr, "Vertex buffer failed: {}", buffer_result.error());
         return 1;
@@ -103,13 +105,12 @@ int main(int argc, char *argv[]) {
         // into the command buffer changes. This is the key difference from
         // OpenGL's glUniform: the pipeline is immutable, data flows through it.
         auto frame = render_frame(
-            engine, background_color,
-            [&](SDL_GPUCommandBuffer *cmd_buf, SDL_GPURenderPass *pass) {
+            engine, background_color, [&](SDL_GPUCommandBuffer *cmd_buf, SDL_GPURenderPass *pass) {
                 SDL_BindGPUGraphicsPipeline(pass, pipeline.get());
                 SDL_GPUBufferBinding binding = {vertex_buffer.get(), 0};
                 SDL_BindGPUVertexBuffers(pass, 0, &binding, 1);
                 SDL_PushGPUVertexUniformData(cmd_buf, 0, &angle, sizeof(float));
-                SDL_DrawGPUPrimitives(pass, 3, 1, 0, 0);
+                SDL_DrawGPUPrimitives(pass, triangle_vertices.size(), 1, 0, 0);
             }
         );
         if (!frame) {

@@ -93,3 +93,7 @@ std::expected<gpu_shader_t, std::string> load_shader(
 // Allocates a GPU vertex buffer and uploads data via a one-shot copy pass.
 std::expected<gpu_buffer_t, std::string>
 create_vertex_buffer(engine_t const &engine, void const *data, Uint32 size);
+
+// Allocates a GPU index buffer and uploads data via a one-shot copy pass.
+std::expected<gpu_buffer_t, std::string>
+create_index_buffer(engine_t const &engine, void const *data, Uint32 size);
