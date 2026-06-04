@@ -1,13 +1,9 @@
-#include <array>
 #include <print>
 
 #include <SDL3/SDL.h>
 
 #include "engine.hpp"
-
-struct vertex_t {
-    float x, y, z;
-};
+#include "geometry.hpp"
 
 constexpr SDL_FColor background_color = {0.2f, 0.3f, 0.3f, 1.0f};
 

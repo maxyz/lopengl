@@ -1,29 +1,14 @@
-#include <array>
 #include <numbers>
 #include <print>
 
 #include <SDL3/SDL.h>
 
 #include "engine.hpp"
-
-struct vertex_t {
-    float x, y, z;
-};
+#include "geometry.hpp"
 
 constexpr SDL_FColor background_color = {0.2f, 0.3f, 0.3f, 1.0f};
 
-// Equilateral triangle inscribed in a circle of radius 0.5,
-// top vertex pointing up. All sides have length sqrt(3)/2.
-constexpr float circumradius = 0.5f;
-constexpr float half_base    = circumradius * std::numbers::sqrt3_v<float> / 2.0f;
-constexpr float top_y        = circumradius;
-constexpr float bottom_y     = -circumradius / 2.0f;
-
-constexpr std::array<vertex_t, 3> triangle_vertices = {{
-    { 0.0f,       top_y,    0.0f},
-    {-half_base,  bottom_y, 0.0f},
-    { half_base,  bottom_y, 0.0f},
-}};
+constexpr auto triangle_vertices = make_equilateral_triangle(0.5f);
 
 constexpr float rotation_rpm        = 1.0f;
 constexpr float radians_per_second  = rotation_rpm * 2.0f * std::numbers::pi_v<float> / 60.0f;
