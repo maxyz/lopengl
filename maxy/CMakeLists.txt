@@ -74,4 +74,27 @@ function(chapter_shaders)
   add_custom_target(shaders_${_chapter_safe} ALL DEPENDS ${_outputs})
 endfunction()
 
+function(chapter_spv_shaders target)
+  file(GLOB _sources CONFIGURE_DEPENDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/shaders/*.vert"
+    "${CMAKE_CURRENT_SOURCE_DIR}/shaders/*.frag"
+  )
+  get_filename_component(_chapter "${CMAKE_CURRENT_SOURCE_DIR}" NAME)
+  string(REPLACE "." "_" _chapter_safe "${_chapter}")
+  set(_outputs "")
+  foreach(_src ${_sources})
+    get_filename_component(_name "${_src}" NAME)
+    set(_spv "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/shaders/${_name}.spv")
+    add_custom_command(
+      OUTPUT "${_spv}"
+      COMMAND glslc "${_src}" -o "${_spv}"
+      DEPENDS "${_src}"
+      COMMENT "Compiling SPIR-V: ${_name}"
+    )
+    list(APPEND _outputs "${_spv}")
+  endforeach()
+  add_custom_target(spv_shaders_${_chapter_safe} ALL DEPENDS ${_outputs})
+  add_dependencies(${target} spv_shaders_${_chapter_safe})
+endfunction()
+
 add_subdirectory(src)

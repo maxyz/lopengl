@@ -3,3 +3,8 @@ AlignAfterOpenBracket: BlockIndent
 IndentWidth: 4
 ObjCBlockIndentWidth: 4
 AccessModifierOffset: -4
+ColumnLimit: 100
+PointerAlignment: Right
+AllowShortIfStatementsOnASingleLine: WithoutElse
+AllowShortFunctionsOnASingleLine: Inline
+SortIncludes: Never
