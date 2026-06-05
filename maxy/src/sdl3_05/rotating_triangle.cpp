@@ -16,6 +16,12 @@ constexpr auto triangle_vertices = make_equilateral_triangle(0.5f);
 constexpr float rotation_rpm       = 1.0f;
 constexpr float radians_per_second = rotation_rpm * 2.0f * std::numbers::pi_v<float> / 60.0f;
 
+// Uniform block matching rotating_triangle.vert -- angle + aspect in one push.
+struct rotation_t {
+    float angle;
+    float aspect;
+};
+
 int main(int argc, char *argv[]) {
     auto config = parse_engine_args(argc, argv);
     auto engine_result =
@@ -57,7 +63,7 @@ int main(int argc, char *argv[]) {
         const bool *keys = SDL_GetKeyboardState(nullptr);
         if (keys[SDL_SCANCODE_ESCAPE]) break;
 
-        float angle = elapsed * radians_per_second;
+        rotation_t rotation{elapsed * radians_per_second, aspect_ratio(engine)};
 
         // The pipeline never changes between frames -- only the angle pushed
         // into the command buffer changes. This is the key difference from
@@ -67,7 +73,7 @@ int main(int argc, char *argv[]) {
                 SDL_BindGPUGraphicsPipeline(pass, pipeline.get());
                 SDL_GPUBufferBinding binding = {vertex_buffer.get(), 0};
                 SDL_BindGPUVertexBuffers(pass, 0, &binding, 1);
-                push_vertex_uniform(cmd_buf, 0, angle);
+                push_vertex_uniform(cmd_buf, 0, rotation);
                 SDL_DrawGPUPrimitives(pass, triangle_vertices.size(), 1, 0, 0);
             }
         );

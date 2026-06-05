@@ -100,7 +100,7 @@ create_engine(std::string_view title, int width, int height, engine_config_t con
     if (!SDL_Init(SDL_INIT_VIDEO)) return sdl_error("SDL_Init failed");
     engine.sdl_initialized = true;
 
-    engine.window = SDL_CreateWindow(title.data(), width, height, 0);
+    engine.window = SDL_CreateWindow(title.data(), width, height, SDL_WINDOW_RESIZABLE);
     if (!engine.window) return sdl_error("SDL_CreateWindow failed");
 
     engine.gpu_device = SDL_CreateGPUDevice(SDL_GPU_SHADERFORMAT_SPIRV, true, nullptr);
@@ -126,6 +126,17 @@ float tick(engine_t &engine) {
     float  dt        = engine.last_tick == 0 ? 0.0f : (now - engine.last_tick) / 1000.0f;
     engine.last_tick = now;
     return dt;
+}
+
+glm::ivec2 window_pixel_size(engine_t const &engine) {
+    int w = 0, h = 0;
+    SDL_GetWindowSizeInPixels(engine.window, &w, &h);
+    return {w, h};
+}
+
+float aspect_ratio(engine_t const &engine) {
+    auto size = window_pixel_size(engine);
+    return float(size.x) / float(size.y);
 }
 
 std::expected<void, std::string> render_frame(
@@ -341,16 +352,19 @@ std::expected<gpu_sampler_t, std::string> create_sampler(
 
 std::expected<gpu_geometry_t, std::string> create_geometry(
     engine_t const &engine, void const *vertices, Uint32 vertex_size,
-    std::span<uint16_t const> indices) {
+    std::span<uint16_t const> indices
+) {
     auto vertex_buffer = create_buffer(engine, SDL_GPU_BUFFERUSAGE_VERTEX, vertices, vertex_size);
     if (!vertex_buffer) return std::unexpected(vertex_buffer.error());
 
-    Uint32 index_size  = static_cast<Uint32>(indices.size() * sizeof(uint16_t));
-    auto   index_buffer = create_buffer(engine, SDL_GPU_BUFFERUSAGE_INDEX, indices.data(), index_size);
+    Uint32 index_size = static_cast<Uint32>(indices.size() * sizeof(uint16_t));
+    auto   index_buffer =
+        create_buffer(engine, SDL_GPU_BUFFERUSAGE_INDEX, indices.data(), index_size);
     if (!index_buffer) return std::unexpected(index_buffer.error());
 
-    return gpu_geometry_t{std::move(*vertex_buffer), std::move(*index_buffer),
-                           static_cast<Uint32>(indices.size())};
+    return gpu_geometry_t{
+        std::move(*vertex_buffer), std::move(*index_buffer), static_cast<Uint32>(indices.size())
+    };
 }
 
 std::expected<gpu_material_t, std::string>
@@ -377,8 +391,10 @@ create_material(engine_t const &engine, material_desc_t desc) {
     return gpu_material_t{std::move(textures), std::move(samplers)};
 }
 
-void draw(gpu_pipeline_t const &pipeline, gpu_geometry_t const &geometry,
-          gpu_material_t const &material, SDL_GPURenderPass *pass) {
+void draw(
+    gpu_pipeline_t const &pipeline, gpu_geometry_t const &geometry, gpu_material_t const &material,
+    SDL_GPURenderPass *pass
+) {
     SDL_BindGPUGraphicsPipeline(pass, pipeline.get());
 
     SDL_GPUBufferBinding vbinding = {geometry.vertex_buffer.get(), 0};

@@ -9,6 +9,6 @@ out vec2 texCoord;
 uniform mat4 transform;
 
 void main() {
-  gl_Position = transform * vec4(aPos, 1.0);
-  texCoord = aTexCoord;
+    gl_Position = transform * vec4(aPos, 1.0);
+    texCoord = aTexCoord;
 }

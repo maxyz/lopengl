@@ -83,6 +83,14 @@ bool poll_events();
 // Returns 0 on the first call.
 float tick(engine_t &engine);
 
+// Returns the window size in pixels. Use this to detect resizes and recompute
+// aspect ratios or recreate size-dependent resources (e.g. depth textures).
+glm::ivec2 window_pixel_size(engine_t const &engine);
+
+// Returns width / height. Divide clip-space x by this to preserve proportions.
+// Superseded by a proper projection matrix from chapter 8 onward.
+float aspect_ratio(engine_t const &engine);
+
 std::expected<void, std::string> render_frame(
     engine_t const &engine, SDL_FColor clear_color,
     std::function<void(SDL_GPUCommandBuffer *, SDL_GPURenderPass *)> draw
@@ -163,9 +171,9 @@ struct gpu_geometry_t {
 
 // Uploads vertices and indices to the GPU in one shot.
 std::expected<gpu_geometry_t, std::string> create_geometry(
-    engine_t const &engine,
-    void const *vertices, Uint32 vertex_size,
-    std::span<uint16_t const> indices);
+    engine_t const &engine, void const *vertices, Uint32 vertex_size,
+    std::span<uint16_t const> indices
+);
 
 // Textures and their paired samplers for a draw call.
 struct gpu_material_t {
@@ -174,7 +182,7 @@ struct gpu_material_t {
 };
 
 struct material_desc_t {
-    std::vector<std::string>               texture_paths;
+    std::vector<std::string> texture_paths;
     // One per texture; if shorter, remaining textures use REPEAT / LINEAR.
     std::vector<SDL_GPUSamplerAddressMode> address_modes;
     std::vector<SDL_GPUFilter>             filter_modes;
@@ -191,8 +199,10 @@ struct textured_mesh_t {
 };
 
 // Bind all parts and issue the indexed draw call.
-void draw(gpu_pipeline_t const &pipeline, gpu_geometry_t const &geometry,
-          gpu_material_t const &material, SDL_GPURenderPass *pass);
+void draw(
+    gpu_pipeline_t const &pipeline, gpu_geometry_t const &geometry, gpu_material_t const &material,
+    SDL_GPURenderPass *pass
+);
 
 // Convenience overload for a pre-assembled mesh.
 inline void draw(textured_mesh_t const &mesh, SDL_GPURenderPass *pass) {

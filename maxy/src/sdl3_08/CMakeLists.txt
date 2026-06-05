@@ -1,0 +1,11 @@
+add_executable(sdl3_08_trying_glm trying_glm.cpp)
+target_link_libraries(sdl3_08_trying_glm sdl3_engine)
+chapter_spv_shaders(sdl3_08_trying_glm)
+
+add_executable(sdl3_ex_8_19_1 ex_8_19_1.cpp)
+target_link_libraries(sdl3_ex_8_19_1 sdl3_engine)
+chapter_spv_shaders(sdl3_ex_8_19_1)
+
+add_executable(sdl3_ex_8_19_2 ex_8_19_2.cpp)
+target_link_libraries(sdl3_ex_8_19_2 sdl3_engine)
+chapter_spv_shaders(sdl3_ex_8_19_2)

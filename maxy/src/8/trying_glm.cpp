@@ -15,27 +15,27 @@
 #include "common/assets.hpp"
 #include "common/shader.hpp"
 
-const char *TITLE = "LOpenGL";
-const GLuint WIDTH = 800;
+const char  *TITLE  = "LOpenGL";
+const GLuint WIDTH  = 800;
 const GLuint HEIGHT = 600;
 
-std::expected<GLFWwindow *, std::string> init_window();
+std::expected<GLFWwindow *, std::string>                       init_window();
 std::expected<std::vector<std::function<void()>>, std::string> init_shaders();
-std::expected<void, std::string> init_textures();
+std::expected<void, std::string>                               init_textures();
 
 void event_loop(GLFWwindow *window, std::vector<std::function<void()>> cbs);
 
 void fun_with_glm() {
     glm::vec4 vec(1.f, 0.f, 0.f, 1.f);
     glm::mat4 trans = glm::mat4(1.f);
-    trans = glm::translate(trans, glm::vec3(1.f, 1.f, 0.f));
-    vec = trans * vec;
+    trans           = glm::translate(trans, glm::vec3(1.f, 1.f, 0.f));
+    vec             = trans * vec;
     std::println("V = ({}, {}, {}, {})", vec.x, vec.y, vec.z, vec.w);
 
     trans = glm::mat4(1.f);
     trans = glm::rotate(trans, glm::radians(90.f), glm::vec3(0.f, 0.f, 1.f));
     trans = glm::scale(trans, glm::vec3(.5f, .5f, .5f));
-    vec = trans * vec;
+    vec   = trans * vec;
     std::println("V = ({}, {}, {}, {})", vec.x, vec.y, vec.z, vec.w);
 }
 
@@ -108,20 +108,20 @@ std::expected<std::vector<std::function<void()>>, std::string> init_shaders() {
     if (!res.has_value()) {
         return std::unexpected(res.error());
     }
-    auto shader = std::move(*res);
-    auto p = shader.program_id();
+    auto              shader = std::move(*res);
+    auto              p      = shader.program_id();
     const std::string filename{"textures/container.jpg"};
-    auto texture_ = load_texture(filename);
+    auto              texture_ = load_texture(filename);
     if (!texture_) {
         return std::unexpected(texture_.error());
     }
     auto texture = *texture_;
-    texture_ = load_texture("textures/awesomeface.png");
+    texture_     = load_texture("textures/awesomeface.png");
     if (!texture_) {
         return std::unexpected(texture_.error());
     }
     auto texture1 = *texture_;
-    auto vao = buffers();
+    auto vao      = buffers();
 
     auto f = [p, vao, texture, texture1]() {
         glUseProgram(p);
@@ -131,7 +131,7 @@ std::expected<std::vector<std::function<void()>>, std::string> init_shaders() {
         glBindTexture(GL_TEXTURE_2D, texture1);
 
         glm::mat4 transform = glm::mat4(1.f);
-        transform = glm::translate(transform, glm::vec3(.5f, -.5f, .0f));
+        transform           = glm::translate(transform, glm::vec3(.5f, -.5f, .0f));
         transform =
             glm::rotate(transform, static_cast<float>(glfwGetTime()), glm::vec3(0.f, 0.f, 1.f));
         auto loc = glGetUniformLocation(p, "transform");
