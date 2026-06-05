@@ -339,29 +339,22 @@ std::expected<gpu_sampler_t, std::string> create_sampler(
     return gpu_sampler_t{engine.gpu_device, sampler};
 }
 
-std::expected<textured_mesh_t, std::string>
-create_textured_mesh(engine_t const &engine, textured_mesh_desc_t desc) {
-    pipeline_desc_t pipeline_desc = {
-        .vertex_shader            = desc.vertex_shader,
-        .fragment_shader          = desc.fragment_shader,
-        .vertex_uniform_buffers   = desc.vertex_uniform_buffers,
-        .fragment_uniform_buffers = desc.fragment_uniform_buffers,
-        .fragment_samplers        = static_cast<Uint32>(desc.texture_paths.size()),
-        .vertex_buffer_descs      = desc.vertex_buffer_descs,
-        .vertex_attributes        = desc.vertex_attributes,
-    };
-    auto pipeline = create_pipeline(engine, pipeline_desc);
-    if (!pipeline) return std::unexpected(pipeline.error());
-
-    auto vertex_buffer =
-        create_buffer(engine, SDL_GPU_BUFFERUSAGE_VERTEX, desc.vertices, desc.vertex_data_size);
+std::expected<gpu_geometry_t, std::string> create_geometry(
+    engine_t const &engine, void const *vertices, Uint32 vertex_size,
+    std::span<uint16_t const> indices) {
+    auto vertex_buffer = create_buffer(engine, SDL_GPU_BUFFERUSAGE_VERTEX, vertices, vertex_size);
     if (!vertex_buffer) return std::unexpected(vertex_buffer.error());
 
-    Uint32 index_data_size = static_cast<Uint32>(desc.indices.size() * sizeof(uint16_t));
-    auto   index_buffer =
-        create_buffer(engine, SDL_GPU_BUFFERUSAGE_INDEX, desc.indices.data(), index_data_size);
+    Uint32 index_size  = static_cast<Uint32>(indices.size() * sizeof(uint16_t));
+    auto   index_buffer = create_buffer(engine, SDL_GPU_BUFFERUSAGE_INDEX, indices.data(), index_size);
     if (!index_buffer) return std::unexpected(index_buffer.error());
 
+    return gpu_geometry_t{std::move(*vertex_buffer), std::move(*index_buffer),
+                           static_cast<Uint32>(indices.size())};
+}
+
+std::expected<gpu_material_t, std::string>
+create_material(engine_t const &engine, material_desc_t desc) {
     std::vector<gpu_texture_t> textures;
     textures.reserve(desc.texture_paths.size());
     for (auto const &path : desc.texture_paths) {
@@ -381,27 +374,24 @@ create_textured_mesh(engine_t const &engine, textured_mesh_desc_t desc) {
         samplers.push_back(std::move(*s));
     }
 
-    Uint32 index_count = static_cast<Uint32>(desc.indices.size());
-    return textured_mesh_t{
-        std::move(*pipeline), std::move(*vertex_buffer), std::move(*index_buffer),
-        std::move(textures),  std::move(samplers),       index_count,
-    };
+    return gpu_material_t{std::move(textures), std::move(samplers)};
 }
 
-void draw(textured_mesh_t const &mesh, SDL_GPURenderPass *pass) {
-    SDL_BindGPUGraphicsPipeline(pass, mesh.pipeline.get());
+void draw(gpu_pipeline_t const &pipeline, gpu_geometry_t const &geometry,
+          gpu_material_t const &material, SDL_GPURenderPass *pass) {
+    SDL_BindGPUGraphicsPipeline(pass, pipeline.get());
 
-    SDL_GPUBufferBinding vbinding = {mesh.vertex_buffer.get(), 0};
+    SDL_GPUBufferBinding vbinding = {geometry.vertex_buffer.get(), 0};
     SDL_BindGPUVertexBuffers(pass, 0, &vbinding, 1);
 
-    SDL_GPUBufferBinding ibinding = {mesh.index_buffer.get(), 0};
+    SDL_GPUBufferBinding ibinding = {geometry.index_buffer.get(), 0};
     SDL_BindGPUIndexBuffer(pass, &ibinding, SDL_GPU_INDEXELEMENTSIZE_16BIT);
 
     std::vector<SDL_GPUTextureSamplerBinding> bindings;
-    bindings.reserve(mesh.textures.size());
-    for (size_t i = 0; i < mesh.textures.size(); ++i)
-        bindings.push_back({mesh.textures[i].get(), mesh.samplers[i].get()});
+    bindings.reserve(material.textures.size());
+    for (size_t i = 0; i < material.textures.size(); ++i)
+        bindings.push_back({material.textures[i].get(), material.samplers[i].get()});
     SDL_BindGPUFragmentSamplers(pass, 0, bindings.data(), static_cast<Uint32>(bindings.size()));
 
-    SDL_DrawGPUIndexedPrimitives(pass, mesh.index_count, 1, 0, 0, 0);
+    SDL_DrawGPUIndexedPrimitives(pass, geometry.index_count, 1, 0, 0, 0);
 }

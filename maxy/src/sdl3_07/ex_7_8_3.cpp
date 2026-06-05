@@ -11,13 +11,12 @@ constexpr int WINDOW_HEIGHT = 600;
 
 constexpr SDL_FColor background_color = {0.2f, 0.3f, 0.3f, 1.0f};
 
-// UVs zoomed into the centre (0.49..0.51) -- only the central ~2% of the
-// texture is sampled, magnifying individual pixels across the whole quad.
+// UVs zoomed into the centre (0.49..0.51) magnify individual pixels.
 constexpr std::array<textured_vertex_t, 4> quad_vertices = {{
-    {{0.5f, 0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.51f, 0.51f}},   // top right
-    {{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 0.0f}, {0.49f, 0.51f}},  // top left
-    {{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {0.51f, 0.49f}},  // bottom right
-    {{-0.5f, -0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.49f, 0.49f}}, // bottom left
+    {{ 0.5f,  0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.51f, 0.51f}},
+    {{-0.5f,  0.5f, 0.0f}, {1.0f, 1.0f, 0.0f}, {0.49f, 0.51f}},
+    {{ 0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {0.51f, 0.49f}},
+    {{-0.5f, -0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.49f, 0.49f}},
 }};
 
 constexpr std::array<uint16_t, 6> quad_indices = {{0, 2, 3, 0, 1, 3}};
@@ -53,39 +52,40 @@ int main(int argc, char *argv[]) {
     }
     engine_t &engine = *engine_result;
 
-    auto mesh_result = create_textured_mesh(
-        engine, {
-                    .vertex_shader       = "shaders/sdl3_07/texture.vert.spv",
-                    .fragment_shader     = "shaders/sdl3_07/ex_7_8_2.frag.spv",
-                    .vertex_buffer_descs = buffer_descs,
-                    .vertex_attributes   = vertex_attributes,
-                    .vertices            = quad_vertices.data(),
-                    .vertex_data_size =
-                        static_cast<Uint32>(quad_vertices.size() * sizeof(textured_vertex_t)),
-                    .indices = quad_indices,
-                    .texture_paths =
-                        {
-                            std::string(ASSETS_PATH) + "textures/container.jpg",
-                            std::string(ASSETS_PATH) + "textures/awesomeface.png",
-                        },
-                    .address_modes =
-                        {
-                            SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE,
-                            SDL_GPU_SAMPLERADDRESSMODE_REPEAT,
-                        },
-                    // NEAREST filtering: each pixel snaps to the nearest texel, making
-                    // the individual pixels clearly visible when magnified.
-                    .filter_modes = {
-                        SDL_GPU_FILTER_NEAREST,
-                        SDL_GPU_FILTER_NEAREST,
-                    },
-                }
-    );
-    if (!mesh_result) {
-        std::println(stderr, "Mesh creation failed: {}", mesh_result.error());
+    auto pipeline_result = create_pipeline(engine, {
+        .vertex_shader       = "shaders/sdl3_07/texture.vert.spv",
+        .fragment_shader     = "shaders/sdl3_07/ex_7_8_2.frag.spv",
+        .fragment_samplers   = 2,
+        .vertex_buffer_descs = buffer_descs,
+        .vertex_attributes   = vertex_attributes,
+    });
+    if (!pipeline_result) {
+        std::println(stderr, "Pipeline failed: {}", pipeline_result.error());
         return 1;
     }
-    textured_mesh_t mesh = std::move(*mesh_result);
+    gpu_pipeline_t pipeline = std::move(*pipeline_result);
+
+    auto geometry_result = create_geometry(
+        engine, quad_vertices.data(), static_cast<Uint32>(quad_vertices.size() * sizeof(textured_vertex_t)), quad_indices);
+    if (!geometry_result) {
+        std::println(stderr, "Geometry failed: {}", geometry_result.error());
+        return 1;
+    }
+    gpu_geometry_t geometry = std::move(*geometry_result);
+
+    auto material_result = create_material(engine, {
+        .texture_paths = {
+            std::string(ASSETS_PATH) + "textures/container.jpg",
+            std::string(ASSETS_PATH) + "textures/awesomeface.png",
+        },
+        .address_modes = {SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE, SDL_GPU_SAMPLERADDRESSMODE_REPEAT},
+        .filter_modes = {SDL_GPU_FILTER_NEAREST, SDL_GPU_FILTER_NEAREST},
+    });
+    if (!material_result) {
+        std::println(stderr, "Material failed: {}", material_result.error());
+        return 1;
+    }
+    gpu_material_t material = std::move(*material_result);
 
     while (poll_events()) {
         const bool *keys = SDL_GetKeyboardState(nullptr);
@@ -93,7 +93,10 @@ int main(int argc, char *argv[]) {
 
         auto frame = render_frame(
             engine, background_color,
-            [&](SDL_GPUCommandBuffer *, SDL_GPURenderPass *pass) { draw(mesh, pass); }
+            [&](SDL_GPUCommandBuffer *cmd_buf, SDL_GPURenderPass *pass) {
+                (void)cmd_buf;
+                draw(pipeline, geometry, material, pass);
+            }
         );
         if (!frame) {
             std::println(stderr, "Render error: {}", frame.error());

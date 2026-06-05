@@ -154,37 +154,47 @@ inline void push_fragment_uniform(SDL_GPUCommandBuffer *cmd, Uint32 slot, glm::v
     SDL_PushGPUFragmentUniformData(cmd, slot, &padded, sizeof(glm::vec4));
 }
 
-// Aggregates a pipeline, vertex/index buffers, textures, and a sampler for
-// indexed textured drawing. All resources are owned via RAII wrappers.
-struct textured_mesh_t {
-    gpu_pipeline_t             pipeline;
-    gpu_buffer_t               vertex_buffer;
-    gpu_buffer_t               index_buffer;
+// Vertex and index buffers for a single drawable piece of geometry.
+struct gpu_geometry_t {
+    gpu_buffer_t vertex_buffer;
+    gpu_buffer_t index_buffer;
+    Uint32       index_count;
+};
+
+// Uploads vertices and indices to the GPU in one shot.
+std::expected<gpu_geometry_t, std::string> create_geometry(
+    engine_t const &engine,
+    void const *vertices, Uint32 vertex_size,
+    std::span<uint16_t const> indices);
+
+// Textures and their paired samplers for a draw call.
+struct gpu_material_t {
     std::vector<gpu_texture_t> textures;
     std::vector<gpu_sampler_t> samplers; // one per texture
-    Uint32                     index_count;
 };
 
-struct textured_mesh_desc_t {
-    std::string_view                                vertex_shader;
-    std::string_view                                fragment_shader;
-    Uint32                                          vertex_uniform_buffers   = 0;
-    Uint32                                          fragment_uniform_buffers = 0;
-    std::span<SDL_GPUVertexBufferDescription const> vertex_buffer_descs      = {};
-    std::span<SDL_GPUVertexAttribute const>         vertex_attributes        = {};
-    void const                                     *vertices;
-    Uint32                                          vertex_data_size;
-    std::span<uint16_t const>                       indices;
-    std::vector<std::string>                        texture_paths;
-    // One address mode per texture. If shorter than texture_paths, remaining
-    // textures use SDL_GPU_SAMPLERADDRESSMODE_REPEAT.
+struct material_desc_t {
+    std::vector<std::string>               texture_paths;
+    // One per texture; if shorter, remaining textures use REPEAT / LINEAR.
     std::vector<SDL_GPUSamplerAddressMode> address_modes;
-    // One filter mode per texture. If shorter, remaining textures use LINEAR.
-    std::vector<SDL_GPUFilter> filter_modes;
+    std::vector<SDL_GPUFilter>             filter_modes;
 };
 
-std::expected<textured_mesh_t, std::string>
-create_textured_mesh(engine_t const &engine, textured_mesh_desc_t desc);
+std::expected<gpu_material_t, std::string>
+create_material(engine_t const &engine, material_desc_t desc);
 
-// Binds the pipeline, buffers, textures, and sampler, then draws.
-void draw(textured_mesh_t const &mesh, SDL_GPURenderPass *pass);
+// A pipeline, geometry, and material assembled into one drawable unit.
+struct textured_mesh_t {
+    gpu_pipeline_t pipeline;
+    gpu_geometry_t geometry;
+    gpu_material_t material;
+};
+
+// Bind all parts and issue the indexed draw call.
+void draw(gpu_pipeline_t const &pipeline, gpu_geometry_t const &geometry,
+          gpu_material_t const &material, SDL_GPURenderPass *pass);
+
+// Convenience overload for a pre-assembled mesh.
+inline void draw(textured_mesh_t const &mesh, SDL_GPURenderPass *pass) {
+    draw(mesh.pipeline, mesh.geometry, mesh.material, pass);
+}

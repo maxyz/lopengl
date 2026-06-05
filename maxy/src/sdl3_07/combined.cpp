@@ -51,24 +51,38 @@ int main(int argc, char *argv[]) {
     }
     engine_t &engine = *engine_result;
 
-    auto mesh_result = create_textured_mesh(engine, {
+    auto pipeline_result = create_pipeline(engine, {
         .vertex_shader       = "shaders/sdl3_07/texture.vert.spv",
         .fragment_shader     = "shaders/sdl3_07/combined.frag.spv",
+        .fragment_samplers   = 2,
         .vertex_buffer_descs = buffer_descs,
         .vertex_attributes   = vertex_attributes,
-        .vertices            = quad_vertices.data(),
-        .vertex_data_size    = static_cast<Uint32>(quad_vertices.size() * sizeof(textured_vertex_t)),
-        .indices             = quad_indices,
-        .texture_paths       = {
+    });
+    if (!pipeline_result) {
+        std::println(stderr, "Pipeline failed: {}", pipeline_result.error());
+        return 1;
+    }
+    gpu_pipeline_t pipeline = std::move(*pipeline_result);
+
+    auto geometry_result = create_geometry(
+        engine, quad_vertices.data(), static_cast<Uint32>(quad_vertices.size() * sizeof(textured_vertex_t)), quad_indices);
+    if (!geometry_result) {
+        std::println(stderr, "Geometry failed: {}", geometry_result.error());
+        return 1;
+    }
+    gpu_geometry_t geometry = std::move(*geometry_result);
+
+    auto material_result = create_material(engine, {
+        .texture_paths = {
             std::string(ASSETS_PATH) + "textures/container.jpg",
             std::string(ASSETS_PATH) + "textures/awesomeface.png",
         },
     });
-    if (!mesh_result) {
-        std::println(stderr, "Mesh creation failed: {}", mesh_result.error());
+    if (!material_result) {
+        std::println(stderr, "Material failed: {}", material_result.error());
         return 1;
     }
-    textured_mesh_t mesh = std::move(*mesh_result);
+    gpu_material_t material = std::move(*material_result);
 
     while (poll_events()) {
         const bool *keys = SDL_GetKeyboardState(nullptr);
@@ -76,7 +90,10 @@ int main(int argc, char *argv[]) {
 
         auto frame = render_frame(
             engine, background_color,
-            [&](SDL_GPUCommandBuffer *, SDL_GPURenderPass *pass) { draw(mesh, pass); }
+            [&](SDL_GPUCommandBuffer *cmd_buf, SDL_GPURenderPass *pass) {
+                (void)cmd_buf;
+                draw(pipeline, geometry, material, pass);
+            }
         );
         if (!frame) {
             std::println(stderr, "Render error: {}", frame.error());
