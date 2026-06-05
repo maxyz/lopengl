@@ -248,6 +248,13 @@ create_pipeline(engine_t const &engine, pipeline_desc_t const &desc) {
     info.primitive_type                                = SDL_GPU_PRIMITIVETYPE_TRIANGLELIST;
     info.target_info.color_target_descriptions         = &color_target;
     info.target_info.num_color_targets                 = 1;
+    if (desc.enable_depth_test) {
+        info.depth_stencil_state.compare_op        = SDL_GPU_COMPAREOP_LESS;
+        info.depth_stencil_state.enable_depth_test  = true;
+        info.depth_stencil_state.enable_depth_write = true;
+        info.target_info.depth_stencil_format       = SDL_GPU_TEXTUREFORMAT_D32_FLOAT;
+        info.target_info.has_depth_stencil_target   = true;
+    }
 
     gpu_pipeline_t pipeline{
         engine.gpu_device, SDL_CreateGPUGraphicsPipeline(engine.gpu_device, &info)
@@ -367,6 +374,17 @@ std::expected<gpu_geometry_t, std::string> create_geometry(
     };
 }
 
+std::expected<gpu_geometry_t, std::string>
+create_vertex_geometry(engine_t const &engine, void const *vertices, Uint32 vertex_size,
+                       Uint32 vertex_count) {
+    auto vertex_buffer = create_buffer(engine, SDL_GPU_BUFFERUSAGE_VERTEX, vertices, vertex_size);
+    if (!vertex_buffer) return std::unexpected(vertex_buffer.error());
+    gpu_geometry_t g;
+g.vertex_buffer = std::move(*vertex_buffer);
+g.vertex_count  = vertex_count;
+return g;
+}
+
 std::expected<gpu_material_t, std::string>
 create_material(engine_t const &engine, material_desc_t desc) {
     std::vector<gpu_texture_t> textures;
@@ -400,8 +418,10 @@ void draw(
     SDL_GPUBufferBinding vbinding = {geometry.vertex_buffer.get(), 0};
     SDL_BindGPUVertexBuffers(pass, 0, &vbinding, 1);
 
-    SDL_GPUBufferBinding ibinding = {geometry.index_buffer.get(), 0};
-    SDL_BindGPUIndexBuffer(pass, &ibinding, SDL_GPU_INDEXELEMENTSIZE_16BIT);
+    if (geometry.index_count > 0) {
+        SDL_GPUBufferBinding ibinding = {geometry.index_buffer.get(), 0};
+        SDL_BindGPUIndexBuffer(pass, &ibinding, SDL_GPU_INDEXELEMENTSIZE_16BIT);
+    }
 
     std::vector<SDL_GPUTextureSamplerBinding> bindings;
     bindings.reserve(material.textures.size());
@@ -409,5 +429,85 @@ void draw(
         bindings.push_back({material.textures[i].get(), material.samplers[i].get()});
     SDL_BindGPUFragmentSamplers(pass, 0, bindings.data(), static_cast<Uint32>(bindings.size()));
 
-    SDL_DrawGPUIndexedPrimitives(pass, geometry.index_count, 1, 0, 0, 0);
+    if (geometry.index_count > 0)
+        SDL_DrawGPUIndexedPrimitives(pass, geometry.index_count, 1, 0, 0, 0);
+    else
+        SDL_DrawGPUPrimitives(pass, geometry.vertex_count, 1, 0, 0);
+}
+
+std::expected<gpu_texture_t, std::string>
+create_depth_texture(engine_t const &engine, int width, int height) {
+    SDL_GPUTextureCreateInfo info = {};
+    info.type                 = SDL_GPU_TEXTURETYPE_2D;
+    info.format               = SDL_GPU_TEXTUREFORMAT_D32_FLOAT;
+    info.usage                = SDL_GPU_TEXTUREUSAGE_DEPTH_STENCIL_TARGET;
+    info.width                = static_cast<Uint32>(width);
+    info.height               = static_cast<Uint32>(height);
+    info.layer_count_or_depth = 1;
+    info.num_levels           = 1;
+
+    SDL_GPUTexture *tex = SDL_CreateGPUTexture(engine.gpu_device, &info);
+    if (!tex) return sdl_error("SDL_CreateGPUTexture (depth) failed");
+    return gpu_texture_t{engine.gpu_device, tex};
+}
+
+bool tracked_depth_t::update(engine_t const &engine) {
+    auto current = window_pixel_size(engine);
+    if (current == size) return true;
+    auto result = create_depth_texture(engine, current.x, current.y);
+    if (!result) return false;
+    texture = std::move(*result);
+    size    = current;
+    return true;
+}
+
+std::expected<tracked_depth_t, std::string>
+create_tracked_depth(engine_t const &engine) {
+    auto size   = window_pixel_size(engine);
+    auto result = create_depth_texture(engine, size.x, size.y);
+    if (!result) return std::unexpected(result.error());
+    return tracked_depth_t{std::move(*result), size};
+}
+
+std::expected<void, std::string> render_frame(
+    engine_t const &engine, SDL_FColor clear_color,
+    gpu_texture_t const &depth_texture,
+    std::function<void(SDL_GPUCommandBuffer *, SDL_GPURenderPass *)> draw) {
+    SDL_GPUCommandBuffer *command_buffer = SDL_AcquireGPUCommandBuffer(engine.gpu_device);
+    if (!command_buffer) return sdl_error("SDL_AcquireGPUCommandBuffer failed");
+
+    SDL_GPUTexture *swapchain_texture = nullptr;
+    if (!SDL_WaitAndAcquireGPUSwapchainTexture(
+            command_buffer, engine.window, &swapchain_texture, nullptr, nullptr
+        )) {
+        SDL_CancelGPUCommandBuffer(command_buffer);
+        return sdl_error("SDL_WaitAndAcquireGPUSwapchainTexture failed");
+    }
+
+    if (swapchain_texture) {
+        SDL_GPUColorTargetInfo color = {};
+        color.texture     = swapchain_texture;
+        color.clear_color = clear_color;
+        color.load_op     = SDL_GPU_LOADOP_CLEAR;
+        color.store_op    = SDL_GPU_STOREOP_STORE;
+
+        SDL_GPUDepthStencilTargetInfo depth = {};
+        depth.texture           = depth_texture.get();
+        depth.clear_depth       = 1.0f;
+        depth.load_op           = SDL_GPU_LOADOP_CLEAR;
+        depth.store_op          = SDL_GPU_STOREOP_DONT_CARE;
+        depth.stencil_load_op   = SDL_GPU_LOADOP_DONT_CARE;
+        depth.stencil_store_op  = SDL_GPU_STOREOP_DONT_CARE;
+        depth.cycle             = true;
+
+        SDL_GPURenderPass *render_pass =
+            SDL_BeginGPURenderPass(command_buffer, &color, 1, &depth);
+        draw(command_buffer, render_pass);
+        SDL_EndGPURenderPass(render_pass);
+    }
+
+    if (!SDL_SubmitGPUCommandBuffer(command_buffer))
+        return sdl_error("SDL_SubmitGPUCommandBuffer failed");
+
+    return {};
 }

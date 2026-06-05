@@ -1,0 +1,27 @@
+add_executable(sdl3_09_going_3d going_3d.cpp)
+target_link_libraries(sdl3_09_going_3d sdl3_engine)
+chapter_spv_shaders(sdl3_09_going_3d)
+
+add_executable(sdl3_09_more_3d more_3d.cpp)
+target_link_libraries(sdl3_09_more_3d sdl3_engine)
+chapter_spv_shaders(sdl3_09_more_3d)
+
+add_executable(sdl3_09_more_cubes more_cubes.cpp)
+target_link_libraries(sdl3_09_more_cubes sdl3_engine)
+chapter_spv_shaders(sdl3_09_more_cubes)
+
+add_executable(sdl3_ex_9_9_1 ex_9_9_1.cpp)
+target_link_libraries(sdl3_ex_9_9_1 sdl3_engine)
+chapter_spv_shaders(sdl3_ex_9_9_1)
+
+add_executable(sdl3_ex_9_9_2 ex_9_9_2.cpp)
+target_link_libraries(sdl3_ex_9_9_2 sdl3_engine)
+chapter_spv_shaders(sdl3_ex_9_9_2)
+
+add_executable(sdl3_ex_9_9_3 ex_9_9_3.cpp)
+target_link_libraries(sdl3_ex_9_9_3 sdl3_engine)
+chapter_spv_shaders(sdl3_ex_9_9_3)
+
+add_executable(sdl3_09_more_cubes_chaotic more_cubes_chaotic.cpp)
+target_link_libraries(sdl3_09_more_cubes_chaotic sdl3_engine)
+chapter_spv_shaders(sdl3_09_more_cubes_chaotic)

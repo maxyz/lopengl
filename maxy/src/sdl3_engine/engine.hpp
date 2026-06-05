@@ -96,6 +96,12 @@ std::expected<void, std::string> render_frame(
     std::function<void(SDL_GPUCommandBuffer *, SDL_GPURenderPass *)> draw
 );
 
+// render_frame with depth -- depth_texture must be created with create_depth_texture.
+std::expected<void, std::string> render_frame(
+    engine_t const &engine, SDL_FColor clear_color,
+    gpu_texture_t const &depth_texture,
+    std::function<void(SDL_GPUCommandBuffer *, SDL_GPURenderPass *)> draw);
+
 // Reads a SPIR-V file and creates a GPU shader stage.
 // num_uniform_buffers and num_samplers must match the shader's declared bindings.
 std::expected<gpu_shader_t, std::string> load_shader(
@@ -110,6 +116,24 @@ create_vertex_buffer(engine_t const &engine, void const *data, Uint32 size);
 // Allocates a GPU index buffer and uploads data via a one-shot copy pass.
 std::expected<gpu_buffer_t, std::string>
 create_index_buffer(engine_t const &engine, void const *data, Uint32 size);
+
+// Creates a depth texture for 3D rendering. Recreate on window resize.
+std::expected<gpu_texture_t, std::string>
+create_depth_texture(engine_t const &engine, int width, int height);
+
+// Depth texture that automatically recreates itself when the window is resized.
+// Call update() once per frame before rendering; pass texture to render_frame.
+struct tracked_depth_t {
+    gpu_texture_t texture;
+    glm::ivec2    size;
+
+    // Recreates the texture if the window pixel size has changed.
+    // Returns false if recreation failed (old texture remains valid).
+    bool update(engine_t const &engine);
+};
+
+std::expected<tracked_depth_t, std::string>
+create_tracked_depth(engine_t const &engine);
 
 // Loads an image file via SDL3_image and uploads it to a GPU texture.
 std::expected<gpu_texture_t, std::string>
@@ -133,6 +157,7 @@ struct pipeline_desc_t {
     // When empty, defaults to one vertex_t (float3) at location 0.
     std::span<SDL_GPUVertexBufferDescription const> vertex_buffer_descs = {};
     std::span<SDL_GPUVertexAttribute const>         vertex_attributes   = {};
+    bool enable_depth_test = false; // enables depth test + write with LESS compare op
 };
 
 std::expected<gpu_pipeline_t, std::string>
@@ -165,15 +190,20 @@ inline void push_fragment_uniform(SDL_GPUCommandBuffer *cmd, Uint32 slot, glm::v
 // Vertex and index buffers for a single drawable piece of geometry.
 struct gpu_geometry_t {
     gpu_buffer_t vertex_buffer;
-    gpu_buffer_t index_buffer;
-    Uint32       index_count;
+    gpu_buffer_t index_buffer;   // empty when drawing without indices
+    Uint32       index_count  = 0; // > 0: SDL_DrawGPUIndexedPrimitives
+    Uint32       vertex_count = 0; // > 0: SDL_DrawGPUPrimitives (non-indexed)
 };
 
 // Uploads vertices and indices to the GPU in one shot.
 std::expected<gpu_geometry_t, std::string> create_geometry(
     engine_t const &engine, void const *vertices, Uint32 vertex_size,
-    std::span<uint16_t const> indices
-);
+    std::span<uint16_t const> indices);
+
+// Uploads vertices only (no index buffer) for glDrawArrays-style drawing.
+std::expected<gpu_geometry_t, std::string> create_vertex_geometry(
+    engine_t const &engine, void const *vertices, Uint32 vertex_size,
+    Uint32 vertex_count);
 
 // Textures and their paired samplers for a draw call.
 struct gpu_material_t {

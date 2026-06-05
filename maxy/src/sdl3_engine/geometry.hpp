@@ -26,6 +26,39 @@ struct textured_vertex_t {
     uv_t     uv;       // location 2
 };
 
+struct pos_uv_vertex_t {
+    vertex_t position; // location 0
+    uv_t     uv;       // location 1
+};
+
+// Unit cube: 36 vertices (6 faces x 2 triangles x 3), no index buffer.
+inline constexpr std::array<pos_uv_vertex_t, 36> unit_cube = {{
+    // back
+    {{-.5f, -.5f, -.5f}, {.0f, .0f}}, {{.5f, -.5f, -.5f}, {1.f, .0f}},
+    {{.5f,  .5f,  -.5f}, {1.f, 1.f}}, {{.5f, .5f, -.5f}, {1.f, 1.f}},
+    {{-.5f, .5f,  -.5f}, {.0f, 1.f}}, {{-.5f, -.5f, -.5f}, {.0f, .0f}},
+    // front
+    {{.5f,  -.5f, .5f},  {.0f, .0f}}, {{-.5f, -.5f, .5f}, {1.f, .0f}},
+    {{-.5f, .5f,  .5f},  {1.f, 1.f}}, {{-.5f, .5f, .5f}, {1.f, 1.f}},
+    {{.5f,  .5f,  .5f},  {.0f, 1.f}}, {{.5f, -.5f, .5f}, {.0f, .0f}},
+    // left
+    {{-.5f, -.5f, .5f},  {.0f, .0f}}, {{-.5f, -.5f, -.5f}, {1.f, .0f}},
+    {{-.5f, .5f,  -.5f}, {1.f, 1.f}}, {{-.5f, .5f, -.5f}, {1.f, 1.f}},
+    {{-.5f, .5f,  .5f},  {.0f, 1.f}}, {{-.5f, -.5f, .5f}, {.0f, .0f}},
+    // right
+    {{.5f,  -.5f, -.5f}, {.0f, .0f}}, {{.5f, -.5f, .5f}, {1.f, .0f}},
+    {{.5f,  .5f,  .5f},  {1.f, 1.f}}, {{.5f, .5f, .5f}, {1.f, 1.f}},
+    {{.5f,  .5f,  -.5f}, {.0f, 1.f}}, {{.5f, -.5f, -.5f}, {.0f, .0f}},
+    // bottom
+    {{-.5f, -.5f, -.5f}, {.0f, .0f}}, {{.5f, -.5f, -.5f}, {1.f, .0f}},
+    {{.5f,  -.5f, .5f},  {1.f, 1.f}}, {{.5f, -.5f, .5f}, {1.f, 1.f}},
+    {{-.5f, -.5f, .5f},  {.0f, 1.f}}, {{-.5f, -.5f, -.5f}, {.0f, .0f}},
+    // top
+    {{-.5f, .5f,  .5f},  {.0f, .0f}}, {{.5f, .5f, .5f}, {1.f, .0f}},
+    {{.5f,  .5f,  -.5f}, {1.f, 1.f}}, {{.5f, .5f, -.5f}, {1.f, 1.f}},
+    {{-.5f, .5f,  -.5f}, {.0f, 1.f}}, {{-.5f, .5f, .5f}, {.0f, .0f}},
+}};
+
 // Returns an equilateral triangle inscribed in a circle of the given
 // circumradius, top vertex pointing up.
 constexpr std::array<vertex_t, 3> make_equilateral_triangle(float circumradius) {
