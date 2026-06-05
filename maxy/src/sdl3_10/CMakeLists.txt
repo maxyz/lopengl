@@ -1,0 +1,23 @@
+add_executable(sdl3_10_camera_circle camera_circle.cpp)
+target_link_libraries(sdl3_10_camera_circle sdl3_engine)
+chapter_spv_shaders(sdl3_10_camera_circle)
+
+add_executable(sdl3_10_walk_around walk_around.cpp)
+target_link_libraries(sdl3_10_walk_around sdl3_engine)
+chapter_spv_shaders(sdl3_10_walk_around)
+
+add_executable(sdl3_10_mouse_input mouse_input.cpp)
+target_link_libraries(sdl3_10_mouse_input sdl3_engine)
+chapter_spv_shaders(sdl3_10_mouse_input)
+
+add_executable(sdl3_10_camera_class camera_class.cpp)
+target_link_libraries(sdl3_10_camera_class sdl3_engine)
+chapter_spv_shaders(sdl3_10_camera_class)
+
+add_executable(sdl3_ex_10_10_1 ex_10_10_1.cpp)
+target_link_libraries(sdl3_ex_10_10_1 sdl3_engine)
+chapter_spv_shaders(sdl3_ex_10_10_1)
+
+add_executable(sdl3_ex_10_10_2 ex_10_10_2.cpp)
+target_link_libraries(sdl3_ex_10_10_2 sdl3_engine)
+chapter_spv_shaders(sdl3_ex_10_10_2)

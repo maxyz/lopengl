@@ -1,5 +1,4 @@
-// Exercise 9.9.3: same camera as ex2 + every 3rd cube rotates over time.
-#include <algorithm>
+// SDL3 port of camera_class: engine camera_t with mouse look, scroll zoom, focus handling.
 #include <print>
 #include <string>
 
@@ -10,11 +9,8 @@
 #include "engine.hpp"
 #include "geometry.hpp"
 
-constexpr int   WINDOW_WIDTH  = 800;
-constexpr int   WINDOW_HEIGHT = 600;
-constexpr float CAM_SPEED     = 2.5f;
-constexpr float YAW_SPEED     = 1.0f;
-constexpr float FOV_SPEED     = 60.0f;
+constexpr int WINDOW_WIDTH  = 800;
+constexpr int WINDOW_HEIGHT = 600;
 
 constexpr SDL_FColor background_color = {0.2f, 0.3f, 0.3f, 1.0f};
 
@@ -22,17 +18,19 @@ constexpr SDL_FColor background_color = {0.2f, 0.3f, 0.3f, 1.0f};
 int main(int argc, char *argv[]) {
     auto config = parse_engine_args(argc, argv);
     auto engine_result =
-        create_engine("SDL3 ex 9.9.3 - Camera + Rotating", WINDOW_WIDTH, WINDOW_HEIGHT, config);
+        create_engine("SDL3 10 - Camera Class", WINDOW_WIDTH, WINDOW_HEIGHT, config);
     if (!engine_result) {
         std::println(stderr, "{}", engine_result.error());
         return 1;
     }
     engine_t &engine = *engine_result;
 
+    SDL_SetWindowRelativeMouseMode(engine.window, true);
+
     auto pipeline_result = create_pipeline(
         engine, {
-                    .vertex_shader          = "shaders/sdl3_09/going_3d.vert.spv",
-                    .fragment_shader        = "shaders/sdl3_09/going_3d.frag.spv",
+                    .vertex_shader          = "shaders/sdl3_10/camera_class.vert.spv",
+                    .fragment_shader        = "shaders/sdl3_10/camera_class.frag.spv",
                     .vertex_uniform_buffers = 3,
                     .fragment_samplers      = 2,
                     .vertex_buffer_descs    = pos_uv_buffer_descs,
@@ -75,36 +73,49 @@ int main(int argc, char *argv[]) {
     }
     tracked_depth_t depth = std::move(*depth_result);
 
-    constexpr glm::vec3 up           = {0.0f, 1.0f, 0.0f};
-    glm::vec3           camera_pos   = {0.0f, 0.0f, 3.0f};
-    glm::vec3           camera_front = {0.0f, 0.0f, -1.0f};
-    float               fov          = 45.0f;
-    float               elapsed      = 0.0f;
+    camera_t camera{{0.0f, 0.0f, 3.0f}};
+    float    time    = 0.0f;
+    bool     focused = true;
 
-    while (poll_events()) {
+    while (true) {
+        bool      running      = true;
+        float     scroll_delta = 0.0f;
+        SDL_Event event;
+        while (SDL_PollEvent(&event)) {
+            if (event.type == SDL_EVENT_QUIT) running = false;
+            if (event.type == SDL_EVENT_MOUSE_WHEEL) scroll_delta += event.wheel.y;
+            // Release cursor on alt-tab; recapture on focus regain.
+            if (event.type == SDL_EVENT_WINDOW_FOCUS_LOST) {
+                focused = false;
+                SDL_SetWindowRelativeMouseMode(engine.window, false);
+            }
+            if (event.type == SDL_EVENT_WINDOW_FOCUS_GAINED) {
+                focused = true;
+                SDL_SetWindowRelativeMouseMode(engine.window, true);
+            }
+        }
+        if (!running) break;
+
         float dt = tick(engine);
-        elapsed += dt;
+        time += dt;
 
         depth.update(engine);
 
+        // Mouse look only when window has focus; negate dy for screen-Y-down.
+        if (focused) {
+            float dx, dy;
+            SDL_GetRelativeMouseState(&dx, &dy);
+            camera.process_mouse(dx, -dy);
+        }
+        camera.process_scroll(scroll_delta);
+
         const bool *keys = SDL_GetKeyboardState(nullptr);
         if (keys[SDL_SCANCODE_ESCAPE]) break;
+        camera.process_keys(keys, dt);
 
-        glm::vec3 right = glm::normalize(glm::cross(camera_front, up));
-        if (keys[SDL_SCANCODE_W]) camera_pos += CAM_SPEED * dt * camera_front;
-        if (keys[SDL_SCANCODE_S]) camera_pos -= CAM_SPEED * dt * camera_front;
-        if (keys[SDL_SCANCODE_A]) camera_pos -= CAM_SPEED * dt * right;
-        if (keys[SDL_SCANCODE_D]) camera_pos += CAM_SPEED * dt * right;
-        if (keys[SDL_SCANCODE_R]) camera_pos.y += CAM_SPEED * dt;
-        if (keys[SDL_SCANCODE_F]) camera_pos.y -= CAM_SPEED * dt;
-        if (keys[SDL_SCANCODE_Q]) camera_front -= YAW_SPEED * CAM_SPEED * dt * right;
-        if (keys[SDL_SCANCODE_E]) camera_front += YAW_SPEED * CAM_SPEED * dt * right;
-        if (keys[SDL_SCANCODE_UP]) fov = std::clamp(fov - FOV_SPEED * dt, 1.0f, 90.0f);
-        if (keys[SDL_SCANCODE_DOWN]) fov = std::clamp(fov + FOV_SPEED * dt, 1.0f, 90.0f);
-
-        glm::mat4 view = glm::lookAt(camera_pos, camera_pos + camera_front, up);
+        glm::mat4 view = camera.view_matrix();
         glm::mat4 projection =
-            glm::perspective(glm::radians(fov), aspect_ratio(engine), 0.1f, 100.0f);
+            glm::perspective(glm::radians(camera.fov), aspect_ratio(engine), 0.1f, 100.0f);
 
         auto frame = render_frame(
             engine, background_color, depth.texture,
@@ -112,8 +123,8 @@ int main(int argc, char *argv[]) {
                 push_vertex_uniform(cmd_buf, 1, view);
                 push_vertex_uniform(cmd_buf, 2, projection);
                 for (Uint32 i = 0; i < example_cube_positions.size(); ++i) {
-                    // Every 3rd cube rotates over time; others have a fixed angle.
-                    float angle = (i % 3 == 0) ? elapsed * 25.0f : 20.0f * static_cast<float>(i);
+                    float angle = 20.0f * static_cast<float>(i);
+                    if (i % 3 == 0) angle = time * 25.0f;
                     glm::mat4 model = glm::translate(glm::mat4(1.0f), example_cube_positions[i]);
                     model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
                     push_vertex_uniform(cmd_buf, 0, model);

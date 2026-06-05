@@ -1,5 +1,6 @@
-// Exercise 9.9.3: same camera as ex2 + every 3rd cube rotates over time.
+// SDL3 port of camera_circle: camera orbits at radius 10 while WASD/Q/E/R/F move the base.
 #include <algorithm>
+#include <cmath>
 #include <print>
 #include <string>
 
@@ -15,6 +16,7 @@ constexpr int   WINDOW_HEIGHT = 600;
 constexpr float CAM_SPEED     = 2.5f;
 constexpr float YAW_SPEED     = 1.0f;
 constexpr float FOV_SPEED     = 60.0f;
+constexpr float ORBIT_RADIUS  = 10.0f;
 
 constexpr SDL_FColor background_color = {0.2f, 0.3f, 0.3f, 1.0f};
 
@@ -22,7 +24,7 @@ constexpr SDL_FColor background_color = {0.2f, 0.3f, 0.3f, 1.0f};
 int main(int argc, char *argv[]) {
     auto config = parse_engine_args(argc, argv);
     auto engine_result =
-        create_engine("SDL3 ex 9.9.3 - Camera + Rotating", WINDOW_WIDTH, WINDOW_HEIGHT, config);
+        create_engine("SDL3 10 - Camera Circle", WINDOW_WIDTH, WINDOW_HEIGHT, config);
     if (!engine_result) {
         std::println(stderr, "{}", engine_result.error());
         return 1;
@@ -31,8 +33,8 @@ int main(int argc, char *argv[]) {
 
     auto pipeline_result = create_pipeline(
         engine, {
-                    .vertex_shader          = "shaders/sdl3_09/going_3d.vert.spv",
-                    .fragment_shader        = "shaders/sdl3_09/going_3d.frag.spv",
+                    .vertex_shader          = "shaders/sdl3_10/camera_circle.vert.spv",
+                    .fragment_shader        = "shaders/sdl3_10/camera_circle.frag.spv",
                     .vertex_uniform_buffers = 3,
                     .fragment_samplers      = 2,
                     .vertex_buffer_descs    = pos_uv_buffer_descs,
@@ -79,11 +81,11 @@ int main(int argc, char *argv[]) {
     glm::vec3           camera_pos   = {0.0f, 0.0f, 3.0f};
     glm::vec3           camera_front = {0.0f, 0.0f, -1.0f};
     float               fov          = 45.0f;
-    float               elapsed      = 0.0f;
+    float               time         = 0.0f;
 
     while (poll_events()) {
         float dt = tick(engine);
-        elapsed += dt;
+        time += dt;
 
         depth.update(engine);
 
@@ -99,10 +101,13 @@ int main(int argc, char *argv[]) {
         if (keys[SDL_SCANCODE_F]) camera_pos.y -= CAM_SPEED * dt;
         if (keys[SDL_SCANCODE_Q]) camera_front -= YAW_SPEED * CAM_SPEED * dt * right;
         if (keys[SDL_SCANCODE_E]) camera_front += YAW_SPEED * CAM_SPEED * dt * right;
+        camera_front = glm::normalize(camera_front);
         if (keys[SDL_SCANCODE_UP]) fov = std::clamp(fov - FOV_SPEED * dt, 1.0f, 90.0f);
         if (keys[SDL_SCANCODE_DOWN]) fov = std::clamp(fov + FOV_SPEED * dt, 1.0f, 90.0f);
 
-        glm::mat4 view = glm::lookAt(camera_pos, camera_pos + camera_front, up);
+        // Eye orbits around camera_pos; look-at target stays at camera_pos + camera_front.
+        glm::vec3 orbit = {std::sin(time) * ORBIT_RADIUS, 0.0f, std::cos(time) * ORBIT_RADIUS};
+        glm::mat4 view  = glm::lookAt(camera_pos + orbit, camera_pos + camera_front, up);
         glm::mat4 projection =
             glm::perspective(glm::radians(fov), aspect_ratio(engine), 0.1f, 100.0f);
 
@@ -112,8 +117,8 @@ int main(int argc, char *argv[]) {
                 push_vertex_uniform(cmd_buf, 1, view);
                 push_vertex_uniform(cmd_buf, 2, projection);
                 for (Uint32 i = 0; i < example_cube_positions.size(); ++i) {
-                    // Every 3rd cube rotates over time; others have a fixed angle.
-                    float angle = (i % 3 == 0) ? elapsed * 25.0f : 20.0f * static_cast<float>(i);
+                    float angle = 20.0f * static_cast<float>(i);
+                    if (i % 3 == 0) angle = time * 25.0f;
                     glm::mat4 model = glm::translate(glm::mat4(1.0f), example_cube_positions[i]);
                     model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
                     push_vertex_uniform(cmd_buf, 0, model);

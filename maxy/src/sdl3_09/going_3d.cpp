@@ -23,22 +23,6 @@ constexpr std::array<pos_uv_vertex_t, 4> quad_vertices = {{
 
 constexpr std::array<uint16_t, 6> quad_indices = {{0, 2, 3, 0, 1, 3}};
 
-constexpr SDL_GPUVertexBufferDescription buffer_descs[] = {{
-    .slot       = 0,
-    .pitch      = sizeof(pos_uv_vertex_t),
-    .input_rate = SDL_GPU_VERTEXINPUTRATE_VERTEX,
-}};
-
-constexpr SDL_GPUVertexAttribute vertex_attributes[] = {
-    {.location    = 0,
-     .buffer_slot = 0,
-     .format      = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
-     .offset      = static_cast<Uint32>(offsetof(pos_uv_vertex_t, position))},
-    {.location    = 1,
-     .buffer_slot = 0,
-     .format      = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2,
-     .offset      = static_cast<Uint32>(offsetof(pos_uv_vertex_t, uv))},
-};
 
 int main(int argc, char *argv[]) {
     auto config = parse_engine_args(argc, argv);
@@ -56,8 +40,8 @@ int main(int argc, char *argv[]) {
                     .fragment_shader        = "shaders/sdl3_09/going_3d.frag.spv",
                     .vertex_uniform_buffers = 3,
                     .fragment_samplers      = 2,
-                    .vertex_buffer_descs    = buffer_descs,
-                    .vertex_attributes      = vertex_attributes,
+                    .vertex_buffer_descs    = pos_uv_buffer_descs,
+                    .vertex_attributes      = pos_uv_vertex_attributes,
                 }
     );
     if (!pipeline_result) {

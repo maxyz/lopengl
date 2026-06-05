@@ -3,6 +3,8 @@
 #include <cstdint>
 #include <numbers>
 
+#include <glm/glm.hpp>
+
 struct vertex_t {
     float x, y, z;
 };
@@ -30,6 +32,20 @@ struct pos_uv_vertex_t {
     vertex_t position; // location 0
     uv_t     uv;       // location 1
 };
+
+// 10 world-space positions used across tutorial chapters 9 and 10.
+inline constexpr std::array<glm::vec3, 10> example_cube_positions = {{
+    {0.0f,  0.0f,   0.0f},
+    {2.0f,  5.0f,  -15.0f},
+    {-1.5f, -2.2f, -2.5f},
+    {-3.8f, -2.0f, -12.3f},
+    {2.4f,  -0.4f, -3.5f},
+    {-1.7f, 3.0f,  -7.5f},
+    {1.3f,  -2.0f, -2.5f},
+    {1.5f,  2.0f,  -2.5f},
+    {1.5f,  0.2f,  -1.5f},
+    {-1.3f, 1.0f,  -1.5f},
+}};
 
 // Unit cube: 36 vertices (6 faces x 2 triangles x 3), no index buffer.
 inline constexpr std::array<pos_uv_vertex_t, 36> unit_cube = {{

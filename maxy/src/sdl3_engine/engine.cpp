@@ -1,10 +1,14 @@
 #include "engine.hpp"
 #include "geometry.hpp"
 
+#include <algorithm>
+#include <cmath>
 #include <format>
 #include <fstream>
 #include <utility>
 #include <vector>
+
+#include <glm/gtc/matrix_transform.hpp>
 
 #include <SDL3_image/SDL_image.h>
 
@@ -249,7 +253,7 @@ create_pipeline(engine_t const &engine, pipeline_desc_t const &desc) {
     info.target_info.color_target_descriptions         = &color_target;
     info.target_info.num_color_targets                 = 1;
     if (desc.enable_depth_test) {
-        info.depth_stencil_state.compare_op        = SDL_GPU_COMPAREOP_LESS;
+        info.depth_stencil_state.compare_op         = SDL_GPU_COMPAREOP_LESS;
         info.depth_stencil_state.enable_depth_test  = true;
         info.depth_stencil_state.enable_depth_write = true;
         info.target_info.depth_stencil_format       = SDL_GPU_TEXTUREFORMAT_D32_FLOAT;
@@ -374,15 +378,15 @@ std::expected<gpu_geometry_t, std::string> create_geometry(
     };
 }
 
-std::expected<gpu_geometry_t, std::string>
-create_vertex_geometry(engine_t const &engine, void const *vertices, Uint32 vertex_size,
-                       Uint32 vertex_count) {
+std::expected<gpu_geometry_t, std::string> create_vertex_geometry(
+    engine_t const &engine, void const *vertices, Uint32 vertex_size, Uint32 vertex_count
+) {
     auto vertex_buffer = create_buffer(engine, SDL_GPU_BUFFERUSAGE_VERTEX, vertices, vertex_size);
     if (!vertex_buffer) return std::unexpected(vertex_buffer.error());
     gpu_geometry_t g;
-g.vertex_buffer = std::move(*vertex_buffer);
-g.vertex_count  = vertex_count;
-return g;
+    g.vertex_buffer = std::move(*vertex_buffer);
+    g.vertex_count  = vertex_count;
+    return g;
 }
 
 std::expected<gpu_material_t, std::string>
@@ -438,13 +442,13 @@ void draw(
 std::expected<gpu_texture_t, std::string>
 create_depth_texture(engine_t const &engine, int width, int height) {
     SDL_GPUTextureCreateInfo info = {};
-    info.type                 = SDL_GPU_TEXTURETYPE_2D;
-    info.format               = SDL_GPU_TEXTUREFORMAT_D32_FLOAT;
-    info.usage                = SDL_GPU_TEXTUREUSAGE_DEPTH_STENCIL_TARGET;
-    info.width                = static_cast<Uint32>(width);
-    info.height               = static_cast<Uint32>(height);
-    info.layer_count_or_depth = 1;
-    info.num_levels           = 1;
+    info.type                     = SDL_GPU_TEXTURETYPE_2D;
+    info.format                   = SDL_GPU_TEXTUREFORMAT_D32_FLOAT;
+    info.usage                    = SDL_GPU_TEXTUREUSAGE_DEPTH_STENCIL_TARGET;
+    info.width                    = static_cast<Uint32>(width);
+    info.height                   = static_cast<Uint32>(height);
+    info.layer_count_or_depth     = 1;
+    info.num_levels               = 1;
 
     SDL_GPUTexture *tex = SDL_CreateGPUTexture(engine.gpu_device, &info);
     if (!tex) return sdl_error("SDL_CreateGPUTexture (depth) failed");
@@ -461,8 +465,7 @@ bool tracked_depth_t::update(engine_t const &engine) {
     return true;
 }
 
-std::expected<tracked_depth_t, std::string>
-create_tracked_depth(engine_t const &engine) {
+std::expected<tracked_depth_t, std::string> create_tracked_depth(engine_t const &engine) {
     auto size   = window_pixel_size(engine);
     auto result = create_depth_texture(engine, size.x, size.y);
     if (!result) return std::unexpected(result.error());
@@ -470,9 +473,9 @@ create_tracked_depth(engine_t const &engine) {
 }
 
 std::expected<void, std::string> render_frame(
-    engine_t const &engine, SDL_FColor clear_color,
-    gpu_texture_t const &depth_texture,
-    std::function<void(SDL_GPUCommandBuffer *, SDL_GPURenderPass *)> draw) {
+    engine_t const &engine, SDL_FColor clear_color, gpu_texture_t const &depth_texture,
+    std::function<void(SDL_GPUCommandBuffer *, SDL_GPURenderPass *)> draw
+) {
     SDL_GPUCommandBuffer *command_buffer = SDL_AcquireGPUCommandBuffer(engine.gpu_device);
     if (!command_buffer) return sdl_error("SDL_AcquireGPUCommandBuffer failed");
 
@@ -486,22 +489,21 @@ std::expected<void, std::string> render_frame(
 
     if (swapchain_texture) {
         SDL_GPUColorTargetInfo color = {};
-        color.texture     = swapchain_texture;
-        color.clear_color = clear_color;
-        color.load_op     = SDL_GPU_LOADOP_CLEAR;
-        color.store_op    = SDL_GPU_STOREOP_STORE;
+        color.texture                = swapchain_texture;
+        color.clear_color            = clear_color;
+        color.load_op                = SDL_GPU_LOADOP_CLEAR;
+        color.store_op               = SDL_GPU_STOREOP_STORE;
 
         SDL_GPUDepthStencilTargetInfo depth = {};
-        depth.texture           = depth_texture.get();
-        depth.clear_depth       = 1.0f;
-        depth.load_op           = SDL_GPU_LOADOP_CLEAR;
-        depth.store_op          = SDL_GPU_STOREOP_DONT_CARE;
-        depth.stencil_load_op   = SDL_GPU_LOADOP_DONT_CARE;
-        depth.stencil_store_op  = SDL_GPU_STOREOP_DONT_CARE;
-        depth.cycle             = true;
+        depth.texture                       = depth_texture.get();
+        depth.clear_depth                   = 1.0f;
+        depth.load_op                       = SDL_GPU_LOADOP_CLEAR;
+        depth.store_op                      = SDL_GPU_STOREOP_DONT_CARE;
+        depth.stencil_load_op               = SDL_GPU_LOADOP_DONT_CARE;
+        depth.stencil_store_op              = SDL_GPU_STOREOP_DONT_CARE;
+        depth.cycle                         = true;
 
-        SDL_GPURenderPass *render_pass =
-            SDL_BeginGPURenderPass(command_buffer, &color, 1, &depth);
+        SDL_GPURenderPass *render_pass = SDL_BeginGPURenderPass(command_buffer, &color, 1, &depth);
         draw(command_buffer, render_pass);
         SDL_EndGPURenderPass(render_pass);
     }
@@ -510,4 +512,59 @@ std::expected<void, std::string> render_frame(
         return sdl_error("SDL_SubmitGPUCommandBuffer failed");
 
     return {};
+}
+
+// camera_t
+
+camera_t::camera_t() {
+    update_vectors();
+}
+
+camera_t::camera_t(glm::vec3 pos, float yaw_, float pitch_)
+    : position(pos), yaw(yaw_), pitch(pitch_) {
+    update_vectors();
+}
+
+void camera_t::update_vectors() {
+    glm::vec3 front;
+    front.x = std::cos(glm::radians(yaw)) * std::cos(glm::radians(pitch));
+    front.y = std::sin(glm::radians(pitch));
+    front.z = std::sin(glm::radians(yaw)) * std::cos(glm::radians(pitch));
+    m_front = glm::normalize(front);
+    m_right = glm::normalize(glm::cross(m_front, m_world_up));
+    m_up    = glm::normalize(glm::cross(m_right, m_front));
+}
+
+glm::mat4 camera_t::view_matrix() const {
+    return glm::lookAt(position, position + m_front, m_up);
+}
+
+void camera_t::process_mouse(float dx, float dy) {
+    yaw += dx * sensitivity;
+    pitch += dy * sensitivity;
+    pitch = std::clamp(pitch, -89.0f, 89.0f);
+    update_vectors();
+}
+
+void camera_t::process_scroll(float dy) {
+    fov = std::clamp(fov - dy, 1.0f, 90.0f);
+}
+
+void camera_t::process_keys(bool const *keys, float dt) {
+    float velocity = speed * dt;
+    if (fps_mode) {
+        // Project forward onto XZ plane: cross(world_up, right) rotates right by 90 around Y.
+        glm::vec3 forward = glm::normalize(glm::cross(m_world_up, m_right));
+        if (keys[SDL_SCANCODE_W]) position += forward * velocity;
+        if (keys[SDL_SCANCODE_S]) position -= forward * velocity;
+        if (keys[SDL_SCANCODE_A]) position -= m_right * velocity;
+        if (keys[SDL_SCANCODE_D]) position += m_right * velocity;
+    } else {
+        if (keys[SDL_SCANCODE_W]) position += m_front * velocity;
+        if (keys[SDL_SCANCODE_S]) position -= m_front * velocity;
+        if (keys[SDL_SCANCODE_A]) position -= m_right * velocity;
+        if (keys[SDL_SCANCODE_D]) position += m_right * velocity;
+        if (keys[SDL_SCANCODE_R]) position += m_up * velocity;
+        if (keys[SDL_SCANCODE_F]) position -= m_up * velocity;
+    }
 }

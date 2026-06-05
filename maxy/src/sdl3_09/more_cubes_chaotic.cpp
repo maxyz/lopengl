@@ -20,18 +20,6 @@ constexpr float FOV_SPEED     = 60.0f;
 
 constexpr SDL_FColor background_color = {0.2f, 0.3f, 0.3f, 1.0f};
 
-constexpr std::array<glm::vec3, 10> cube_positions = {{
-    {0.0f, 0.0f, 0.0f},
-    {2.0f, 5.0f, -15.0f},
-    {-1.5f, -2.2f, -2.5f},
-    {-3.8f, -2.0f, -12.3f},
-    {2.4f, -0.4f, -3.5f},
-    {-1.7f, 3.0f, -7.5f},
-    {1.3f, -2.0f, -2.5f},
-    {1.5f, 2.0f, -2.5f},
-    {1.5f, 0.2f, -1.5f},
-    {-1.3f, 1.0f, -1.5f},
-}};
 
 // Unique rotation axis per cube (GLM normalises these internally).
 constexpr std::array<glm::vec3, 10> rotation_axes = {{
@@ -75,21 +63,6 @@ constexpr std::array<float, 10> rotation_phases = {{
     324.0f,
 }};
 
-constexpr SDL_GPUVertexBufferDescription buffer_descs[]      = {{
-    .slot       = 0,
-    .pitch      = sizeof(pos_uv_vertex_t),
-    .input_rate = SDL_GPU_VERTEXINPUTRATE_VERTEX,
-}};
-constexpr SDL_GPUVertexAttribute         vertex_attributes[] = {
-    {.location    = 0,
-     .buffer_slot = 0,
-     .format      = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
-     .offset      = static_cast<Uint32>(offsetof(pos_uv_vertex_t, position))},
-    {.location    = 1,
-     .buffer_slot = 0,
-     .format      = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2,
-     .offset      = static_cast<Uint32>(offsetof(pos_uv_vertex_t, uv))},
-};
 
 int main(int argc, char *argv[]) {
     auto config        = parse_engine_args(argc, argv);
@@ -106,8 +79,8 @@ int main(int argc, char *argv[]) {
                     .fragment_shader        = "shaders/sdl3_09/going_3d.frag.spv",
                     .vertex_uniform_buffers = 3,
                     .fragment_samplers      = 2,
-                    .vertex_buffer_descs    = buffer_descs,
-                    .vertex_attributes      = vertex_attributes,
+                    .vertex_buffer_descs    = pos_uv_buffer_descs,
+                    .vertex_attributes      = pos_uv_vertex_attributes,
                     .enable_depth_test      = true,
                 }
     );
@@ -182,9 +155,9 @@ int main(int argc, char *argv[]) {
             [&](SDL_GPUCommandBuffer *cmd_buf, SDL_GPURenderPass *pass) {
                 push_vertex_uniform(cmd_buf, 1, view);
                 push_vertex_uniform(cmd_buf, 2, projection);
-                for (Uint32 i = 0; i < cube_positions.size(); ++i) {
+                for (Uint32 i = 0; i < example_cube_positions.size(); ++i) {
                     float     angle = rotation_phases[i] + elapsed * rotation_speeds[i];
-                    glm::mat4 model = glm::translate(glm::mat4(1.0f), cube_positions[i]);
+                    glm::mat4 model = glm::translate(glm::mat4(1.0f), example_cube_positions[i]);
                     model           = glm::rotate(model, glm::radians(angle), rotation_axes[i]);
                     push_vertex_uniform(cmd_buf, 0, model);
                     draw(pipeline, geometry, material, pass);

@@ -10,6 +10,8 @@
 #include <SDL3/SDL.h>
 #include <glm/glm.hpp>
 
+#include "geometry.hpp"
+
 // Generic RAII owner for any SDL GPU object released via Release(device,
 // handle). Move-only; destructor fires the release call.
 template <typename T, void (*Release)(SDL_GPUDevice *, T *)> struct gpu_resource_t {
@@ -98,9 +100,9 @@ std::expected<void, std::string> render_frame(
 
 // render_frame with depth -- depth_texture must be created with create_depth_texture.
 std::expected<void, std::string> render_frame(
-    engine_t const &engine, SDL_FColor clear_color,
-    gpu_texture_t const &depth_texture,
-    std::function<void(SDL_GPUCommandBuffer *, SDL_GPURenderPass *)> draw);
+    engine_t const &engine, SDL_FColor clear_color, gpu_texture_t const &depth_texture,
+    std::function<void(SDL_GPUCommandBuffer *, SDL_GPURenderPass *)> draw
+);
 
 // Reads a SPIR-V file and creates a GPU shader stage.
 // num_uniform_buffers and num_samplers must match the shader's declared bindings.
@@ -132,8 +134,7 @@ struct tracked_depth_t {
     bool update(engine_t const &engine);
 };
 
-std::expected<tracked_depth_t, std::string>
-create_tracked_depth(engine_t const &engine);
+std::expected<tracked_depth_t, std::string> create_tracked_depth(engine_t const &engine);
 
 // Loads an image file via SDL3_image and uploads it to a GPU texture.
 std::expected<gpu_texture_t, std::string>
@@ -190,7 +191,7 @@ inline void push_fragment_uniform(SDL_GPUCommandBuffer *cmd, Uint32 slot, glm::v
 // Vertex and index buffers for a single drawable piece of geometry.
 struct gpu_geometry_t {
     gpu_buffer_t vertex_buffer;
-    gpu_buffer_t index_buffer;   // empty when drawing without indices
+    gpu_buffer_t index_buffer;     // empty when drawing without indices
     Uint32       index_count  = 0; // > 0: SDL_DrawGPUIndexedPrimitives
     Uint32       vertex_count = 0; // > 0: SDL_DrawGPUPrimitives (non-indexed)
 };
@@ -198,12 +199,13 @@ struct gpu_geometry_t {
 // Uploads vertices and indices to the GPU in one shot.
 std::expected<gpu_geometry_t, std::string> create_geometry(
     engine_t const &engine, void const *vertices, Uint32 vertex_size,
-    std::span<uint16_t const> indices);
+    std::span<uint16_t const> indices
+);
 
 // Uploads vertices only (no index buffer) for glDrawArrays-style drawing.
 std::expected<gpu_geometry_t, std::string> create_vertex_geometry(
-    engine_t const &engine, void const *vertices, Uint32 vertex_size,
-    Uint32 vertex_count);
+    engine_t const &engine, void const *vertices, Uint32 vertex_size, Uint32 vertex_count
+);
 
 // Textures and their paired samplers for a draw call.
 struct gpu_material_t {
@@ -238,3 +240,60 @@ void draw(
 inline void draw(textured_mesh_t const &mesh, SDL_GPURenderPass *pass) {
     draw(mesh.pipeline, mesh.geometry, mesh.material, pass);
 }
+
+// FPS camera with Euler angles. Derives front/right/up axes on every update.
+// process_mouse expects dy already negated for screen-Y-down convention.
+struct camera_t {
+    glm::vec3 position    = {0.0f, 0.0f, 3.0f};
+    float     yaw         = -90.0f; // -90 so initial front points along -Z
+    float     pitch       = 0.0f;
+    float     fov         = 45.0f;
+    float     speed       = 2.5f;
+    float     sensitivity = 0.1f;
+    bool      fps_mode    = false; // constrain W/S/A/D to XZ plane; disables R/F
+
+    camera_t();
+    camera_t(glm::vec3 position, float yaw = -90.0f, float pitch = 0.0f);
+
+    glm::vec3 const &front() const { return m_front; }
+    glm::vec3 const &right() const { return m_right; }
+    glm::vec3 const &up() const { return m_up; }
+
+    glm::mat4 view_matrix() const;
+
+    // Apply mouse delta (pixels). Pass dy already negated for screen-Y-down.
+    void process_mouse(float dx, float dy);
+
+    // Adjust FOV by scroll wheel delta; clamped to [1, 90].
+    void process_scroll(float dy);
+
+    // WASD forward/back/strafe + R/F up/down from SDL keyboard state.
+    void process_keys(bool const *keys, float dt);
+
+private:
+    glm::vec3 m_front    = {0.0f, 0.0f, -1.0f};
+    glm::vec3 m_right    = {1.0f, 0.0f, 0.0f};
+    glm::vec3 m_up       = {0.0f, 1.0f, 0.0f};
+    glm::vec3 m_world_up = {0.0f, 1.0f, 0.0f};
+
+    void update_vectors();
+};
+
+// Vertex layout for pos_uv_vertex_t: one buffer slot, float3 position at location 0,
+// float2 uv at location 1. Pass to pipeline_desc_t::vertex_buffer_descs / vertex_attributes.
+inline constexpr SDL_GPUVertexBufferDescription pos_uv_buffer_descs[] = {{
+    .slot       = 0,
+    .pitch      = sizeof(pos_uv_vertex_t),
+    .input_rate = SDL_GPU_VERTEXINPUTRATE_VERTEX,
+}};
+
+inline constexpr SDL_GPUVertexAttribute pos_uv_vertex_attributes[] = {
+    {.location    = 0,
+     .buffer_slot = 0,
+     .format      = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
+     .offset      = static_cast<Uint32>(offsetof(pos_uv_vertex_t, position))},
+    {.location    = 1,
+     .buffer_slot = 0,
+     .format      = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2,
+     .offset      = static_cast<Uint32>(offsetof(pos_uv_vertex_t, uv))},
+};
