@@ -1,0 +1,3 @@
+add_executable(sdl3_12_colors colors.cpp)
+target_link_libraries(sdl3_12_colors sdl3_engine)
+chapter_spv_shaders(sdl3_12_colors)
