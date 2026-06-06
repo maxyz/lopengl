@@ -9,6 +9,7 @@
 
 #include <SDL3/SDL.h>
 #include <glm/glm.hpp>
+#include <imgui.h>
 
 #include "geometry.hpp"
 
@@ -77,6 +78,10 @@ struct engine_t {
 std::expected<engine_t, std::string>
 create_engine(std::string_view title, int width, int height, engine_config_t const &config = {});
 
+// Initialise Dear ImGui with the SDL3 platform and SDL_GPU renderer backends.
+// Call from create_scene before configuring fonts; the engine destructor runs shutdown.
+std::expected<void, std::string> init_imgui(engine_t const &engine);
+
 // Returns false when the application should quit (window closed).
 // Games handle their own exit conditions (escape, menus, etc.) separately.
 bool poll_events();
@@ -99,6 +104,7 @@ std::expected<void, std::string> render_frame(
 );
 
 // render_frame with depth -- depth_texture must be created with create_depth_texture.
+// Calls imgui_prepare_draw_data before the render pass when an ImGui context exists.
 std::expected<void, std::string> render_frame(
     engine_t const &engine, SDL_FColor clear_color, gpu_texture_t const &depth_texture,
     std::function<void(SDL_GPUCommandBuffer *, SDL_GPURenderPass *)> draw
@@ -253,13 +259,10 @@ struct input_t {
 };
 
 // Self-contained event loop: handles SDL events, focus tracking, relative mouse
-// mode, depth texture management, and tick. Calls update(input_t) once per frame
-// (return false to quit) then draw(cmd, pass) inside render_frame.
+// mode, depth texture management, tick, and ImGui integration when a context exists.
 std::expected<void, std::string> run_loop(
-    engine_t                                                         &engine,
-    SDL_FColor                                                        clear_color,
-    std::function<bool(input_t const &)>                              update,
-    std::function<void(SDL_GPUCommandBuffer *, SDL_GPURenderPass *)>  draw
+    engine_t &engine, SDL_FColor clear_color, std::function<bool(input_t const &)> update,
+    std::function<void(SDL_GPUCommandBuffer *, SDL_GPURenderPass *)> draw
 );
 
 // FPS camera with Euler angles. Derives front/right/up axes on every update.
@@ -341,3 +344,21 @@ inline constexpr SDL_GPUVertexAttribute pos_normal_uv_vertex_attributes[] = {
      .format      = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2,
      .offset      = static_cast<Uint32>(offsetof(pos_normal_uv_vertex_t, uv))},
 };
+
+// Absorbs engine creation, scene creation, and run_loop into one call.
+// CreateSceneFn takes engine_t& and returns std::expected<SceneT, std::string>.
+// SceneT must have update(input_t const&) -> bool and render(cmd, pass).
+template <typename CreateSceneFn>
+std::expected<void, std::string> run_app(
+    int argc, char *argv[], std::string_view title, int width, int height, SDL_FColor clear_color,
+    CreateSceneFn &&create_scene_fn
+) {
+    auto engine = create_engine(title, width, height, parse_engine_args(argc, argv));
+    if (!engine) return std::unexpected(engine.error());
+    auto scene = create_scene_fn(*engine);
+    if (!scene) return std::unexpected(scene.error());
+    return run_loop(
+        *engine, clear_color, [&](input_t const &in) { return scene->update(in); },
+        [&](SDL_GPUCommandBuffer *cmd, SDL_GPURenderPass *pass) { scene->render(cmd, pass); }
+    );
+}

@@ -8,6 +8,9 @@
 #include <utility>
 #include <vector>
 
+#include <backends/imgui_impl_sdl3.h>
+#include <backends/imgui_impl_sdlgpu3.h>
+
 #include <glm/gtc/matrix_transform.hpp>
 
 #include <SDL3_image/SDL_image.h>
@@ -61,6 +64,24 @@ std::expected<gpu_buffer_t, std::string> create_buffer(
     return buffer;
 }
 
+void imgui_process_event(SDL_Event const &event) {
+    ImGui_ImplSDL3_ProcessEvent(&event);
+}
+
+void imgui_prepare_draw_data(SDL_GPUCommandBuffer *cmd) {
+    ImGui_ImplSDLGPU3_PrepareDrawData(ImGui::GetDrawData(), cmd);
+}
+
+void imgui_render_draw_data(SDL_GPUCommandBuffer *cmd, SDL_GPURenderPass *pass) {
+    ImGui_ImplSDLGPU3_RenderDrawData(ImGui::GetDrawData(), cmd, pass);
+}
+
+void imgui_new_frame() {
+    ImGui_ImplSDLGPU3_NewFrame();
+    ImGui_ImplSDL3_NewFrame();
+    ImGui::NewFrame();
+}
+
 } // namespace
 
 engine_t::engine_t(engine_t &&other) noexcept
@@ -82,6 +103,12 @@ engine_t &engine_t::operator=(engine_t &&other) noexcept {
 }
 
 engine_t::~engine_t() {
+    // ImGui must be shut down before the GPU device is destroyed.
+    if (ImGui::GetCurrentContext()) {
+        ImGui_ImplSDLGPU3_Shutdown();
+        ImGui_ImplSDL3_Shutdown();
+        ImGui::DestroyContext();
+    }
     if (gpu_device && window) SDL_ReleaseWindowFromGPUDevice(gpu_device, window);
     if (gpu_device) SDL_DestroyGPUDevice(gpu_device);
     if (window) SDL_DestroyWindow(window);
@@ -117,6 +144,28 @@ create_engine(std::string_view title, int width, int height, engine_config_t con
     return engine;
 }
 
+std::expected<void, std::string> init_imgui(engine_t const &engine) {
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGui::StyleColorsDark();
+
+    // ColorTargetFormat must match the swapchain format the shaders will write to.
+    ImGui_ImplSDLGPU3_InitInfo info = {
+        .Device            = engine.gpu_device,
+        .ColorTargetFormat = SDL_GetGPUSwapchainTextureFormat(engine.gpu_device, engine.window),
+    };
+    if (!ImGui_ImplSDLGPU3_Init(&info)) {
+        ImGui::DestroyContext();
+        return std::unexpected("ImGui_ImplSDLGPU3_Init failed");
+    }
+    if (!ImGui_ImplSDL3_InitForSDLGPU(engine.window)) {
+        ImGui_ImplSDLGPU3_Shutdown();
+        ImGui::DestroyContext();
+        return std::unexpected("ImGui_ImplSDL3_InitForSDLGPU failed");
+    }
+    return {};
+}
+
 bool poll_events() {
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
@@ -126,9 +175,7 @@ bool poll_events() {
 }
 
 std::expected<void, std::string> run_loop(
-    engine_t                                                        &engine,
-    SDL_FColor                                                       clear_color,
-    std::function<bool(input_t const &)>                             update,
+    engine_t &engine, SDL_FColor clear_color, std::function<bool(input_t const &)> update,
     std::function<void(SDL_GPUCommandBuffer *, SDL_GPURenderPass *)> draw
 ) {
     auto depth_result = create_tracked_depth(engine);
@@ -143,6 +190,7 @@ std::expected<void, std::string> run_loop(
         float     scroll_delta = 0.0f;
         SDL_Event event;
         while (SDL_PollEvent(&event)) {
+            if (ImGui::GetCurrentContext()) imgui_process_event(event);
             if (event.type == SDL_EVENT_QUIT) running = false;
             if (event.type == SDL_EVENT_MOUSE_WHEEL) scroll_delta += event.wheel.y;
             if (event.type == SDL_EVENT_WINDOW_FOCUS_LOST) {
@@ -173,7 +221,10 @@ std::expected<void, std::string> run_loop(
             .aspect_ratio = aspect_ratio(engine),
         };
 
-        if (!update(input)) break;
+        if (ImGui::GetCurrentContext()) imgui_new_frame();
+        bool const should_continue = update(input);
+        if (ImGui::GetCurrentContext()) ImGui::Render();
+        if (!should_continue) break;
 
         if (auto frame = render_frame(engine, clear_color, depth.texture, draw); !frame)
             return std::unexpected(frame.error());
@@ -544,6 +595,9 @@ std::expected<void, std::string> render_frame(
     }
 
     if (swapchain_texture) {
+        // ImGui vertex/index upload must happen before the render pass (copy pass exclusivity).
+        if (ImGui::GetCurrentContext()) imgui_prepare_draw_data(command_buffer);
+
         SDL_GPUColorTargetInfo color = {};
         color.texture                = swapchain_texture;
         color.clear_color            = clear_color;
@@ -561,6 +615,7 @@ std::expected<void, std::string> render_frame(
 
         SDL_GPURenderPass *render_pass = SDL_BeginGPURenderPass(command_buffer, &color, 1, &depth);
         draw(command_buffer, render_pass);
+        if (ImGui::GetCurrentContext()) imgui_render_draw_data(command_buffer, render_pass);
         SDL_EndGPURenderPass(render_pass);
     }
 

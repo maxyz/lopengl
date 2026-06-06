@@ -1,0 +1,23 @@
+add_executable(sdl3_14_materials materials.cpp)
+target_link_libraries(sdl3_14_materials sdl3_engine)
+chapter_spv_shaders(sdl3_14_materials)
+
+add_executable(sdl3_14_lighting lighting.cpp)
+target_link_libraries(sdl3_14_lighting sdl3_engine)
+chapter_spv_shaders(sdl3_14_lighting)
+
+add_executable(sdl3_14_strobe strobe.cpp)
+target_link_libraries(sdl3_14_strobe sdl3_engine)
+chapter_spv_shaders(sdl3_14_strobe)
+
+add_executable(sdl3_14_ex_1 ex_1.cpp)
+target_link_libraries(sdl3_14_ex_1 sdl3_engine)
+chapter_spv_shaders(sdl3_14_ex_1)
+
+add_executable(sdl3_14_ex_2 ex_2.cpp)
+target_link_libraries(sdl3_14_ex_2 sdl3_engine)
+chapter_spv_shaders(sdl3_14_ex_2)
+
+add_executable(sdl3_14_imgui imgui.cpp)
+target_link_libraries(sdl3_14_imgui sdl3_engine)
+chapter_spv_shaders(sdl3_14_imgui)
