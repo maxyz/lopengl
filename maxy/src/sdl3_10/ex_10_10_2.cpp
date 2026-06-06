@@ -15,7 +15,6 @@ constexpr int WINDOW_HEIGHT = 600;
 
 constexpr SDL_FColor background_color = {0.2f, 0.3f, 0.3f, 1.0f};
 
-
 // Manual LookAt: view = rotation * translation.
 //
 // Rotation rows are the camera's three axes [right, up, -front].
@@ -128,6 +127,8 @@ int main(int argc, char *argv[]) {
             if (event.type == SDL_EVENT_WINDOW_FOCUS_GAINED) {
                 focused = true;
                 SDL_SetWindowRelativeMouseMode(engine.window, true);
+                float dx, dy;
+                SDL_GetRelativeMouseState(&dx, &dy); // drain delta accumulated while unfocused
             }
         }
         if (!running) break;

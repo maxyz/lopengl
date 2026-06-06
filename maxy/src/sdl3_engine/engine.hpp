@@ -241,6 +241,27 @@ inline void draw(textured_mesh_t const &mesh, SDL_GPURenderPass *pass) {
     draw(mesh.pipeline, mesh.geometry, mesh.material, pass);
 }
 
+// Per-frame input snapshot delivered by run_loop to the update callback.
+// dy is already negated for screen-Y-down convention.
+struct input_t {
+    bool const *keys;
+    float       dx;
+    float       dy;
+    float       scroll;
+    float       dt;
+    float       aspect_ratio;
+};
+
+// Self-contained event loop: handles SDL events, focus tracking, relative mouse
+// mode, depth texture management, and tick. Calls update(input_t) once per frame
+// (return false to quit) then draw(cmd, pass) inside render_frame.
+std::expected<void, std::string> run_loop(
+    engine_t                                                         &engine,
+    SDL_FColor                                                        clear_color,
+    std::function<bool(input_t const &)>                              update,
+    std::function<void(SDL_GPUCommandBuffer *, SDL_GPURenderPass *)>  draw
+);
+
 // FPS camera with Euler angles. Derives front/right/up axes on every update.
 // process_mouse expects dy already negated for screen-Y-down convention.
 struct camera_t {
@@ -296,4 +317,27 @@ inline constexpr SDL_GPUVertexAttribute pos_uv_vertex_attributes[] = {
      .buffer_slot = 0,
      .format      = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2,
      .offset      = static_cast<Uint32>(offsetof(pos_uv_vertex_t, uv))},
+};
+
+// Vertex layout for pos_normal_uv_vertex_t: float3 position (loc 0), float3 normal (loc 1),
+// float2 UV (loc 2). Pitch = 32 bytes.
+inline constexpr SDL_GPUVertexBufferDescription pos_normal_uv_buffer_descs[] = {{
+    .slot       = 0,
+    .pitch      = sizeof(pos_normal_uv_vertex_t),
+    .input_rate = SDL_GPU_VERTEXINPUTRATE_VERTEX,
+}};
+
+inline constexpr SDL_GPUVertexAttribute pos_normal_uv_vertex_attributes[] = {
+    {.location    = 0,
+     .buffer_slot = 0,
+     .format      = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
+     .offset      = static_cast<Uint32>(offsetof(pos_normal_uv_vertex_t, position))},
+    {.location    = 1,
+     .buffer_slot = 0,
+     .format      = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
+     .offset      = static_cast<Uint32>(offsetof(pos_normal_uv_vertex_t, normal))},
+    {.location    = 2,
+     .buffer_slot = 0,
+     .format      = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2,
+     .offset      = static_cast<Uint32>(offsetof(pos_normal_uv_vertex_t, uv))},
 };

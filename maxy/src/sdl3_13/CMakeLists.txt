@@ -1,0 +1,27 @@
+add_executable(sdl3_13_basic_light basic_light.cpp)
+target_link_libraries(sdl3_13_basic_light sdl3_engine)
+chapter_spv_shaders(sdl3_13_basic_light)
+
+add_executable(sdl3_13_ex_1 ex_1.cpp)
+target_link_libraries(sdl3_13_ex_1 sdl3_engine)
+chapter_spv_shaders(sdl3_13_ex_1)
+
+add_executable(sdl3_13_ex_2 ex_2.cpp)
+target_link_libraries(sdl3_13_ex_2 sdl3_engine)
+chapter_spv_shaders(sdl3_13_ex_2)
+
+add_executable(sdl3_13_ex_2_view ex_2_view.cpp)
+target_link_libraries(sdl3_13_ex_2_view sdl3_engine)
+chapter_spv_shaders(sdl3_13_ex_2_view)
+
+add_executable(sdl3_13_ex_2_camrel ex_2_camrel.cpp)
+target_link_libraries(sdl3_13_ex_2_camrel sdl3_engine)
+chapter_spv_shaders(sdl3_13_ex_2_camrel)
+
+add_executable(sdl3_13_ex_3 ex_3.cpp)
+target_link_libraries(sdl3_13_ex_3 sdl3_engine)
+chapter_spv_shaders(sdl3_13_ex_3)
+
+add_executable(sdl3_13_ex_camrel_loop ex_camrel_loop.cpp)
+target_link_libraries(sdl3_13_ex_camrel_loop sdl3_engine)
+chapter_spv_shaders(sdl3_13_ex_camrel_loop)

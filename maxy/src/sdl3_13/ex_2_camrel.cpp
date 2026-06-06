@@ -1,3 +1,4 @@
+#include <cmath>
 #include <print>
 #include <string>
 
@@ -11,30 +12,31 @@
 constexpr int        WINDOW_WIDTH     = 800;
 constexpr int        WINDOW_HEIGHT    = 600;
 constexpr SDL_FColor BACKGROUND_COLOR = {0.2f, 0.3f, 0.3f, 1.0f};
-constexpr glm::vec3  LIGHT_POSITION   = {2.0f, 1.0f, -2.0f};
+constexpr float      LIGHT_SPEED      = 2.5f;
 
 struct lighting_t {
     glm::vec4 object_color;
     glm::vec4 light_color;
+    glm::vec4 light_strengths; // x=ambient, y=diffuse, z=specular, w=shininess
 };
 
-constexpr lighting_t LIGHTING = {
-    .object_color = {1.0f, 0.5f, 0.31f, 0.0f},
-    .light_color  = {1.0f, 1.0f, 1.0f, 0.0f},
+struct positions_t {
+    // view_pos removed: in camera-relative world space the camera is at the origin.
+    glm::vec4 light_pos;
 };
 
-// Light pipeline only reads position (location 0); UVs present in buffer but ignored.
-// Pitch stays sizeof(pos_uv_vertex_t) so the GPU advances the same 20 bytes per vertex.
 constexpr SDL_GPUVertexAttribute light_vertex_attributes[] = {
     {.location    = 0,
      .buffer_slot = 0,
      .format      = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
-     .offset      = static_cast<Uint32>(offsetof(pos_uv_vertex_t, position))},
+     .offset      = static_cast<Uint32>(offsetof(pos_normal_uv_vertex_t, position))},
 };
 
 int main(int argc, char *argv[]) {
     auto config        = parse_engine_args(argc, argv);
-    auto engine_result = create_engine("SDL3 12 - Colors", WINDOW_WIDTH, WINDOW_HEIGHT, config);
+    auto engine_result = create_engine(
+        "SDL3 13 - Ex 2 Camrel: Camera-Relative World Space", WINDOW_WIDTH, WINDOW_HEIGHT, config
+    );
     if (!engine_result) {
         std::println(stderr, "{}", engine_result.error());
         return 1;
@@ -45,13 +47,13 @@ int main(int argc, char *argv[]) {
 
     auto cube_pipeline_result = create_pipeline(
         engine, {
-                    .vertex_shader            = "shaders/sdl3_12/colors.vert.spv",
-                    .fragment_shader          = "shaders/sdl3_12/colors.frag.spv",
+                    .vertex_shader            = "shaders/sdl3_13/cube_camrel.vert.spv",
+                    .fragment_shader          = "shaders/sdl3_13/cube_camrel.frag.spv",
                     .vertex_uniform_buffers   = 3,
-                    .fragment_uniform_buffers = 1,
+                    .fragment_uniform_buffers = 2,
                     .fragment_samplers        = 2,
-                    .vertex_buffer_descs      = pos_uv_buffer_descs,
-                    .vertex_attributes        = pos_uv_vertex_attributes,
+                    .vertex_buffer_descs      = pos_normal_uv_buffer_descs,
+                    .vertex_attributes        = pos_normal_uv_vertex_attributes,
                     .enable_depth_test        = true,
                 }
     );
@@ -63,10 +65,10 @@ int main(int argc, char *argv[]) {
 
     auto light_pipeline_result = create_pipeline(
         engine, {
-                    .vertex_shader          = "shaders/sdl3_12/light.vert.spv",
-                    .fragment_shader        = "shaders/sdl3_12/light.frag.spv",
+                    .vertex_shader          = "shaders/sdl3_13/light.vert.spv",
+                    .fragment_shader        = "shaders/sdl3_13/light.frag.spv",
                     .vertex_uniform_buffers = 3,
-                    .vertex_buffer_descs    = pos_uv_buffer_descs,
+                    .vertex_buffer_descs    = pos_normal_uv_buffer_descs,
                     .vertex_attributes      = light_vertex_attributes,
                     .enable_depth_test      = true,
                 }
@@ -78,8 +80,9 @@ int main(int argc, char *argv[]) {
     gpu_pipeline_t light_pipeline = std::move(*light_pipeline_result);
 
     auto geometry_result = create_vertex_geometry(
-        engine, unit_cube.data(), static_cast<Uint32>(unit_cube.size() * sizeof(pos_uv_vertex_t)),
-        static_cast<Uint32>(unit_cube.size())
+        engine, unit_cube_with_normals.data(),
+        static_cast<Uint32>(unit_cube_with_normals.size() * sizeof(pos_normal_uv_vertex_t)),
+        static_cast<Uint32>(unit_cube_with_normals.size())
     );
     if (!geometry_result) {
         std::println(stderr, "{}", geometry_result.error());
@@ -106,9 +109,15 @@ int main(int argc, char *argv[]) {
     }
     tracked_depth_t depth = std::move(*depth_result);
 
-    camera_t camera{{0.0f, 0.0f, 3.0f}};
-    float    time    = 0.0f;
-    bool     focused = true;
+    camera_t   camera{{0.0f, 0.0f, 3.0f}};
+    glm::vec3  light_position = {2.0f, 1.0f, -2.0f};
+    lighting_t lighting       = {
+        .object_color    = {1.0f, 0.5f, 0.31f, 0.0f},
+        .light_color     = {1.0f, 1.0f, 1.0f, 0.0f},
+        .light_strengths = {0.1f, 1.0f, 0.5f, 32.0f},
+    };
+    float time    = 0.0f;
+    bool  focused = true;
 
     while (true) {
         bool      running      = true;
@@ -142,33 +151,79 @@ int main(int argc, char *argv[]) {
         }
         camera.process_scroll(scroll_delta);
 
-        const bool *keys = SDL_GetKeyboardState(nullptr);
+        const bool *keys  = SDL_GetKeyboardState(nullptr);
+        bool        shift = keys[SDL_SCANCODE_LSHIFT] || keys[SDL_SCANCODE_RSHIFT];
+
         if (keys[SDL_SCANCODE_ESCAPE]) break;
         camera.process_keys(keys, dt);
+
+        // Light position: IJKL = XZ strafe, Y/H = up/down.
+        float step = LIGHT_SPEED * dt;
+        if (keys[SDL_SCANCODE_I]) light_position.z -= step;
+        if (keys[SDL_SCANCODE_K]) light_position.z += step;
+        if (keys[SDL_SCANCODE_J]) light_position.x -= step;
+        if (keys[SDL_SCANCODE_L]) light_position.x += step;
+        if (keys[SDL_SCANCODE_Y]) light_position.y += step;
+        if (keys[SDL_SCANCODE_H]) light_position.y -= step;
+
+        // Phong parameter tuning: +Shift = increase, alone = decrease.
+        auto &ls = lighting.light_strengths;
+        if (keys[SDL_SCANCODE_Z]) {
+            ls.x += shift ? 0.01f : -0.01f;
+            std::println("Ambient: {:.3f}", ls.x);
+        }
+        if (keys[SDL_SCANCODE_X]) {
+            ls.y += shift ? 0.01f : -0.01f;
+            std::println("Diffuse: {:.3f}", ls.y);
+        }
+        if (keys[SDL_SCANCODE_C]) {
+            ls.z += shift ? 0.01f : -0.01f;
+            std::println("Specular: {:.3f}", ls.z);
+        }
+        if (keys[SDL_SCANCODE_V]) {
+            ls.w = shift ? ls.w * 2.0f : ls.w / 2.0f;
+            std::println("Shininess: {:.3f}", ls.w);
+        }
+
+        glm::vec3 light_rot = light_position + glm::vec3(std::sin(time), 0.0f, std::cos(time));
 
         auto frame = render_frame(
             engine, BACKGROUND_COLOR, depth.texture,
             [&](SDL_GPUCommandBuffer *cmd_buf, SDL_GPURenderPass *pass) {
-                glm::mat4 view = camera.view_matrix();
+                glm::mat4 full_view = camera.view_matrix();
+                // Strip the translation from the view matrix. Object positions are
+                // already camera-relative, so only the rotation part is needed here.
+                glm::mat4 view = glm::mat4(glm::mat3(full_view));
                 glm::mat4 projection =
                     glm::perspective(glm::radians(camera.fov), aspect_ratio(engine), 0.1f, 100.0f);
 
+                // Subtract camera position so all positions sent to the GPU are
+                // relative to the camera. In a large world this subtraction would be
+                // done in double precision on the CPU to preserve accuracy.
+                positions_t positions{
+                    .light_pos = glm::vec4(light_rot - camera.position, 0.0f),
+                };
+
                 push_vertex_uniform(cmd_buf, 1, view);
                 push_vertex_uniform(cmd_buf, 2, projection);
-                push_fragment_uniform(cmd_buf, 0, LIGHTING);
+                push_fragment_uniform(cmd_buf, 0, lighting);
+                push_fragment_uniform(cmd_buf, 1, positions);
 
                 for (Uint32 i = 0; i < example_cube_positions.size(); ++i) {
-                    float     angle = time * static_cast<float>(i % 3) * 25.0f;
-                    glm::mat4 model = glm::rotate(
-                        glm::translate(glm::mat4(1.0f), example_cube_positions[i]),
-                        glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f)
+                    float angle = time * static_cast<float>(i % 3) * 25.0f;
+                    // Translate to camera-relative position before rotating.
+                    glm::vec3 camrel_pos = example_cube_positions[i] - camera.position;
+                    glm::mat4 model      = glm::rotate(
+                        glm::translate(glm::mat4(1.0f), camrel_pos), glm::radians(angle),
+                        glm::vec3(1.0f, 0.3f, 0.5f)
                     );
                     push_vertex_uniform(cmd_buf, 0, model);
                     draw(cube_pipeline, geometry, material, pass);
                 }
 
-                glm::mat4 light_model =
-                    glm::scale(glm::translate(glm::mat4(1.0f), LIGHT_POSITION), glm::vec3(0.2f));
+                glm::mat4 light_model = glm::scale(
+                    glm::translate(glm::mat4(1.0f), light_rot - camera.position), glm::vec3(0.2f)
+                );
                 push_vertex_uniform(cmd_buf, 0, light_model);
                 push_vertex_uniform(cmd_buf, 1, view);
                 push_vertex_uniform(cmd_buf, 2, projection);

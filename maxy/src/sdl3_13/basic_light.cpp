@@ -16,25 +16,33 @@ constexpr glm::vec3  LIGHT_POSITION   = {2.0f, 1.0f, -2.0f};
 struct lighting_t {
     glm::vec4 object_color;
     glm::vec4 light_color;
+    glm::vec4 light_strengths; // x=ambient, y=diffuse, z=specular, w=shininess
 };
 
 constexpr lighting_t LIGHTING = {
-    .object_color = {1.0f, 0.5f, 0.31f, 0.0f},
-    .light_color  = {1.0f, 1.0f, 1.0f, 0.0f},
+    .object_color    = {1.0f, 0.5f, 0.31f, 0.0f},
+    .light_color     = {1.0f, 1.0f, 1.0f, 0.0f},
+    .light_strengths = {0.1f, 1.0f, 0.5f, 32.0f},
 };
 
-// Light pipeline only reads position (location 0); UVs present in buffer but ignored.
-// Pitch stays sizeof(pos_uv_vertex_t) so the GPU advances the same 20 bytes per vertex.
+struct positions_t {
+    glm::vec4 light_pos;
+    glm::vec4 view_pos;
+};
+
+// Light pipeline reads only position (loc 0); normal and UV bytes are skipped.
+// Pitch stays sizeof(pos_normal_uv_vertex_t) so the GPU advances 32 bytes per vertex.
 constexpr SDL_GPUVertexAttribute light_vertex_attributes[] = {
     {.location    = 0,
      .buffer_slot = 0,
      .format      = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
-     .offset      = static_cast<Uint32>(offsetof(pos_uv_vertex_t, position))},
+     .offset      = static_cast<Uint32>(offsetof(pos_normal_uv_vertex_t, position))},
 };
 
 int main(int argc, char *argv[]) {
-    auto config        = parse_engine_args(argc, argv);
-    auto engine_result = create_engine("SDL3 12 - Colors", WINDOW_WIDTH, WINDOW_HEIGHT, config);
+    auto config = parse_engine_args(argc, argv);
+    auto engine_result =
+        create_engine("SDL3 13 - Basic Lighting", WINDOW_WIDTH, WINDOW_HEIGHT, config);
     if (!engine_result) {
         std::println(stderr, "{}", engine_result.error());
         return 1;
@@ -45,13 +53,13 @@ int main(int argc, char *argv[]) {
 
     auto cube_pipeline_result = create_pipeline(
         engine, {
-                    .vertex_shader            = "shaders/sdl3_12/colors.vert.spv",
-                    .fragment_shader          = "shaders/sdl3_12/colors.frag.spv",
+                    .vertex_shader            = "shaders/sdl3_13/cube.vert.spv",
+                    .fragment_shader          = "shaders/sdl3_13/cube.frag.spv",
                     .vertex_uniform_buffers   = 3,
-                    .fragment_uniform_buffers = 1,
+                    .fragment_uniform_buffers = 2,
                     .fragment_samplers        = 2,
-                    .vertex_buffer_descs      = pos_uv_buffer_descs,
-                    .vertex_attributes        = pos_uv_vertex_attributes,
+                    .vertex_buffer_descs      = pos_normal_uv_buffer_descs,
+                    .vertex_attributes        = pos_normal_uv_vertex_attributes,
                     .enable_depth_test        = true,
                 }
     );
@@ -63,10 +71,10 @@ int main(int argc, char *argv[]) {
 
     auto light_pipeline_result = create_pipeline(
         engine, {
-                    .vertex_shader          = "shaders/sdl3_12/light.vert.spv",
-                    .fragment_shader        = "shaders/sdl3_12/light.frag.spv",
+                    .vertex_shader          = "shaders/sdl3_13/light.vert.spv",
+                    .fragment_shader        = "shaders/sdl3_13/light.frag.spv",
                     .vertex_uniform_buffers = 3,
-                    .vertex_buffer_descs    = pos_uv_buffer_descs,
+                    .vertex_buffer_descs    = pos_normal_uv_buffer_descs,
                     .vertex_attributes      = light_vertex_attributes,
                     .enable_depth_test      = true,
                 }
@@ -78,8 +86,9 @@ int main(int argc, char *argv[]) {
     gpu_pipeline_t light_pipeline = std::move(*light_pipeline_result);
 
     auto geometry_result = create_vertex_geometry(
-        engine, unit_cube.data(), static_cast<Uint32>(unit_cube.size() * sizeof(pos_uv_vertex_t)),
-        static_cast<Uint32>(unit_cube.size())
+        engine, unit_cube_with_normals.data(),
+        static_cast<Uint32>(unit_cube_with_normals.size() * sizeof(pos_normal_uv_vertex_t)),
+        static_cast<Uint32>(unit_cube_with_normals.size())
     );
     if (!geometry_result) {
         std::println(stderr, "{}", geometry_result.error());
@@ -153,9 +162,15 @@ int main(int argc, char *argv[]) {
                 glm::mat4 projection =
                     glm::perspective(glm::radians(camera.fov), aspect_ratio(engine), 0.1f, 100.0f);
 
+                positions_t positions{
+                    .light_pos = glm::vec4(LIGHT_POSITION, 0.0f),
+                    .view_pos  = glm::vec4(camera.position, 0.0f),
+                };
+
                 push_vertex_uniform(cmd_buf, 1, view);
                 push_vertex_uniform(cmd_buf, 2, projection);
                 push_fragment_uniform(cmd_buf, 0, LIGHTING);
+                push_fragment_uniform(cmd_buf, 1, positions);
 
                 for (Uint32 i = 0; i < example_cube_positions.size(); ++i) {
                     float     angle = time * static_cast<float>(i % 3) * 25.0f;

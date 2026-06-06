@@ -125,6 +125,62 @@ bool poll_events() {
     return true;
 }
 
+std::expected<void, std::string> run_loop(
+    engine_t                                                        &engine,
+    SDL_FColor                                                       clear_color,
+    std::function<bool(input_t const &)>                             update,
+    std::function<void(SDL_GPUCommandBuffer *, SDL_GPURenderPass *)> draw
+) {
+    auto depth_result = create_tracked_depth(engine);
+    if (!depth_result) return std::unexpected(depth_result.error());
+    tracked_depth_t depth = std::move(*depth_result);
+
+    SDL_SetWindowRelativeMouseMode(engine.window, true);
+    bool focused = true;
+
+    while (true) {
+        bool      running      = true;
+        float     scroll_delta = 0.0f;
+        SDL_Event event;
+        while (SDL_PollEvent(&event)) {
+            if (event.type == SDL_EVENT_QUIT) running = false;
+            if (event.type == SDL_EVENT_MOUSE_WHEEL) scroll_delta += event.wheel.y;
+            if (event.type == SDL_EVENT_WINDOW_FOCUS_LOST) {
+                focused = false;
+                SDL_SetWindowRelativeMouseMode(engine.window, false);
+            }
+            if (event.type == SDL_EVENT_WINDOW_FOCUS_GAINED) {
+                focused = true;
+                SDL_SetWindowRelativeMouseMode(engine.window, true);
+                float dx, dy;
+                SDL_GetRelativeMouseState(&dx, &dy); // drain delta accumulated while unfocused
+            }
+        }
+        if (!running) break;
+
+        float dt = tick(engine);
+        depth.update(engine);
+
+        float dx = 0.0f, dy = 0.0f;
+        if (focused) SDL_GetRelativeMouseState(&dx, &dy);
+
+        input_t input{
+            .keys         = SDL_GetKeyboardState(nullptr),
+            .dx           = dx,
+            .dy           = -dy,
+            .scroll       = scroll_delta,
+            .dt           = dt,
+            .aspect_ratio = aspect_ratio(engine),
+        };
+
+        if (!update(input)) break;
+
+        if (auto frame = render_frame(engine, clear_color, depth.texture, draw); !frame)
+            return std::unexpected(frame.error());
+    }
+    return {};
+}
+
 float tick(engine_t &engine) {
     Uint64 now       = SDL_GetTicks();
     float  dt        = engine.last_tick == 0 ? 0.0f : (now - engine.last_tick) / 1000.0f;
