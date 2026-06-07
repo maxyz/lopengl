@@ -7,6 +7,7 @@
 
 #include "engine.hpp"
 #include "geometry.hpp"
+#include "lights.hpp"
 
 constexpr int        WINDOW_WIDTH     = 800;
 constexpr int        WINDOW_HEIGHT    = 600;
@@ -32,12 +33,6 @@ struct positions_t {
 
 // Light pipeline reads only position (loc 0); normal and UV bytes are skipped.
 // Pitch stays sizeof(pos_normal_uv_vertex_t) so the GPU advances 32 bytes per vertex.
-constexpr SDL_GPUVertexAttribute light_vertex_attributes[] = {
-    {.location    = 0,
-     .buffer_slot = 0,
-     .format      = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
-     .offset      = static_cast<Uint32>(offsetof(pos_normal_uv_vertex_t, position))},
-};
 
 int main(int argc, char *argv[]) {
     auto config = parse_engine_args(argc, argv);

@@ -7,6 +7,7 @@
 
 #include "engine.hpp"
 #include "geometry.hpp"
+#include "lights.hpp"
 
 // lighting.cpp vs materials.cpp:
 //   The original uses view-space lighting: vertex shader transforms frag_pos,
@@ -29,15 +30,6 @@ struct material_uniforms_t {
     glm::vec4 specular_shininess; // .rgb = specular, .w = shininess
 };
 
-// GPU-safe light_t: position bundled with per-component colors.
-// Matches common/light.hpp light_t but uses vec4 to satisfy std140 alignment.
-struct light_uniforms_t {
-    glm::vec4 ambient;
-    glm::vec4 diffuse;
-    glm::vec4 specular;
-    glm::vec4 position; // camera-relative world space; updated each frame
-};
-
 constexpr material_uniforms_t pearl = {
     .ambient            = {0.25f, 0.20725f, 0.20725f, 0.0f},
     .diffuse            = {1.0f, 0.829f, 0.829f, 0.0f},
@@ -49,13 +41,6 @@ constexpr light_uniforms_t initial_light = {
     .diffuse  = {0.5f, 0.5f, 0.5f, 0.0f},
     .specular = {1.0f, 1.0f, 1.0f, 0.0f},
     .position = {2.0f, 1.0f, -2.0f, 0.0f},
-};
-
-constexpr SDL_GPUVertexAttribute light_vertex_attributes[] = {
-    {.location    = 0,
-     .buffer_slot = 0,
-     .format      = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
-     .offset      = static_cast<Uint32>(offsetof(pos_normal_uv_vertex_t, position))},
 };
 
 struct scene_t {

@@ -9,6 +9,7 @@
 
 #include "engine.hpp"
 #include "geometry.hpp"
+#include "lights.hpp"
 
 constexpr int        WINDOW_WIDTH     = 1024;
 constexpr int        WINDOW_HEIGHT    = 768;
@@ -19,21 +20,7 @@ struct material_uniforms_t {
     glm::vec4 shininess_pad; // .x = shininess, .yzw unused
 };
 
-struct light_uniforms_t {
-    glm::vec4 ambient;
-    glm::vec4 diffuse;
-    glm::vec4 specular;
-    glm::vec4 position; // camera-relative world space; updated each frame
-};
-
 constexpr material_uniforms_t MATERIAL = {.shininess_pad = {64.0f, 0.0f, 0.0f, 0.0f}};
-
-constexpr SDL_GPUVertexAttribute light_vertex_attributes[] = {
-    {.location    = 0,
-     .buffer_slot = 0,
-     .format      = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
-     .offset      = static_cast<Uint32>(offsetof(pos_normal_uv_vertex_t, position))},
-};
 
 struct scene_t {
     gpu_pipeline_t cube_pipeline;

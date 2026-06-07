@@ -8,6 +8,7 @@
 
 #include "engine.hpp"
 #include "geometry.hpp"
+#include "lights.hpp"
 
 constexpr int        WINDOW_WIDTH     = 800;
 constexpr int        WINDOW_HEIGHT    = 600;
@@ -23,13 +24,6 @@ struct vertex_lighting_t {
 // Object color sent to the fragment stage only.
 struct fragment_lighting_t {
     glm::vec4 object_color;
-};
-
-constexpr SDL_GPUVertexAttribute light_vertex_attributes[] = {
-    {.location    = 0,
-     .buffer_slot = 0,
-     .format      = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
-     .offset      = static_cast<Uint32>(offsetof(pos_normal_uv_vertex_t, position))},
 };
 
 int main(int argc, char *argv[]) {

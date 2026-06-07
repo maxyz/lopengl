@@ -7,6 +7,7 @@
 
 #include "engine.hpp"
 #include "geometry.hpp"
+#include "lights.hpp"
 
 constexpr int        WINDOW_WIDTH     = 800;
 constexpr int        WINDOW_HEIGHT    = 600;
@@ -20,13 +21,6 @@ struct material_uniforms_t {
     glm::vec4 ambient;
     glm::vec4 diffuse;
     glm::vec4 specular_shininess; // .rgb = specular, .w = shininess
-};
-
-struct light_uniforms_t {
-    glm::vec4 ambient;
-    glm::vec4 diffuse;
-    glm::vec4 specular;
-    glm::vec4 position; // camera-relative world space; updated each frame
 };
 
 // Pearl surface parameters from physical reflectance tables.
@@ -43,13 +37,6 @@ constexpr light_uniforms_t initial_light = {
     .diffuse  = {0.5f, 0.5f, 0.5f, 0.0f},
     .specular = {1.0f, 1.0f, 1.0f, 0.0f},
     .position = {2.0f, 1.0f, -2.0f, 0.0f},
-};
-
-constexpr SDL_GPUVertexAttribute light_vertex_attributes[] = {
-    {.location    = 0,
-     .buffer_slot = 0,
-     .format      = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
-     .offset      = static_cast<Uint32>(offsetof(pos_normal_uv_vertex_t, position))},
 };
 
 struct scene_t {

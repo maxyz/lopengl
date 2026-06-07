@@ -8,6 +8,7 @@
 
 #include "engine.hpp"
 #include "geometry.hpp"
+#include "lights.hpp"
 
 constexpr int        WINDOW_WIDTH     = 800;
 constexpr int        WINDOW_HEIGHT    = 600;
@@ -22,13 +23,6 @@ struct lighting_t {
 
 struct positions_t {
     glm::vec4 light_pos; // camera-relative; view_pos absent: camera is at origin
-};
-
-constexpr SDL_GPUVertexAttribute light_vertex_attributes[] = {
-    {.location    = 0,
-     .buffer_slot = 0,
-     .format      = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
-     .offset      = static_cast<Uint32>(offsetof(pos_normal_uv_vertex_t, position))},
 };
 
 struct scene_t {

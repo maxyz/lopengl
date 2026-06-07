@@ -9,6 +9,7 @@
 
 #include "engine.hpp"
 #include "geometry.hpp"
+#include "lights.hpp"
 
 constexpr int        WINDOW_WIDTH     = 1024;
 constexpr int        WINDOW_HEIGHT    = 768;
@@ -20,13 +21,6 @@ struct material_uniforms_t {
     float shininess;
     float time;
     float pad[2];
-};
-
-struct light_uniforms_t {
-    glm::vec4 ambient;
-    glm::vec4 diffuse;
-    glm::vec4 specular;
-    glm::vec4 position; // camera-relative world space; updated each frame
 };
 
 constexpr light_uniforms_t INITIAL_LIGHT = {
@@ -43,13 +37,6 @@ light_uniforms_t strobe_light(float time) {
     light.ambient          = glm::vec4(glm::vec3(light.diffuse) * 0.2f, 0.0f);
     return light;
 }
-
-constexpr SDL_GPUVertexAttribute light_vertex_attributes[] = {
-    {.location    = 0,
-     .buffer_slot = 0,
-     .format      = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
-     .offset      = static_cast<Uint32>(offsetof(pos_normal_uv_vertex_t, position))},
-};
 
 struct scene_t {
     gpu_pipeline_t cube_pipeline;
