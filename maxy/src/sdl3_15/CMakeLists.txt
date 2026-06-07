@@ -1,0 +1,23 @@
+add_executable(sdl3_15_diffuse_map diffuse_map.cpp)
+target_link_libraries(sdl3_15_diffuse_map sdl3_engine)
+chapter_spv_shaders(sdl3_15_diffuse_map)
+
+add_executable(sdl3_15_specular_map specular_map.cpp)
+target_link_libraries(sdl3_15_specular_map sdl3_engine)
+chapter_spv_shaders(sdl3_15_specular_map)
+
+add_executable(sdl3_15_light_controls light_controls.cpp)
+target_link_libraries(sdl3_15_light_controls sdl3_engine)
+chapter_spv_shaders(sdl3_15_light_controls)
+
+add_executable(sdl3_15_ex_2 ex_2.cpp)
+target_link_libraries(sdl3_15_ex_2 sdl3_engine)
+chapter_spv_shaders(sdl3_15_ex_2)
+
+add_executable(sdl3_15_emission_map emission_map.cpp)
+target_link_libraries(sdl3_15_emission_map sdl3_engine)
+chapter_spv_shaders(sdl3_15_emission_map)
+
+add_executable(sdl3_15_emission_pulse emission_pulse.cpp)
+target_link_libraries(sdl3_15_emission_pulse sdl3_engine)
+chapter_spv_shaders(sdl3_15_emission_pulse)
