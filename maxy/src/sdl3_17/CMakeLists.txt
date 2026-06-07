@@ -1,0 +1,7 @@
+add_executable(sdl3_17_multiple multiple.cpp)
+target_link_libraries(sdl3_17_multiple sdl3_engine)
+chapter_spv_shaders(sdl3_17_multiple)
+
+add_executable(sdl3_17_ex_1 ex_1.cpp)
+target_link_libraries(sdl3_17_ex_1 sdl3_engine)
+chapter_spv_shaders(sdl3_17_ex_1)

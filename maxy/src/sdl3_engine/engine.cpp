@@ -174,8 +174,11 @@ bool poll_events() {
     return true;
 }
 
-std::expected<void, std::string> run_loop(
-    engine_t &engine, SDL_FColor clear_color, std::function<bool(input_t const &)> update,
+namespace {
+
+std::expected<void, std::string> run_loop_impl(
+    engine_t &engine, std::function<SDL_FColor()> get_clear_color,
+    std::function<bool(input_t const &)> update,
     std::function<void(SDL_GPUCommandBuffer *, SDL_GPURenderPass *)> draw
 ) {
     auto depth_result = create_tracked_depth(engine);
@@ -226,10 +229,27 @@ std::expected<void, std::string> run_loop(
         if (ImGui::GetCurrentContext()) ImGui::Render();
         if (!should_continue) break;
 
-        if (auto frame = render_frame(engine, clear_color, depth.texture, draw); !frame)
+        if (auto frame = render_frame(engine, get_clear_color(), depth.texture, draw); !frame)
             return std::unexpected(frame.error());
     }
     return {};
+}
+
+} // namespace
+
+std::expected<void, std::string> run_loop(
+    engine_t &engine, SDL_FColor clear_color, std::function<bool(input_t const &)> update,
+    std::function<void(SDL_GPUCommandBuffer *, SDL_GPURenderPass *)> draw
+) {
+    return run_loop_impl(engine, [clear_color]() { return clear_color; }, update, draw);
+}
+
+std::expected<void, std::string> run_loop(
+    engine_t &engine, std::function<SDL_FColor()> get_clear_color,
+    std::function<bool(input_t const &)> update,
+    std::function<void(SDL_GPUCommandBuffer *, SDL_GPURenderPass *)> draw
+) {
+    return run_loop_impl(engine, std::move(get_clear_color), update, draw);
 }
 
 float tick(engine_t &engine) {

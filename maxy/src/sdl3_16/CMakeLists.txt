@@ -1,0 +1,11 @@
+add_executable(sdl3_16_directional directional.cpp)
+target_link_libraries(sdl3_16_directional sdl3_engine)
+chapter_spv_shaders(sdl3_16_directional)
+
+add_executable(sdl3_16_positional positional.cpp)
+target_link_libraries(sdl3_16_positional sdl3_engine)
+chapter_spv_shaders(sdl3_16_positional)
+
+add_executable(sdl3_16_spot spot.cpp)
+target_link_libraries(sdl3_16_spot sdl3_engine)
+chapter_spv_shaders(sdl3_16_spot)

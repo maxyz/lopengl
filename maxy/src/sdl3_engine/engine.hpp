@@ -265,6 +265,13 @@ std::expected<void, std::string> run_loop(
     std::function<void(SDL_GPUCommandBuffer *, SDL_GPURenderPass *)> draw
 );
 
+// Variant that queries the clear colour each frame — use when the background changes at runtime.
+std::expected<void, std::string> run_loop(
+    engine_t &engine, std::function<SDL_FColor()> get_clear_color,
+    std::function<bool(input_t const &)> update,
+    std::function<void(SDL_GPUCommandBuffer *, SDL_GPURenderPass *)> draw
+);
+
 // FPS camera with Euler angles. Derives front/right/up axes on every update.
 // process_mouse expects dy already negated for screen-Y-down convention.
 struct camera_t {
