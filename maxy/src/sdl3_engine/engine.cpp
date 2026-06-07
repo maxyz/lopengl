@@ -178,7 +178,7 @@ namespace {
 
 std::expected<void, std::string> run_loop_impl(
     engine_t &engine, std::function<SDL_FColor()> get_clear_color,
-    std::function<bool(input_t const &)> update,
+    std::function<bool(input_t const &)>                             update,
     std::function<void(SDL_GPUCommandBuffer *, SDL_GPURenderPass *)> draw
 ) {
     auto depth_result = create_tracked_depth(engine);
@@ -246,7 +246,7 @@ std::expected<void, std::string> run_loop(
 
 std::expected<void, std::string> run_loop(
     engine_t &engine, std::function<SDL_FColor()> get_clear_color,
-    std::function<bool(input_t const &)> update,
+    std::function<bool(input_t const &)>                             update,
     std::function<void(SDL_GPUCommandBuffer *, SDL_GPURenderPass *)> draw
 ) {
     return run_loop_impl(engine, std::move(get_clear_color), update, draw);
@@ -654,6 +654,35 @@ camera_t::camera_t() {
 camera_t::camera_t(glm::vec3 pos, float yaw_, float pitch_)
     : position(pos), yaw(yaw_), pitch(pitch_) {
     update_vectors();
+}
+
+camera_t::camera_t(SDL_Window *window, glm::vec3 pos, float yaw_, float pitch_)
+    : position(pos), yaw(yaw_), pitch(pitch_), m_window(window) {
+    update_vectors();
+}
+
+glm::mat4 camera_t::rotation_view() const {
+    return glm::mat4(glm::mat3(view_matrix()));
+}
+
+void camera_t::update(input_t const &in) {
+    bool grave = in.keys[SDL_SCANCODE_GRAVE];
+    if (grave && !m_prev_grave) {
+        m_ui_mode = !m_ui_mode;
+        if (!m_ui_mode) {
+            float dx, dy;
+            SDL_GetRelativeMouseState(&dx, &dy); // drain accumulated delta to prevent camera jump
+        }
+    }
+    m_prev_grave = grave;
+
+    if (m_window) SDL_SetWindowRelativeMouseMode(m_window, !m_ui_mode);
+
+    if (!m_ui_mode) {
+        process_keys(in.keys, in.dt);
+        process_mouse(in.dx, in.dy);
+        process_scroll(in.scroll);
+    }
 }
 
 void camera_t::update_vectors() {

@@ -27,9 +27,8 @@ struct scene_t {
     gpu_geometry_t geometry;
     gpu_material_t material;
 
-    camera_t    camera;
-    SDL_Window *m_window       = nullptr;
-    glm::vec3   light_position = {2.0f, 1.0f, 3.0f};
+    camera_t  camera;
+    glm::vec3 light_position = {2.0f, 1.0f, 3.0f};
     // Stored as vec3 for direct use with ImGui value_ptr; packed to vec4 for GPU push.
     glm::vec3 light_ambient   = {0.2f, 0.2f, 0.2f};
     glm::vec3 light_diffuse   = {0.5f, 0.5f, 0.5f};
@@ -39,8 +38,6 @@ struct scene_t {
     float     light_quadratic = 0.032f;
     float     m_time          = 0.0f;
     float     m_aspect_ratio  = static_cast<float>(WINDOW_WIDTH) / WINDOW_HEIGHT;
-    bool      m_ui_mode       = false;
-    bool      m_prev_grave    = false;
 
     bool update(input_t const &in);
     void render(SDL_GPUCommandBuffer *cmd, SDL_GPURenderPass *pass);
@@ -52,22 +49,7 @@ bool scene_t::update(input_t const &in) {
 
     if (in.keys[SDL_SCANCODE_ESCAPE]) return false;
 
-    bool grave = in.keys[SDL_SCANCODE_GRAVE];
-    if (grave && !m_prev_grave) {
-        m_ui_mode = !m_ui_mode;
-        SDL_SetWindowRelativeMouseMode(m_window, !m_ui_mode);
-        if (!m_ui_mode) {
-            float dx, dy;
-            SDL_GetRelativeMouseState(&dx, &dy); // drain accumulated delta to prevent camera jump
-        }
-    }
-    m_prev_grave = grave;
-
-    if (!m_ui_mode) {
-        camera.process_keys(in.keys, in.dt);
-        camera.process_mouse(in.dx, in.dy);
-        camera.process_scroll(in.scroll);
-    }
+    camera.update(in);
 
     float step = LIGHT_SPEED * in.dt;
     if (in.keys[SDL_SCANCODE_I]) light_position.z -= step;
@@ -86,8 +68,8 @@ bool scene_t::update(input_t const &in) {
     ImGui::LabelText(
         "Light", "(%.2f, %.2f, %.2f)", light_position.x, light_position.y, light_position.z
     );
-    ImGui::LabelText("Mode", "%s", m_ui_mode ? "UI (` to fly)" : "Fly (` for UI)");
-    if (m_ui_mode) {
+    ImGui::LabelText("Mode", "%s", camera.ui_mode() ? "UI (` to fly)" : "Fly (` for UI)");
+    if (camera.ui_mode()) {
         ImGui::SeparatorText("Light");
         ImGui::ColorEdit3("Ambient", glm::value_ptr(light_ambient));
         ImGui::ColorEdit3("Diffuse", glm::value_ptr(light_diffuse));
@@ -107,7 +89,7 @@ bool scene_t::update(input_t const &in) {
 }
 
 void scene_t::render(SDL_GPUCommandBuffer *cmd, SDL_GPURenderPass *pass) {
-    glm::mat4 view       = glm::mat4(glm::mat3(camera.view_matrix()));
+    glm::mat4 view       = camera.rotation_view();
     glm::mat4 projection = glm::perspective(glm::radians(camera.fov), m_aspect_ratio, 0.1f, 100.0f);
 
     positional_light_uniforms_t frame_light = {
@@ -150,7 +132,7 @@ void scene_t::render(SDL_GPUCommandBuffer *cmd, SDL_GPURenderPass *pass) {
 
 std::expected<scene_t, std::string> create_scene(engine_t &engine) {
     scene_t scene;
-    scene.m_window = engine.window;
+    scene.camera = camera_t(engine.window);
 
     if (auto r = init_imgui(engine); !r) return std::unexpected(r.error());
     ImGuiIO &io    = ImGui::GetIO();

@@ -231,13 +231,10 @@ struct scene_t {
     gpu_geometry_t pyramid_geometry;
     gpu_material_t material;
 
-    camera_t    camera;
-    SDL_Window *m_window       = nullptr;
-    float       m_time         = 0.0f;
-    float       m_aspect_ratio = static_cast<float>(WINDOW_WIDTH) / WINDOW_HEIGHT;
-    bool        m_ui_mode      = false;
-    bool        m_prev_grave   = false;
-    bool        m_prev_p       = false;
+    camera_t   camera;
+    float      m_time         = 0.0f;
+    float      m_aspect_ratio = static_cast<float>(WINDOW_WIDTH) / WINDOW_HEIGHT;
+    bool       m_prev_p       = false;
     size_t      m_preset_index = 0;
     SDL_FColor  m_clear_color  = presets[0].sky_color;
 
@@ -251,16 +248,7 @@ bool scene_t::update(input_t const &in) {
 
     if (in.keys[SDL_SCANCODE_ESCAPE]) return false;
 
-    bool grave = in.keys[SDL_SCANCODE_GRAVE];
-    if (grave && !m_prev_grave) {
-        m_ui_mode = !m_ui_mode;
-        SDL_SetWindowRelativeMouseMode(m_window, !m_ui_mode);
-        if (!m_ui_mode) {
-            float dx, dy;
-            SDL_GetRelativeMouseState(&dx, &dy); // drain accumulated delta to prevent camera jump
-        }
-    }
-    m_prev_grave = grave;
+    camera.update(in);
 
     bool p = in.keys[SDL_SCANCODE_P];
     if (p && !m_prev_p) {
@@ -274,12 +262,6 @@ bool scene_t::update(input_t const &in) {
     }
     m_prev_p = p;
 
-    if (!m_ui_mode) {
-        camera.process_keys(in.keys, in.dt);
-        camera.process_mouse(in.dx, in.dy);
-        camera.process_scroll(in.scroll);
-    }
-
     preset_t const &preset = presets[m_preset_index];
 
     ImGui::SetNextWindowPos(ImVec2(6.0f, 6.0f), ImGuiCond_Once);
@@ -289,7 +271,7 @@ bool scene_t::update(input_t const &in) {
         "Camera", "(%.2f, %.2f, %.2f)", camera.position.x, camera.position.y, camera.position.z
     );
     ImGui::LabelText("Preset", "%zu: %s  (P / Shift+P)", m_preset_index, preset.name.data());
-    ImGui::LabelText("Mode", "%s", m_ui_mode ? "UI (` to fly)" : "Fly (` for UI)");
+    ImGui::LabelText("Mode", "%s", camera.ui_mode() ? "UI (` to fly)" : "Fly (` for UI)");
     ImGui::PopItemWidth();
     ImGui::End();
 
@@ -297,7 +279,7 @@ bool scene_t::update(input_t const &in) {
 }
 
 void scene_t::render(SDL_GPUCommandBuffer *cmd, SDL_GPURenderPass *pass) {
-    glm::mat4 view       = glm::mat4(glm::mat3(camera.view_matrix()));
+    glm::mat4 view       = camera.rotation_view();
     glm::mat4 projection = glm::perspective(glm::radians(camera.fov), m_aspect_ratio, 0.1f, 100.0f);
 
     preset_t const &preset = presets[m_preset_index];
@@ -390,7 +372,7 @@ void scene_t::render(SDL_GPUCommandBuffer *cmd, SDL_GPURenderPass *pass) {
 
 std::expected<scene_t, std::string> create_scene(engine_t &engine) {
     scene_t scene;
-    scene.m_window = engine.window;
+    scene.camera = camera_t(engine.window);
 
     if (auto r = init_imgui(engine); !r) return std::unexpected(r.error());
     ImGuiIO &io    = ImGui::GetIO();

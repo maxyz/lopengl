@@ -268,7 +268,7 @@ std::expected<void, std::string> run_loop(
 // Variant that queries the clear colour each frame — use when the background changes at runtime.
 std::expected<void, std::string> run_loop(
     engine_t &engine, std::function<SDL_FColor()> get_clear_color,
-    std::function<bool(input_t const &)> update,
+    std::function<bool(input_t const &)>                             update,
     std::function<void(SDL_GPUCommandBuffer *, SDL_GPURenderPass *)> draw
 );
 
@@ -285,12 +285,27 @@ struct camera_t {
 
     camera_t();
     camera_t(glm::vec3 position, float yaw = -90.0f, float pitch = 0.0f);
+    // Construct with a window so update() can manage relative mouse mode automatically.
+    camera_t(
+        SDL_Window *window, glm::vec3 position = {0.0f, 0.0f, 3.0f}, float yaw = -90.0f,
+        float pitch = 0.0f
+    );
 
     glm::vec3 const &front() const { return m_front; }
     glm::vec3 const &right() const { return m_right; }
     glm::vec3 const &up() const { return m_up; }
+    bool             ui_mode() const { return m_ui_mode; }
 
     glm::mat4 view_matrix() const;
+    // Rotation-only view matrix for camera-relative world space rendering.
+    // Use with model matrices built from (world_pos - camera.position) so
+    // the view transform contributes only orientation, not translation.
+    glm::mat4 rotation_view() const;
+
+    // Handles the grave-key UI/fly toggle, relative mouse mode, and per-frame
+    // camera input in a single call. Replaces the 12-line boilerplate that was
+    // copy-pasted into every scene update().
+    void update(input_t const &in);
 
     // Apply mouse delta (pixels). Pass dy already negated for screen-Y-down.
     void process_mouse(float dx, float dy);
@@ -302,10 +317,13 @@ struct camera_t {
     void process_keys(bool const *keys, float dt);
 
 private:
-    glm::vec3 m_front    = {0.0f, 0.0f, -1.0f};
-    glm::vec3 m_right    = {1.0f, 0.0f, 0.0f};
-    glm::vec3 m_up       = {0.0f, 1.0f, 0.0f};
-    glm::vec3 m_world_up = {0.0f, 1.0f, 0.0f};
+    glm::vec3   m_front      = {0.0f, 0.0f, -1.0f};
+    glm::vec3   m_right      = {1.0f, 0.0f, 0.0f};
+    glm::vec3   m_up         = {0.0f, 1.0f, 0.0f};
+    glm::vec3   m_world_up   = {0.0f, 1.0f, 0.0f};
+    SDL_Window *m_window     = nullptr;
+    bool        m_ui_mode    = false;
+    bool        m_prev_grave = false;
 
     void update_vectors();
 };
