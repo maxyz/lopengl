@@ -505,6 +505,24 @@ std::expected<gpu_geometry_t, std::string> create_geometry(
     };
 }
 
+std::expected<gpu_geometry_t, std::string> create_geometry(
+    engine_t const &engine, void const *vertices, Uint32 vertex_size,
+    std::span<uint32_t const> indices
+) {
+    auto vertex_buffer = create_buffer(engine, SDL_GPU_BUFFERUSAGE_VERTEX, vertices, vertex_size);
+    if (!vertex_buffer) return std::unexpected(vertex_buffer.error());
+
+    Uint32 index_size = static_cast<Uint32>(indices.size() * sizeof(uint32_t));
+    auto   index_buffer =
+        create_buffer(engine, SDL_GPU_BUFFERUSAGE_INDEX, indices.data(), index_size);
+    if (!index_buffer) return std::unexpected(index_buffer.error());
+
+    return gpu_geometry_t{
+        std::move(*vertex_buffer), std::move(*index_buffer), static_cast<Uint32>(indices.size()), 0,
+        SDL_GPU_INDEXELEMENTSIZE_32BIT
+    };
+}
+
 std::expected<gpu_geometry_t, std::string> create_vertex_geometry(
     engine_t const &engine, void const *vertices, Uint32 vertex_size, Uint32 vertex_count
 ) {
@@ -551,7 +569,7 @@ void draw(
 
     if (geometry.index_count > 0) {
         SDL_GPUBufferBinding ibinding = {geometry.index_buffer.get(), 0};
-        SDL_BindGPUIndexBuffer(pass, &ibinding, SDL_GPU_INDEXELEMENTSIZE_16BIT);
+        SDL_BindGPUIndexBuffer(pass, &ibinding, geometry.index_element_size);
     }
 
     std::vector<SDL_GPUTextureSamplerBinding> bindings;

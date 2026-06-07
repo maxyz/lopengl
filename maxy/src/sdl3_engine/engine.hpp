@@ -196,16 +196,24 @@ inline void push_fragment_uniform(SDL_GPUCommandBuffer *cmd, Uint32 slot, glm::v
 
 // Vertex and index buffers for a single drawable piece of geometry.
 struct gpu_geometry_t {
-    gpu_buffer_t vertex_buffer;
-    gpu_buffer_t index_buffer;     // empty when drawing without indices
-    Uint32       index_count  = 0; // > 0: SDL_DrawGPUIndexedPrimitives
-    Uint32       vertex_count = 0; // > 0: SDL_DrawGPUPrimitives (non-indexed)
+    gpu_buffer_t            vertex_buffer;
+    gpu_buffer_t            index_buffer;           // empty when drawing without indices
+    Uint32                  index_count        = 0; // > 0: SDL_DrawGPUIndexedPrimitives
+    Uint32                  vertex_count       = 0; // > 0: SDL_DrawGPUPrimitives (non-indexed)
+    SDL_GPUIndexElementSize index_element_size = SDL_GPU_INDEXELEMENTSIZE_16BIT;
 };
 
-// Uploads vertices and indices to the GPU in one shot.
+// Uploads vertices and 16-bit indices to the GPU in one shot.
 std::expected<gpu_geometry_t, std::string> create_geometry(
     engine_t const &engine, void const *vertices, Uint32 vertex_size,
     std::span<uint16_t const> indices
+);
+
+// Uploads vertices and 32-bit indices to the GPU in one shot.
+// Use when index values exceed 65535 (e.g. large loaded models).
+std::expected<gpu_geometry_t, std::string> create_geometry(
+    engine_t const &engine, void const *vertices, Uint32 vertex_size,
+    std::span<uint32_t const> indices
 );
 
 // Uploads vertices only (no index buffer) for glDrawArrays-style drawing.
