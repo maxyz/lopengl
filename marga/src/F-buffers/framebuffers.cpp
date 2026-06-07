@@ -184,7 +184,7 @@ int main()
     //Shader ourShader("shaders/vertex.glsl", "shaders/simple-blending.glsl");
     //Shader ourShader("shaders/vertex.glsl", "shaders/depth-buffer.glsl");
     Shader sourceShader("shaders/source-vertex.glsl", "shaders/source-frag.glsl");
-    Shader quadShader("shaders/quad-vertex.glsl", "shaders/quad-frag.glsl");
+    Shader quadShader("shaders/quad-vertex.glsl", "shaders/quad-edge-frag.glsl");
 
 
 
@@ -301,13 +301,14 @@ int main()
     Texture::flip_vertically();
     Texture marble = Texture("../media/marble.jpg", GL_RGB);
     Texture metal = Texture("../media/metal.png", GL_RGB);
+    Texture wood = Texture("../media/container.jpg", GL_RGB);
 
-    Texture grass = Texture("../media/grass.png", GL_RGBA);
+    /*Texture grass = Texture("../media/grass.png", GL_RGBA);
     grass.set_wrap(GL_CLAMP_TO_EDGE);
 
     Texture windowPane = Texture("../media/blending_transparent_window.png", GL_RGBA);
     Texture windowSpecular = Texture("../media/transparent_window_specular.png", GL_RGBA);
-    windowPane.set_wrap(GL_CLAMP_TO_EDGE);
+    windowPane.set_wrap(GL_CLAMP_TO_EDGE);*/
     
     ourShader.use();
     ourShader.setInt("material.texture_diffuse1", 0);
@@ -379,43 +380,6 @@ int main()
         glClearColor(backgroundColor.x, backgroundColor.y, backgroundColor.z, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        // ImGui dock
-        ImGui_ImplOpenGL3_NewFrame();
-        ImGui_ImplGlfw_NewFrame();
-        ImGui::NewFrame();
-        ImGui::SetNextWindowPos(ImVec2(20.0f, 20.0f), ImGuiCond_Once);
-        ImGui::Begin("Scene information", NULL, ImGuiWindowFlags_AlwaysAutoResize);
-        ImGui::PushItemWidth(150.0f);
-        ImGui::LabelText("Pos","(%.2f, %.2f, %.2f)", camera.Position.x, camera.Position.y, camera.Position.z);
-        ImGui::LabelText("Front","(%.2f, %.2f, %.2f)", camera.Front.x, camera.Front.y, camera.Front.z);
-        // Only show the controls when the mouse is not captured by the camera
-        if (glfwGetInputMode(window, GLFW_CURSOR) != GLFW_CURSOR_DISABLED) {
-            ImGui::ColorEdit3("Background", glm::value_ptr(backgroundColor));
-            ImGui::SliderFloat("Shininess", &material.shininess, 0.0f, 256.0f);
-
-            directionalLight.showImGuiControls("Directional Light");
-            for (int i = 0; i < sizeof(positionalLights)/sizeof(PositionalLight); i++) {
-                positionalLights[i].showImGuiControls(std::format("Positional Light {}", i));
-            }
-            spotLight.showImGuiControls("Spot Light");
-
-            if (ImGui::Button("Desert"))
-                SetLights("Desert", backgroundColor, directionalLight, positionalLights, spotLight);
-            ImGui::SameLine();
-            if (ImGui::Button("Factory"))
-                SetLights("Factory", backgroundColor, directionalLight, positionalLights, spotLight);
-            ImGui::SameLine();
-            if (ImGui::Button("Horror"))
-                SetLights("Horror", backgroundColor, directionalLight, positionalLights, spotLight);
-            ImGui::SameLine();
-            if (ImGui::Button("BioLab"))
-                SetLights("BioLab", backgroundColor, directionalLight, positionalLights, spotLight);
-        }
-        ImGui::SeparatorText("");
-        ImGui::Text("Press TAB to switch modes");
-        ImGui::PopItemWidth();
-        ImGui::End();
-
         ourShader.use();
 
         ourShader.setVec3f("viewPos", glm::value_ptr(camera.Position));
@@ -446,9 +410,9 @@ int main()
         // Draw 2 cubes
         glBindVertexArray(VAO);
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, marble.ID);
+        glBindTexture(GL_TEXTURE_2D, wood.ID);
         glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, marble.ID);
+        glBindTexture(GL_TEXTURE_2D, wood.ID);
         model = glm::translate(model, glm::vec3(-1.5f, 0.0f, -1.5f));
         ourShader.setMatrix4fv("model", glm::value_ptr(model));
         glDrawArrays(GL_TRIANGLES, 0, 36);
@@ -489,6 +453,7 @@ int main()
         glBindVertexArray(0);
 
         // Put the transparent objects into a map to get them sorted by distance
+        /*
         glBindVertexArray(VAO);
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, windowPane.ID);
@@ -502,12 +467,8 @@ int main()
             model = glm::translate(model, it->second);				
             ourShader.setMatrix4fv("model", glm::value_ptr(model));
             glDrawArrays(GL_TRIANGLES, 0, 6);
-        }
+        }*/
         glEnable(GL_CULL_FACE);
-
-        // Render ImGui
-        ImGui::Render();
-        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
         // second pass: use the framebuffer as a texture and render that
         glBindFramebuffer(GL_FRAMEBUFFER, 0); // back to default framebuffer
@@ -520,6 +481,48 @@ int main()
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, textureColorbuffer);
         glDrawArrays(GL_TRIANGLES, 0, 6);  
+
+        // ImGui dock
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+        ImGui::SetNextWindowPos(ImVec2(20.0f, 20.0f), ImGuiCond_Once);
+        ImGui::Begin("Scene information", NULL, ImGuiWindowFlags_AlwaysAutoResize);
+        ImGui::PushItemWidth(150.0f);
+        ImGui::LabelText("Pos","(%.2f, %.2f, %.2f)", camera.Position.x, camera.Position.y, camera.Position.z);
+        ImGui::LabelText("Front","(%.2f, %.2f, %.2f)", camera.Front.x, camera.Front.y, camera.Front.z);
+        // Only show the controls when the mouse is not captured by the camera
+        if (glfwGetInputMode(window, GLFW_CURSOR) != GLFW_CURSOR_DISABLED) {
+            ImGui::ColorEdit3("Background", glm::value_ptr(backgroundColor));
+            ImGui::SliderFloat("Shininess", &material.shininess, 0.0f, 256.0f);
+
+            directionalLight.showImGuiControls("Directional Light");
+            for (int i = 0; i < sizeof(positionalLights)/sizeof(PositionalLight); i++) {
+                positionalLights[i].showImGuiControls(std::format("Positional Light {}", i));
+            }
+            spotLight.showImGuiControls("Spot Light");
+
+            if (ImGui::Button("Desert"))
+                SetLights("Desert", backgroundColor, directionalLight, positionalLights, spotLight);
+            ImGui::SameLine();
+            if (ImGui::Button("Factory"))
+                SetLights("Factory", backgroundColor, directionalLight, positionalLights, spotLight);
+            ImGui::SameLine();
+            if (ImGui::Button("Horror"))
+                SetLights("Horror", backgroundColor, directionalLight, positionalLights, spotLight);
+            ImGui::SameLine();
+            if (ImGui::Button("BioLab"))
+                SetLights("BioLab", backgroundColor, directionalLight, positionalLights, spotLight);
+        }
+        ImGui::SeparatorText("");
+        ImGui::Text("Press TAB to switch modes");
+        ImGui::PopItemWidth();
+        ImGui::End();
+
+        // Render ImGui
+        ImGui::Render();
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
 
         // check and call events and swap buffers
         glfwPollEvents();
