@@ -244,7 +244,11 @@ struct textured_mesh_t {
     gpu_material_t material;
 };
 
-// Bind all parts and issue the indexed draw call.
+// Bind geometry and material and issue the draw call.
+// Caller must have already called SDL_BindGPUGraphicsPipeline.
+void draw(gpu_geometry_t const &geometry, gpu_material_t const &material, SDL_GPURenderPass *pass);
+
+// Convenience overload: binds the pipeline then draws.
 void draw(
     gpu_pipeline_t const &pipeline, gpu_geometry_t const &geometry, gpu_material_t const &material,
     SDL_GPURenderPass *pass

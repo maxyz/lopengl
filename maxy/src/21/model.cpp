@@ -15,23 +15,23 @@
 
 #include "common/common.hpp"
 
-constexpr const char *TITLE = "Model loading example";
-constexpr GLuint WIDTH = 1024;
-constexpr GLuint HEIGHT = 768;
+constexpr const char *TITLE  = "Model loading example";
+constexpr GLuint      WIDTH  = 1024;
+constexpr GLuint      HEIGHT = 768;
 
 struct model_preset_t {
     glm::vec3 position;
-    float scale;
+    float     scale;
 };
 struct preset_t {
-    std::string name;
-    glm::vec4 clear_color;
+    std::string    name;
+    glm::vec4      clear_color;
     model_preset_t model;
 };
 
 struct state_t {
-    window_state_t window = {.viewport = {.width = WIDTH, .height = HEIGHT}};
-    size_t preset_index = 0;
+    window_state_t window       = {.viewport = {.width = WIDTH, .height = HEIGHT}};
+    size_t         preset_index = 0;
 };
 state_t state;
 
@@ -39,23 +39,22 @@ class SceneRenderer {
 public:
     static std::expected<SceneRenderer, std::string> create(GLFWwindow *window);
 
-    SceneRenderer(const SceneRenderer &) = delete;
+    SceneRenderer(const SceneRenderer &)            = delete;
     SceneRenderer &operator=(const SceneRenderer &) = delete;
-    SceneRenderer(SceneRenderer &&o) noexcept = default;
-    SceneRenderer &operator=(SceneRenderer &&) = default;
-    ~SceneRenderer() noexcept = default;
+    SceneRenderer(SceneRenderer &&o) noexcept       = default;
+    SceneRenderer &operator=(SceneRenderer &&)      = default;
+    ~SceneRenderer() noexcept                       = default;
 
     void render(input_t input, float delta);
 
 private:
     GLFWwindow *m_window{};
-    Shader m_shader{};
-    Model m_model;
+    Shader      m_shader{};
+    Model       m_model;
 
     SceneRenderer(GLFWwindow *window, Shader shader, Model model)
         : m_window{window}, m_shader{std::move(shader)}, m_model{std::move(model)} {};
 
-    static SceneRenderer setup_gl(GLFWwindow *window, Shader shader, Model model);
     void render_scene();
     void render_imgui();
 };
@@ -82,11 +81,11 @@ int main() {
 
 const std::array<preset_t, 1> presets = {{
     {
-        .name = "simple",
+        .name        = "simple",
         .clear_color = glm::vec4(.75f, .52f, .3f, 1.f),
-        .model = {
+        .model       = {
             .position = glm::vec3(0.f, 0.f, 0.f),
-            .scale = 1.f,
+            .scale    = 1.f,
         },
     },
 }};
@@ -100,11 +99,7 @@ std::expected<SceneRenderer, std::string> SceneRenderer::create(GLFWwindow *wind
     if (!model) {
         return std::unexpected(model.error());
     }
-    return setup_gl(window, std::move(*shader), std::move(*model));
-}
-
-SceneRenderer SceneRenderer::setup_gl(GLFWwindow *window, Shader shader, Model model) {
-    return SceneRenderer{window, std::move(shader), std::move(model)};
+    return SceneRenderer{window, std::move(*shader), std::move(*model)};
 }
 
 void SceneRenderer::render(input_t input, float delta) {
@@ -123,9 +118,9 @@ void SceneRenderer::render(input_t input, float delta) {
 
 void SceneRenderer::render_scene() {
     m_shader.use();
-    const preset_t &preset = presets[state.preset_index];
-    glm::mat4 view = state.window.camera.get_view_matrix();
-    glm::mat4 projection = glm::perspective(
+    const preset_t &preset     = presets[state.preset_index];
+    glm::mat4       view       = state.window.camera.get_view_matrix();
+    glm::mat4       projection = glm::perspective(
         glm::radians(state.window.camera.fov),
         static_cast<float>(state.window.viewport.width) /
             static_cast<float>(state.window.viewport.height),
@@ -135,8 +130,8 @@ void SceneRenderer::render_scene() {
     m_shader.set_mat4("projection", projection);
 
     glm::mat4 model_transform = glm::mat4(1.f);
-    model_transform = glm::translate(model_transform, preset.model.position);
-    model_transform = glm::scale(model_transform, glm::vec3(preset.model.scale));
+    model_transform           = glm::translate(model_transform, preset.model.position);
+    model_transform           = glm::scale(model_transform, glm::vec3(preset.model.scale));
     m_shader.set_mat4("model", model_transform);
 
     m_model.draw(m_shader);
@@ -147,8 +142,8 @@ void SceneRenderer::render_imgui() {
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
 
-    ImGuiIO &io = ImGui::GetIO();
-    bool cam_mode = glfwGetInputMode(m_window, GLFW_CURSOR) == GLFW_CURSOR_DISABLED;
+    ImGuiIO &io       = ImGui::GetIO();
+    bool     cam_mode = glfwGetInputMode(m_window, GLFW_CURSOR) == GLFW_CURSOR_DISABLED;
 
     if (cam_mode) {
         io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;

@@ -558,12 +558,7 @@ create_material(engine_t const &engine, material_desc_t desc) {
     return gpu_material_t{std::move(textures), std::move(samplers)};
 }
 
-void draw(
-    gpu_pipeline_t const &pipeline, gpu_geometry_t const &geometry, gpu_material_t const &material,
-    SDL_GPURenderPass *pass
-) {
-    SDL_BindGPUGraphicsPipeline(pass, pipeline.get());
-
+void draw(gpu_geometry_t const &geometry, gpu_material_t const &material, SDL_GPURenderPass *pass) {
     SDL_GPUBufferBinding vbinding = {geometry.vertex_buffer.get(), 0};
     SDL_BindGPUVertexBuffers(pass, 0, &vbinding, 1);
 
@@ -582,6 +577,14 @@ void draw(
         SDL_DrawGPUIndexedPrimitives(pass, geometry.index_count, 1, 0, 0, 0);
     else
         SDL_DrawGPUPrimitives(pass, geometry.vertex_count, 1, 0, 0);
+}
+
+void draw(
+    gpu_pipeline_t const &pipeline, gpu_geometry_t const &geometry, gpu_material_t const &material,
+    SDL_GPURenderPass *pass
+) {
+    SDL_BindGPUGraphicsPipeline(pass, pipeline.get());
+    draw(geometry, material, pass);
 }
 
 std::expected<gpu_texture_t, std::string>
