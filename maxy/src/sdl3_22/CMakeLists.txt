@@ -1,0 +1,11 @@
+add_executable(sdl3_22_depth depth.cpp)
+target_link_libraries(sdl3_22_depth sdl3_engine)
+chapter_spv_shaders(sdl3_22_depth)
+
+add_executable(sdl3_22_linear linear.cpp)
+target_link_libraries(sdl3_22_linear sdl3_engine)
+chapter_spv_shaders(sdl3_22_linear)
+
+add_executable(sdl3_22_multi_light multi_light.cpp)
+target_link_libraries(sdl3_22_multi_light sdl3_engine)
+chapter_spv_shaders(sdl3_22_multi_light)

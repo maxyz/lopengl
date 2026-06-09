@@ -41,8 +41,8 @@ bool scene_t::update(input_t const &in) {
 }
 
 void scene_t::render(SDL_GPUCommandBuffer *cmd, SDL_GPURenderPass *pass) {
-    glm::mat4 model_mat  = glm::mat4(1.0f);
-    glm::mat4 view       = camera.view_matrix();
+    glm::mat4 model_mat  = glm::translate(glm::mat4(1.0f), -camera.position);
+    glm::mat4 view       = camera.rotation_view();
     glm::mat4 projection = glm::perspective(glm::radians(camera.fov), m_aspect_ratio, 0.1f, 100.0f);
 
     SDL_BindGPUGraphicsPipeline(pass, pipeline.get());

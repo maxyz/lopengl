@@ -50,6 +50,22 @@ struct spot_light_uniforms_t {
     float     pad[3];
 };
 
+// Camera-attached spotlight. Position is implicitly vec3(0) in camera-relative world space.
+// Direction is camera.front(), updated each frame.
+// 4 vec4s (64 B) + 5 floats (20 B) + 3 pad floats (12 B) = 96 B (std140 multiple of 16).
+struct flashlight_uniforms_t {
+    glm::vec4 direction; // camera.front() in camera-relative world space; updated each frame
+    glm::vec4 ambient;
+    glm::vec4 diffuse;
+    glm::vec4 specular;
+    float     cutoff;       // cos(inner_angle)
+    float     outer_cutoff; // cos(outer_angle)
+    float     constant;
+    float     linear;
+    float     quadratic;
+    float     pad[3];
+};
+
 // Position-only vertex attribute for the light-indicator cube pipeline.
 // Reuses the same VBO as the scene cube; only the position channel is read.
 inline constexpr SDL_GPUVertexAttribute light_vertex_attributes[] = {

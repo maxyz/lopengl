@@ -164,7 +164,8 @@ struct pipeline_desc_t {
     // When empty, defaults to one vertex_t (float3) at location 0.
     std::span<SDL_GPUVertexBufferDescription const> vertex_buffer_descs = {};
     std::span<SDL_GPUVertexAttribute const>         vertex_attributes   = {};
-    bool enable_depth_test = false; // enables depth test + write with LESS compare op
+    bool             enable_depth_test = false;                     // enables depth test + write
+    SDL_GPUCompareOp depth_compare_op  = SDL_GPU_COMPAREOP_LESS; // only used when enable_depth_test
 };
 
 std::expected<gpu_pipeline_t, std::string>

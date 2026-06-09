@@ -18,44 +18,44 @@
 
 #include "common/common.hpp"
 
-constexpr const char *TITLE = "Transparent windows";
-constexpr GLuint WIDTH = 1024;
-constexpr GLuint HEIGHT = 768;
+constexpr const char *TITLE  = "Transparent windows";
+constexpr GLuint      WIDTH  = 1024;
+constexpr GLuint      HEIGHT = 768;
 
 struct model_preset_t {
     glm::vec3 position;
-    float scale;
+    float     scale;
 };
 struct preset_t {
-    std::string name;
-    glm::vec4 clear_color;
-    std::vector<model_preset_t> cubes;
-    std::vector<model_preset_t> windows;
-    model_preset_t plane;
-    light_directional_t dir_light;
+    std::string                     name;
+    glm::vec4                       clear_color;
+    std::vector<model_preset_t>     cubes;
+    std::vector<model_preset_t>     windows;
+    model_preset_t                  plane;
+    light_directional_t             dir_light;
     std::vector<light_positional_t> pos_lights;
-    std::vector<light_spot_t> spot_lights;
-    flashlight_t flashlight;
+    std::vector<light_spot_t>       spot_lights;
+    flashlight_t                    flashlight;
 };
 
 struct depth_mode_t {
     std::string name;
-    GLenum mode;
+    GLenum      mode;
 };
 
-constexpr int MAX_POS_LIGHTS = 16;
+constexpr int MAX_POS_LIGHTS  = 16;
 constexpr int MAX_SPOT_LIGHTS = 8;
 
 struct state_t {
     window_state_t window = {
         .viewport = {.width = WIDTH, .height = HEIGHT},
-        .camera = Camera{glm::vec3(0.f, .5f, 3.f)},
+        .camera   = Camera{glm::vec3(0.f, .5f, 3.f)},
     };
-    size_t preset_index = 0;
-    size_t depth_mode_index = 2; // Initial value set to less
+    size_t                          preset_index     = 0;
+    size_t                          depth_mode_index = 2; // Initial value set to less
     std::vector<light_positional_t> pos_lights{};
-    std::vector<light_spot_t> spot_lights{};
-    bool flashlight_on = true;
+    std::vector<light_spot_t>       spot_lights{};
+    bool                            flashlight_on = true;
 };
 state_t state;
 
@@ -88,10 +88,10 @@ class SceneRenderer {
 public:
     static std::expected<std::unique_ptr<SceneRenderer>, std::string> create(GLFWwindow *window);
 
-    SceneRenderer(const SceneRenderer &) = delete;
+    SceneRenderer(const SceneRenderer &)            = delete;
     SceneRenderer &operator=(const SceneRenderer &) = delete;
-    SceneRenderer(SceneRenderer &&o) noexcept = delete;
-    SceneRenderer &operator=(SceneRenderer &&o) = delete;
+    SceneRenderer(SceneRenderer &&o) noexcept       = delete;
+    SceneRenderer &operator=(SceneRenderer &&o)     = delete;
     ~SceneRenderer() noexcept {
         glDeleteVertexArrays(5, &m_vaos.cube);
         glDeleteBuffers(5, &m_vbos.cube);
@@ -101,10 +101,10 @@ public:
 
 private:
     GLFWwindow *m_window{};
-    shaders_t m_shaders;
-    textures_t m_textures{};
-    vaos_t m_vaos;
-    vbos_t m_vbos;
+    shaders_t   m_shaders;
+    textures_t  m_textures{};
+    vaos_t      m_vaos;
+    vbos_t      m_vbos;
 
     SceneRenderer(
         GLFWwindow *window, shaders_t shaders, textures_t textures, vaos_t vaos, vbos_t vbos
@@ -157,7 +157,7 @@ const std::vector<model_preset_t> biochemical_windows = {
 };
 const model_preset_t simple_plane = {
     .position = glm::vec3(0.f, 0.f, 0.f),
-    .scale = 1.f,
+    .scale    = 1.f,
 };
 
 // Far clip is 100 units; ±500 ensures the floor edge is never visible.
@@ -387,7 +387,7 @@ const std::array<depth_mode_t, 8> depth_modes = {{
 }};
 
 id_t generate_white_texture() {
-    id_t texture{};
+    id_t              texture{};
     constexpr uint8_t white_pixel[] = {255, 255, 255};
     glGenTextures(1, &texture);
     glBindTexture(GL_TEXTURE_2D, texture);
@@ -414,9 +414,9 @@ std::expected<textures_t, std::string> load_textures() {
     }
     return textures_t{
         .marble = *marble_texture,
-        .metal = *metal_texture,
+        .metal  = *metal_texture,
         .window = *window_texture,
-        .white = generate_white_texture(),
+        .white  = generate_white_texture(),
     };
 }
 
@@ -491,7 +491,7 @@ SceneRenderer::create(GLFWwindow *window) {
     auto [vaos, vbos] = load_buffers();
 
     shaders_t shaders{
-        .view = std::move(*view_shader),
+        .view         = std::move(*view_shader),
         .light_marker = std::move(*light_marker_shader),
     };
     shaders.view.use();
@@ -533,7 +533,7 @@ void SceneRenderer::render_fill_pass() {
 void SceneRenderer::render_scene_set_lighting() {
     const preset_t &preset = presets[state.preset_index];
 
-    glm::mat4 view = state.window.camera.get_view_matrix();
+    glm::mat4 view       = state.window.camera.get_view_matrix();
     glm::mat4 projection = glm::perspective(
         glm::radians(state.window.camera.fov),
         static_cast<float>(state.window.viewport.width) /
@@ -567,7 +567,7 @@ void SceneRenderer::render_scene_set_lighting() {
 }
 
 void SceneRenderer::render_scene_draw_lights() {
-    glm::mat4 view = state.window.camera.get_view_matrix();
+    glm::mat4 view       = state.window.camera.get_view_matrix();
     glm::mat4 projection = glm::perspective(
         glm::radians(state.window.camera.fov),
         static_cast<float>(state.window.viewport.width) /
@@ -592,7 +592,7 @@ void SceneRenderer::render_scene_draw_lights() {
     glBindVertexArray(m_vaos.pyramid);
     for (const light_spot_t &spot_light : state.spot_lights) {
         glm::mat4 look_at = glm::lookAt(glm::vec3(0.f), spot_light.direction, glm::vec3(0, 1, 0));
-        glm::mat4 model = glm::scale(
+        glm::mat4 model   = glm::scale(
             glm::translate(glm::mat4(1.f), spot_light.position) * glm::inverse(look_at),
             glm::vec3(.2f)
         );
@@ -613,8 +613,8 @@ void SceneRenderer::render_scene_draw_cubes() {
 
     for (const auto &model_info : preset.cubes) {
         glm::mat4 model_transform = glm::mat4(1.f);
-        model_transform = glm::translate(model_transform, model_info.position);
-        model_transform = glm::scale(model_transform, glm::vec3(model_info.scale));
+        model_transform           = glm::translate(model_transform, model_info.position);
+        model_transform           = glm::scale(model_transform, glm::vec3(model_info.scale));
         m_shaders.view.set_mat4("model", model_transform);
         glDrawArrays(GL_TRIANGLES, 0, cube_vertices.size());
     }
@@ -673,10 +673,10 @@ void SceneRenderer::render_scene_draw_plane() {
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, m_textures.metal);
 
-    const auto &model_info = preset.plane;
-    glm::mat4 model_transform = glm::mat4(1.f);
-    model_transform = glm::translate(model_transform, model_info.position);
-    model_transform = glm::scale(model_transform, glm::vec3(model_info.scale));
+    const auto &model_info      = preset.plane;
+    glm::mat4   model_transform = glm::mat4(1.f);
+    model_transform             = glm::translate(model_transform, model_info.position);
+    model_transform             = glm::scale(model_transform, glm::vec3(model_info.scale));
 
     m_shaders.view.set_mat4("model", model_transform);
     glEnable(GL_POLYGON_OFFSET_FILL);
@@ -686,9 +686,9 @@ void SceneRenderer::render_scene_draw_plane() {
 }
 
 void SceneRenderer::render_imgui() {
-    ImGuiIO &io = ImGui::GetIO();
-    auto cursor_input_mode = glfwGetInputMode(m_window, GLFW_CURSOR);
-    bool camera_mode = cursor_input_mode != GLFW_CURSOR_NORMAL;
+    ImGuiIO &io                = ImGui::GetIO();
+    auto     cursor_input_mode = glfwGetInputMode(m_window, GLFW_CURSOR);
+    bool     camera_mode       = cursor_input_mode != GLFW_CURSOR_NORMAL;
 
     if (camera_mode) {
         io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;

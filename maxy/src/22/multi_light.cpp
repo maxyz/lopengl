@@ -1,7 +1,6 @@
 #include <expected>
 #include <glm/geometric.hpp>
 #include <iostream>
-#include <random>
 #include <utility>
 #include <vector>
 
@@ -19,19 +18,19 @@
 
 #include "common/common.hpp"
 
-const char *TITLE = "LOpenGL";
-const GLuint WIDTH = 1024;
-const GLuint HEIGHT = 768;
-constexpr int MAX_POS_LIGHTS = 16;
+const char   *TITLE           = "LOpenGL";
+const GLuint  WIDTH           = 1024;
+const GLuint  HEIGHT          = 768;
+constexpr int MAX_POS_LIGHTS  = 16;
 constexpr int MAX_SPOT_LIGHTS = 8;
 
 struct preset_t {
-    std::string name;
-    glm::vec4 clear_color;
-    light_directional_t dir_light;
+    std::string                       name;
+    glm::vec4                         clear_color;
+    light_directional_t               dir_light;
     std::array<light_positional_t, 4> pos_lights;
-    std::array<light_spot_t, 2> spot_lights;
-    flashlight_t flashlight;
+    std::array<light_spot_t, 2>       spot_lights;
+    flashlight_t                      flashlight;
 };
 
 const std::array<preset_t, 4> presets = {
@@ -336,10 +335,10 @@ const std::array<preset_t, 4> presets = {
     }};
 
 struct state_t {
-    window_state_t window = {.viewport = {.width = WIDTH, .height = HEIGHT}};
-    size_t preset_index = 0;
+    window_state_t                  window       = {.viewport = {.width = WIDTH, .height = HEIGHT}};
+    size_t                          preset_index = 0;
     std::vector<light_positional_t> pos_lights{};
-    std::vector<light_spot_t> spot_lights{};
+    std::vector<light_spot_t>       spot_lights{};
 };
 // Global state
 state_t state;
@@ -354,7 +353,7 @@ class SceneRenderer {
 public:
     static std::expected<SceneRenderer, std::string> create(GLFWwindow *window);
 
-    SceneRenderer(const SceneRenderer &) = delete;
+    SceneRenderer(const SceneRenderer &)            = delete;
     SceneRenderer &operator=(const SceneRenderer &) = delete;
     SceneRenderer(SceneRenderer &&o) noexcept
         : m_programs(std::exchange(o.m_programs, {})), m_vaos(std::exchange(o.m_vaos, {})),
@@ -383,12 +382,12 @@ private:
         id_t specular{};
     };
 
-    programs_t m_programs{};
-    vaos_t m_vaos{};
-    textures_t m_textures{};
-    id_t m_vbo{};
-    id_t m_pyramid_vbo{};
-    id_t m_pyramid_ebo{};
+    programs_t  m_programs{};
+    vaos_t      m_vaos{};
+    textures_t  m_textures{};
+    id_t        m_vbo{};
+    id_t        m_pyramid_vbo{};
+    id_t        m_pyramid_ebo{};
     GLFWwindow *m_window{};
 
     SceneRenderer() = default;
@@ -412,9 +411,9 @@ std::expected<SceneRenderer, std::string> SceneRenderer::create(GLFWwindow *wind
     struct build_t {
         Shader shader;
         Shader light_shader;
-        id_t diffuse{};
-        id_t specular{};
-        id_t metal{};
+        id_t   diffuse{};
+        id_t   specular{};
+        id_t   metal{};
     };
 
     return Shader::build("shaders/22_multiple.vert", "shaders/22_multiple.frag")
@@ -502,20 +501,20 @@ SceneRenderer SceneRenderer::setup_gl(
     shader.set_int("material.diffuse", 0);
 
     SceneRenderer r;
-    r.m_programs = {.view = std::move(shader), .light = std::move(light_shader)};
-    r.m_vaos = {.cube = cube_vao, .pyramid = pyramid_vao, .light = light_vao};
-    r.m_textures = {.diffuse = diffuse, .specular = specular};
-    r.m_vbo = vbo;
+    r.m_programs    = {.view = std::move(shader), .light = std::move(light_shader)};
+    r.m_vaos        = {.cube = cube_vao, .pyramid = pyramid_vao, .light = light_vao};
+    r.m_textures    = {.diffuse = diffuse, .specular = specular};
+    r.m_vbo         = vbo;
     r.m_pyramid_vbo = pyramid_vbo;
     r.m_pyramid_ebo = pyramid_ebo;
-    r.m_window = window;
+    r.m_window      = window;
     return r;
 }
 
 void SceneRenderer::render_scene() {
-    const preset_t &preset = presets[state.preset_index];
-    glm::mat4 view = state.window.camera.get_view_matrix();
-    glm::mat4 projection = glm::perspective(
+    const preset_t &preset     = presets[state.preset_index];
+    glm::mat4       view       = state.window.camera.get_view_matrix();
+    glm::mat4       projection = glm::perspective(
         glm::radians(state.window.camera.fov),
         static_cast<float>(state.window.viewport.width) /
             static_cast<float>(state.window.viewport.height),
@@ -569,7 +568,7 @@ void SceneRenderer::render_scene_draw_lights(
     glBindVertexArray(m_vaos.light);
     for (unsigned int i = 0; i < state.pos_lights.size(); ++i) {
         const light_positional_t &pos_light = state.pos_lights[i];
-        glm::mat4 model =
+        glm::mat4                 model =
             glm::scale(glm::translate(glm::mat4(1.f), pos_light.position), glm::vec3(.2f));
         set_mat4(m_programs.light.program_id(), "model", model);
         set_positional_light(m_programs.light.program_id(), "light", pos_light);
@@ -580,7 +579,7 @@ void SceneRenderer::render_scene_draw_lights(
     for (unsigned int i = 0; i < state.spot_lights.size(); ++i) {
         const light_spot_t &spot_light = state.spot_lights[i];
         glm::mat4 look_at = glm::lookAt(glm::vec3(0.f), spot_light.direction, glm::vec3(0, 1, 0));
-        glm::mat4 model = glm::scale(
+        glm::mat4 model   = glm::scale(
             glm::translate(glm::mat4(1.f), spot_light.position) * glm::inverse(look_at),
             glm::vec3(.2f)
         );
@@ -594,7 +593,7 @@ void SceneRenderer::render_scene_draw_cubes() {
     m_programs.view.use();
     glBindVertexArray(m_vaos.cube);
     for (unsigned int i = 0; i < 10; ++i) {
-        float angle = glfwGetTime() * (i % 3) * 25.f;
+        float     angle = glfwGetTime() * (i % 3) * 25.f;
         glm::mat4 model = glm::rotate(
             glm::translate(glm::mat4(1.f), example_cube_positions[i]), glm::radians(angle),
             glm::vec3(1.f, .3f, .5f)
@@ -609,8 +608,8 @@ void SceneRenderer::render_imgui() {
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
 
-    ImGuiIO &io = ImGui::GetIO();
-    bool cam_mode = glfwGetInputMode(m_window, GLFW_CURSOR) == GLFW_CURSOR_DISABLED;
+    ImGuiIO &io       = ImGui::GetIO();
+    bool     cam_mode = glfwGetInputMode(m_window, GLFW_CURSOR) == GLFW_CURSOR_DISABLED;
 
     if (cam_mode) {
         io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;

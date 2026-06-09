@@ -380,7 +380,7 @@ create_pipeline(engine_t const &engine, pipeline_desc_t const &desc) {
     info.target_info.color_target_descriptions         = &color_target;
     info.target_info.num_color_targets                 = 1;
     if (desc.enable_depth_test) {
-        info.depth_stencil_state.compare_op         = SDL_GPU_COMPAREOP_LESS;
+        info.depth_stencil_state.compare_op         = desc.depth_compare_op;
         info.depth_stencil_state.enable_depth_test  = true;
         info.depth_stencil_state.enable_depth_write = true;
         info.target_info.depth_stencil_format       = SDL_GPU_TEXTUREFORMAT_D32_FLOAT;
@@ -745,7 +745,7 @@ void camera_t::process_keys(bool const *keys, float dt) {
         if (keys[SDL_SCANCODE_S]) position -= m_front * velocity;
         if (keys[SDL_SCANCODE_A]) position -= m_right * velocity;
         if (keys[SDL_SCANCODE_D]) position += m_right * velocity;
-        if (keys[SDL_SCANCODE_R]) position += m_up * velocity;
-        if (keys[SDL_SCANCODE_F]) position -= m_up * velocity;
+        if (keys[SDL_SCANCODE_E]) position += m_up * velocity;
+        if (keys[SDL_SCANCODE_Q]) position -= m_up * velocity;
     }
 }

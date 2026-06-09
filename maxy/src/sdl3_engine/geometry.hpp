@@ -39,6 +39,17 @@ struct pos_normal_uv_vertex_t {
     uv_t     uv;       // location 2
 };
 
+// Tiled floor plane: 10x10 quad at y=0, normal up, UV tiles 2x in each direction.
+// Use with a REPEAT sampler (the engine default) for a seamless tile effect.
+inline constexpr std::array<pos_normal_uv_vertex_t, 6> floor_plane_vertices = {{
+    {{5.f, 0.f, 5.f}, {0.f, 1.f, 0.f}, {2.f, 0.f}},
+    {{-5.f, 0.f, -5.f}, {0.f, 1.f, 0.f}, {0.f, 2.f}},
+    {{-5.f, 0.f, 5.f}, {0.f, 1.f, 0.f}, {0.f, 0.f}},
+    {{5.f, 0.f, 5.f}, {0.f, 1.f, 0.f}, {2.f, 0.f}},
+    {{5.f, 0.f, -5.f}, {0.f, 1.f, 0.f}, {2.f, 2.f}},
+    {{-5.f, 0.f, -5.f}, {0.f, 1.f, 0.f}, {0.f, 2.f}},
+}};
+
 // 10 world-space positions used across tutorial chapters 9 and 10.
 inline constexpr std::array<glm::vec3, 10> example_cube_positions = {{
     {0.0f, 0.0f, 0.0f},
