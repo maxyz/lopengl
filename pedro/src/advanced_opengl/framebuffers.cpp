@@ -87,10 +87,15 @@ int main()
     glDepthFunc(GL_LESS);
 
     // Setup Shaders
-    Shader shader("shaders/shader01.vs", "shaders/shader01.frag");
-    Shader depthShader("shaders/shader01.vs", "shaders/depthShader.frag");
+    Shader renderShader("shaders/shader01.vs", "shaders/shader01.frag");
+    Shader postShaderDefault("shaders/post1.vs", "shaders/postDefault.frag");
+    Shader postShaderInverse("shaders/post1.vs", "shaders/postInverse.frag");
+    Shader postShaderGreyscale("shaders/post1.vs", "shaders/postGreyscale.frag");
+    Shader postShaderKernel1("shaders/post1.vs", "shaders/postKernel1.frag");
+    Shader postShaderKernel2("shaders/post1.vs", "shaders/postKernel2.frag");
 
-    std::vector<Shader> shaders = {shader, depthShader};
+    std::vector<Shader> postprocShaders = {postShaderDefault, postShaderInverse, postShaderGreyscale, postShaderKernel1, postShaderKernel2};
+
     uint current_shader = 0;
 
     float cubeVertices[] = {
@@ -149,6 +154,17 @@ int main()
         5.0f, -0.5f, -5.0f,  1.0f, 1.0f								
     };
     
+    float quadVertices[] = {
+    // positions   // texCoords
+        -1.0f,  1.0f,  0.0f, 1.0f,
+        -1.0f, -1.0f,  0.0f, 0.0f,
+        1.0f, -1.0f,  1.0f, 0.0f,
+
+        -1.0f,  1.0f,  0.0f, 1.0f,
+        1.0f, -1.0f,  1.0f, 0.0f,
+        1.0f,  1.0f,  1.0f, 1.0f
+    };
+
     // cube VAO
     unsigned int cubeVAO, cubeVBO;
     glGenVertexArrays(1, &cubeVAO);
@@ -174,12 +190,45 @@ int main()
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
     glBindVertexArray(0);
     // glm::mat4 source_rotation = glm::rotate(glm::mat4(1.0f), (float)glm::radians(1.5), glm::vec3(0.0f,1.0f,0.0f));
+    unsigned int quadVAO, quadVBO;
+    glGenVertexArrays(1, &quadVAO);
+    glGenBuffers(1, &quadVBO);
+    glBindVertexArray(quadVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
 
-    Texture2D cubeTexture("../media/marble.jpg", JPG);
-    Texture2D floorTexture("../media/metal2.jpg", JPG);
+    // Framebuffers
+    unsigned int framebuffer;
+    glGenFramebuffers(1, &framebuffer);
+    glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+    // create a color attachment texture
+    unsigned int textureColorbuffer;
+    glGenTextures(1, &textureColorbuffer);
+    glBindTexture(GL_TEXTURE_2D, textureColorbuffer);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureColorbuffer, 0);
+    // create a renderbuffer object for depth and stencil attachment (we won't be sampling these)
+    unsigned int rbo;
+    glGenRenderbuffers(1, &rbo);
+    glBindRenderbuffer(GL_RENDERBUFFER, rbo);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height); // use a single renderbuffer object for both a depth AND stencil buffer.
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo); // now actually attach it
+    // now that we actually created the framebuffer and added all attachments we want to check if it is actually complete now
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+        std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!\n";
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-    shader.use();
-    shader.setInt("material.texture_diffuse1", 0);
+    Texture2D cubeTexture("../media/container.jpg", JPG);
+    Texture2D floorTexture("../media/metal.png", PNG);
+
+    renderShader.use();
+    renderShader.setInt("material.texture_diffuse1", 0);
 
     glm::mat4 model;
     glm::mat4 view;
@@ -194,10 +243,13 @@ int main()
         processInput(window);
         if (shaderNeedsToBeChanged)
         {
-            current_shader = (current_shader + 1) % shaders.size();
+            current_shader = (current_shader + 1) % postprocShaders.size();
             shaderNeedsToBeChanged = false;
         }
         
+        glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+        glEnable(GL_DEPTH_TEST);
+
         // Render:
         // glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
@@ -208,28 +260,40 @@ int main()
         view = cam.lookFront();
         projection = glm::perspective(glm::radians(cam.fov), width / height, 0.1f, 100.0f);
 
-        shaders[current_shader].setVertexMatrices(view, model, projection);
+        renderShader.use();
+        renderShader.setVertexMatrices(view, model, projection);
 
         // cubes
         glBindVertexArray(cubeVAO);
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, cubeTexture.texture); 	
         model = glm::translate(model, glm::vec3(-1.0f, 0.0f, -1.0f));
-        shaders[current_shader].setMat4("model", model);
+        renderShader.setMat4("model", model);
         glDrawArrays(GL_TRIANGLES, 0, 36);
         model = glm::mat4(1.0f);
         model = glm::translate(model, glm::vec3(2.0f, 0.0f, 0.0f));
-        shaders[current_shader].setMat4("model", model);
+        renderShader.setMat4("model", model);
         glDrawArrays(GL_TRIANGLES, 0, 36);
 
         // floor
         glBindVertexArray(planeVAO);
         glBindTexture(GL_TEXTURE_2D, floorTexture.texture);
-        shaders[current_shader].setMat4("model", glm::mat4(1.0f));
+        renderShader.setMat4("model", glm::mat4(1.0f));
         model = glm::mat4(1.0f);
-        shaders[current_shader].setVertexMatrices(view, model, projection);
+        renderShader.setVertexMatrices(view, model, projection);
         glDrawArrays(GL_TRIANGLES, 0, 6);
         glBindVertexArray(0);
+
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glDisable(GL_DEPTH_TEST);
+
+        glClearColor(1.0f, 1.0f, 1.0f, 1.0f); 
+        glClear(GL_COLOR_BUFFER_BIT);
+
+        postprocShaders[current_shader].use();
+        glBindVertexArray(quadVAO);
+        glBindTexture(GL_TEXTURE_2D, textureColorbuffer);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
 
         glfwSwapBuffers(window);
         glfwPollEvents();    
