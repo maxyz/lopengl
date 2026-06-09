@@ -120,6 +120,11 @@ void SpotLight::showImGuiControls(std::string header) {
     }
 }
 
+/* New signature wrapper */
+void SetLights(std::string name, glm::vec3 &backgroundColor, LightSet *lights) {
+    SetLights(name, backgroundColor, lights->directionalLight, lights->positionalLights.data(), lights->spotLight);
+}
+
 /* Presets */
 void SetLights(std::string name, glm::vec3 &backgroundColor, DirectionalLight &directionalLight, PositionalLight positionalLights[], SpotLight &spotLight) {
 

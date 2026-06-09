@@ -3,6 +3,7 @@
 
 #include <string>
 #include <format>
+#include <array>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -68,9 +69,16 @@ public:
     void showImGuiControls(std::string header);
 };
 
+class LightSet {
+public:
+    DirectionalLight directionalLight;
+    SpotLight        spotLight;
+    int              positionalLightAmount;
+    std::array<PositionalLight,4> positionalLights;
+};
+
 void SetLights(std::string name, glm::vec3 &backgroundColor, DirectionalLight &directionalLight, PositionalLight positionalLights[], SpotLight &spotLight);
-
-
+void SetLights(std::string name, glm::vec3 &backgroundColor, LightSet *lights);
 
 
 

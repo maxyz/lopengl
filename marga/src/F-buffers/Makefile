@@ -1,4 +1,4 @@
-EXES = framebuffers
+EXES = framebuffers rear-mirror
 
 default_target: $(EXES)
 
@@ -29,6 +29,9 @@ mesh.o: ../lib/mesh.cpp ../lib/mesh.h
 
 # This chapter's files
 framebuffers: framebuffers.cpp libGLAD.a shader.o lights.o texture.o ../lib/camera.h
+	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
+
+rear-mirror: rear-mirror.cpp libGLAD.a shader.o lights.o texture.o ../lib/camera.h
 	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
 
 clean:
