@@ -260,6 +260,20 @@ inline void draw(textured_mesh_t const &mesh, SDL_GPURenderPass *pass) {
     draw(mesh.pipeline, mesh.geometry, mesh.material, pass);
 }
 
+// Detects the rising edge of a boolean signal (e.g. a key press).
+// Call operator() each frame with the current state; returns true only on the
+// frame the signal transitions from false to true.
+struct key_edge_t {
+    bool operator()(bool current) noexcept {
+        bool fired = current && !m_prev;
+        m_prev     = current;
+        return fired;
+    }
+
+private:
+    bool m_prev = false;
+};
+
 // Per-frame input snapshot delivered by run_loop to the update callback.
 // dy is already negated for screen-Y-down convention.
 struct input_t {
@@ -326,7 +340,7 @@ struct camera_t {
     // Adjust FOV by scroll wheel delta; clamped to [1, 90].
     void process_scroll(float dy);
 
-    // WASD forward/back/strafe + R/F up/down from SDL keyboard state.
+    // WASD forward/back/strafe + E up + Q down from SDL keyboard state.
     void process_keys(bool const *keys, float dt);
 
 private:
@@ -336,7 +350,7 @@ private:
     glm::vec3   m_world_up   = {0.0f, 1.0f, 0.0f};
     SDL_Window *m_window     = nullptr;
     bool        m_ui_mode    = false;
-    bool        m_prev_grave = false;
+    key_edge_t  m_grave_edge;
 
     void update_vectors();
 };

@@ -248,11 +248,11 @@ struct scene_t {
     std::vector<pos_light_state_t>  pos_lights;
     std::vector<spot_light_state_t> spot_lights;
 
-    bool m_prev_p     = false;
-    bool m_prev_plus  = false;
-    bool m_prev_minus = false;
-    bool m_prev_zero  = false;
-    bool m_prev_nine  = false;
+    key_edge_t m_p_edge;
+    key_edge_t m_plus_edge;
+    key_edge_t m_minus_edge;
+    key_edge_t m_zero_edge;
+    key_edge_t m_nine_edge;
 
     bool update(input_t const &in);
     void render(SDL_GPUCommandBuffer *cmd, SDL_GPURenderPass *pass);
@@ -266,8 +266,7 @@ bool scene_t::update(input_t const &in) {
 
     bool shift = in.keys[SDL_SCANCODE_LSHIFT] || in.keys[SDL_SCANCODE_RSHIFT];
 
-    bool p_key = in.keys[SDL_SCANCODE_P];
-    if (p_key && !m_prev_p && !camera.ui_mode()) {
+    if (m_p_edge(in.keys[SDL_SCANCODE_P]) && !camera.ui_mode()) {
         if (shift)
             m_preset_index = (m_preset_index + PRESETS.size() - 1) % PRESETS.size();
         else
@@ -277,7 +276,6 @@ bool scene_t::update(input_t const &in) {
         pos_lights.assign(preset.pos_lights.begin(), preset.pos_lights.end());
         spot_lights.assign(preset.spot_lights.begin(), preset.spot_lights.end());
     }
-    m_prev_p = p_key;
 
     if (!camera.ui_mode()) {
         bool plus_key  = shift && in.keys[SDL_SCANCODE_EQUALS];
@@ -285,17 +283,12 @@ bool scene_t::update(input_t const &in) {
         bool zero_key  = in.keys[SDL_SCANCODE_0];
         bool nine_key  = in.keys[SDL_SCANCODE_9];
 
-        if (plus_key && !m_prev_plus && static_cast<int>(pos_lights.size()) < MAX_POS_LIGHTS)
+        if (m_plus_edge(plus_key) && static_cast<int>(pos_lights.size()) < MAX_POS_LIGHTS)
             pos_lights.push_back(random_positional_light());
-        if (minus_key && !m_prev_minus && !pos_lights.empty()) pos_lights.pop_back();
-        if (zero_key && !m_prev_zero && static_cast<int>(spot_lights.size()) < MAX_SPOT_LIGHTS)
+        if (m_minus_edge(minus_key) && !pos_lights.empty()) pos_lights.pop_back();
+        if (m_zero_edge(zero_key) && static_cast<int>(spot_lights.size()) < MAX_SPOT_LIGHTS)
             spot_lights.push_back(random_spot_light());
-        if (nine_key && !m_prev_nine && !spot_lights.empty()) spot_lights.pop_back();
-
-        m_prev_plus  = plus_key;
-        m_prev_minus = minus_key;
-        m_prev_zero  = zero_key;
-        m_prev_nine  = nine_key;
+        if (m_nine_edge(nine_key) && !spot_lights.empty()) spot_lights.pop_back();
     }
 
     ImGui::SetNextWindowPos(ImVec2(6.0f, 6.0f), ImGuiCond_Once);

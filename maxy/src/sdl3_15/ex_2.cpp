@@ -38,7 +38,7 @@ struct scene_t {
     float     m_time         = 0.0f;
     float     m_aspect_ratio = static_cast<float>(WINDOW_WIDTH) / WINDOW_HEIGHT;
     bool      m_ui_mode      = false; // false = fly (camera), true = UI (ImGui)
-    bool      m_prev_grave   = false;
+    key_edge_t m_grave_edge;
 
     bool update(input_t const &in);
     void render(SDL_GPUCommandBuffer *cmd, SDL_GPURenderPass *pass);
@@ -51,8 +51,7 @@ bool scene_t::update(input_t const &in) {
     if (in.keys[SDL_SCANCODE_ESCAPE]) return false;
 
     // Grave (`) toggles between fly mode (camera control) and UI mode (ImGui interaction).
-    bool grave = in.keys[SDL_SCANCODE_GRAVE];
-    if (grave && !m_prev_grave) {
+    if (m_grave_edge(in.keys[SDL_SCANCODE_GRAVE])) {
         m_ui_mode = !m_ui_mode;
         SDL_SetWindowRelativeMouseMode(m_window, !m_ui_mode);
         if (!m_ui_mode) {
@@ -60,7 +59,6 @@ bool scene_t::update(input_t const &in) {
             SDL_GetRelativeMouseState(&dx, &dy); // drain accumulated delta to prevent camera jump
         }
     }
-    m_prev_grave = grave;
 
     if (!m_ui_mode) {
         camera.process_keys(in.keys, in.dt);

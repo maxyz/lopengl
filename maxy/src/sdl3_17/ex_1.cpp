@@ -234,7 +234,7 @@ struct scene_t {
     camera_t   camera;
     float      m_time         = 0.0f;
     float      m_aspect_ratio = static_cast<float>(WINDOW_WIDTH) / WINDOW_HEIGHT;
-    bool       m_prev_p       = false;
+    key_edge_t m_p_edge;
     size_t      m_preset_index = 0;
     SDL_FColor  m_clear_color  = presets[0].sky_color;
 
@@ -250,8 +250,7 @@ bool scene_t::update(input_t const &in) {
 
     camera.update(in);
 
-    bool p = in.keys[SDL_SCANCODE_P];
-    if (p && !m_prev_p) {
+    if (m_p_edge(in.keys[SDL_SCANCODE_P])) {
         bool shift = in.keys[SDL_SCANCODE_LSHIFT] || in.keys[SDL_SCANCODE_RSHIFT];
         if (shift) {
             m_preset_index = (presets.size() + m_preset_index - 1) % presets.size();
@@ -260,7 +259,6 @@ bool scene_t::update(input_t const &in) {
         }
         m_clear_color = presets[m_preset_index].sky_color;
     }
-    m_prev_p = p;
 
     preset_t const &preset = presets[m_preset_index];
 

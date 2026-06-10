@@ -127,8 +127,8 @@ struct scene_t {
     light_uniforms_t light          = initial_light;
     size_t           m_current_mat  = 3; // pearl as default
     bool             m_textures_on  = true;
-    bool             m_prev_m_key   = false;
-    bool             m_prev_t_key   = false;
+    key_edge_t       m_m_edge;
+    key_edge_t       m_t_edge;
     float            m_time         = 0.0f;
     float            m_aspect_ratio = static_cast<float>(WINDOW_WIDTH) / WINDOW_HEIGHT;
 
@@ -145,8 +145,7 @@ bool scene_t::update(input_t const &in) {
     camera.process_mouse(in.dx, in.dy);
     camera.process_scroll(in.scroll);
 
-    bool m_key = in.keys[SDL_SCANCODE_M];
-    if (m_key && !m_prev_m_key) {
+    if (m_m_edge(in.keys[SDL_SCANCODE_M])) {
         bool shift = in.keys[SDL_SCANCODE_LSHIFT] || in.keys[SDL_SCANCODE_RSHIFT];
         if (shift) {
             m_current_mat = (m_current_mat - 1 + materials.size()) % materials.size();
@@ -154,11 +153,8 @@ bool scene_t::update(input_t const &in) {
             m_current_mat = (m_current_mat + 1) % materials.size();
         }
     }
-    m_prev_m_key = m_key;
 
-    bool t_key = in.keys[SDL_SCANCODE_T];
-    if (t_key && !m_prev_t_key) m_textures_on = !m_textures_on;
-    m_prev_t_key = t_key;
+    if (m_t_edge(in.keys[SDL_SCANCODE_T])) m_textures_on = !m_textures_on;
 
     float step = LIGHT_SPEED * in.dt;
     if (in.keys[SDL_SCANCODE_I]) light_position.z -= step;

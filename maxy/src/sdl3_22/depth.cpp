@@ -49,7 +49,7 @@ struct scene_t {
 
     camera_t camera;
     size_t   depth_mode_index = 2; // start at "Less"
-    bool     m_prev_m         = false;
+    key_edge_t m_m_edge;
     float    m_aspect_ratio   = static_cast<float>(WINDOW_WIDTH) / WINDOW_HEIGHT;
 
     bool update(input_t const &in);
@@ -62,9 +62,7 @@ bool scene_t::update(input_t const &in) {
 
     camera.update(in);
 
-    bool m_key = in.keys[SDL_SCANCODE_M];
-    if (m_key && !m_prev_m) depth_mode_index = (depth_mode_index + 1) % DEPTH_MODES.size();
-    m_prev_m = m_key;
+    if (m_m_edge(in.keys[SDL_SCANCODE_M])) depth_mode_index = (depth_mode_index + 1) % DEPTH_MODES.size();
 
     ImGui::SetNextWindowPos(ImVec2(6.0f, 6.0f), ImGuiCond_Once);
     ImGui::Begin("Scene", nullptr, ImGuiWindowFlags_AlwaysAutoResize);

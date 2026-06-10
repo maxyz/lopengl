@@ -687,15 +687,13 @@ glm::mat4 camera_t::rotation_view() const {
 }
 
 void camera_t::update(input_t const &in) {
-    bool grave = in.keys[SDL_SCANCODE_GRAVE];
-    if (grave && !m_prev_grave) {
+    if (m_grave_edge(in.keys[SDL_SCANCODE_GRAVE])) {
         m_ui_mode = !m_ui_mode;
         if (!m_ui_mode) {
             float dx, dy;
             SDL_GetRelativeMouseState(&dx, &dy); // drain accumulated delta to prevent camera jump
         }
     }
-    m_prev_grave = grave;
 
     if (m_window) SDL_SetWindowRelativeMouseMode(m_window, !m_ui_mode);
 
