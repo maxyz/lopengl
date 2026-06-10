@@ -25,30 +25,6 @@ struct material_uniforms_t {
 
 constexpr material_uniforms_t MATERIAL = {.shininess_pad = {64.0f, 0.0f, 0.0f, 0.0f}};
 
-struct pos_lights_block_t {
-    std::array<positional_light_uniforms_t, NUM_POS_LIGHTS> lights;
-};
-
-struct spot_lights_block_t {
-    std::array<spot_light_uniforms_t, NUM_SPOT_LIGHTS> lights;
-};
-
-constexpr float pyramid_vertices[] = {
-    0.0f,  0.0f, 0.0f,  -0.5f, 0.5f,  -1.0f, 0.5f,  0.5f,
-    -1.0f, 0.5f, -0.5f, -1.0f, -0.5f, -0.5f, -1.0f,
-};
-
-constexpr uint16_t pyramid_indices[] = {
-    0, 2, 1, 0, 3, 2, 0, 4, 3, 0, 1, 4, 1, 2, 3, 1, 3, 4,
-};
-
-constexpr SDL_GPUVertexBufferDescription pyramid_buffer_descs[] = {
-    {.slot = 0, .pitch = 3 * sizeof(float), .input_rate = SDL_GPU_VERTEXINPUTRATE_VERTEX},
-};
-
-constexpr SDL_GPUVertexAttribute pyramid_vertex_attributes[] = {
-    {.location = 0, .buffer_slot = 0, .format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3, .offset = 0},
-};
 
 struct preset_pos_light_t {
     glm::vec3 position;
@@ -289,7 +265,7 @@ void scene_t::render(SDL_GPUCommandBuffer *cmd, SDL_GPURenderPass *pass) {
         .specular  = glm::vec4(preset.dir_specular, 0.0f),
     };
 
-    pos_lights_block_t pos_block;
+    pos_lights_block_t<NUM_POS_LIGHTS> pos_block;
     for (int i = 0; i < NUM_POS_LIGHTS; ++i) {
         auto const &l       = preset.pos_lights[i];
         pos_block.lights[i] = {
@@ -303,7 +279,7 @@ void scene_t::render(SDL_GPUCommandBuffer *cmd, SDL_GPURenderPass *pass) {
         };
     }
 
-    spot_lights_block_t spot_block;
+    spot_lights_block_t<NUM_SPOT_LIGHTS> spot_block;
     for (int i = 0; i < NUM_SPOT_LIGHTS; ++i) {
         auto const &s        = preset.spot_lights[i];
         spot_block.lights[i] = {

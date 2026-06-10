@@ -25,58 +25,6 @@ struct material_uniforms_t {
 
 constexpr material_uniforms_t MATERIAL = {.shininess_pad = {64.0f, 0.0f, 0.0f, 0.0f}};
 
-struct pos_lights_block_t {
-    std::array<positional_light_uniforms_t, NUM_POS_LIGHTS> lights;
-};
-
-struct spot_lights_block_t {
-    std::array<spot_light_uniforms_t, NUM_SPOT_LIGHTS> lights;
-};
-
-// Pyramid: apex at origin, base at z = -1, positions-only (stride = 12 bytes).
-constexpr float pyramid_vertices[] = {
-    0.0f,  0.0f,  0.0f,  // 0: apex
-    -0.5f, 0.5f,  -1.0f, // 1: base
-    0.5f,  0.5f,  -1.0f, // 2: base
-    0.5f,  -0.5f, -1.0f, // 3: base
-    -0.5f, -0.5f, -1.0f, // 4: base
-};
-
-constexpr uint16_t pyramid_indices[] = {
-    0, 2, 1, // side 1
-    0, 3, 2, // side 2
-    0, 4, 3, // side 3
-    0, 1, 4, // side 4
-    1, 2, 3, // base 1
-    1, 3, 4, // base 2
-};
-
-constexpr SDL_GPUVertexBufferDescription pyramid_buffer_descs[] = {
-    {.slot = 0, .pitch = 3 * sizeof(float), .input_rate = SDL_GPU_VERTEXINPUTRATE_VERTEX},
-};
-
-constexpr SDL_GPUVertexAttribute pyramid_vertex_attributes[] = {
-    {.location = 0, .buffer_slot = 0, .format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3, .offset = 0},
-};
-
-struct pos_light_state_t {
-    glm::vec3 position;
-    glm::vec3 ambient  = {0.05f, 0.05f, 0.05f};
-    glm::vec3 diffuse  = {0.8f, 0.8f, 0.8f};
-    glm::vec3 specular = {1.0f, 1.0f, 1.0f};
-    float     constant = 1.0f, linear = 0.09f, quadratic = 0.032f;
-};
-
-struct spot_light_state_t {
-    glm::vec3 position;
-    glm::vec3 direction     = {0.0f, 0.0f, -1.0f};
-    glm::vec3 ambient       = {0.0f, 0.0f, 0.0f};
-    glm::vec3 diffuse       = {0.5f, 0.5f, 0.5f};
-    glm::vec3 specular      = {1.0f, 1.0f, 1.0f};
-    float     inner_degrees = 25.0f;
-    float     outer_degrees = 30.0f;
-    float     constant = 1.0f, linear = 0.09f, quadratic = 0.032f;
-};
 
 struct scene_t {
     gpu_pipeline_t cube_pipeline;
@@ -153,7 +101,7 @@ void scene_t::render(SDL_GPUCommandBuffer *cmd, SDL_GPURenderPass *pass) {
         .specular  = glm::vec4(dir_light_specular, 0.0f),
     };
 
-    pos_lights_block_t pos_block;
+    pos_lights_block_t<NUM_POS_LIGHTS> pos_block;
     for (int i = 0; i < NUM_POS_LIGHTS; ++i) {
         pos_block.lights[i] = {
             .position  = glm::vec4(pos_lights[i].position - camera.position, 0.0f),
@@ -166,7 +114,7 @@ void scene_t::render(SDL_GPUCommandBuffer *cmd, SDL_GPURenderPass *pass) {
         };
     }
 
-    spot_lights_block_t spot_block;
+    spot_lights_block_t<NUM_SPOT_LIGHTS> spot_block;
     for (int i = 0; i < NUM_SPOT_LIGHTS; ++i) {
         spot_block.lights[i] = {
             .position     = glm::vec4(spot_lights[i].position - camera.position, 0.0f),

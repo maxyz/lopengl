@@ -1,5 +1,7 @@
 #pragma once
 
+#include <array>
+
 #include <SDL3/SDL.h>
 #include <glm/glm.hpp>
 
@@ -73,4 +75,59 @@ inline constexpr SDL_GPUVertexAttribute light_vertex_attributes[] = {
      .buffer_slot = 0,
      .format      = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
      .offset      = static_cast<Uint32>(offsetof(pos_normal_uv_vertex_t, position))},
+};
+
+// Vertex layout for pyramid geometry (positions-only, stride = 12 bytes).
+// Used for spot-light direction indicators.
+inline constexpr SDL_GPUVertexBufferDescription pyramid_buffer_descs[] = {
+    {.slot = 0, .pitch = 3 * sizeof(float), .input_rate = SDL_GPU_VERTEXINPUTRATE_VERTEX},
+};
+
+inline constexpr SDL_GPUVertexAttribute pyramid_vertex_attributes[] = {
+    {.location = 0, .buffer_slot = 0, .format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3, .offset = 0},
+};
+
+// CPU-side light descriptions — human-readable values (world-space positions, angles in degrees).
+// Converted to camera-relative GPU uniforms each frame in render().
+
+constexpr int MAX_POS_LIGHTS  = 16;
+constexpr int MAX_SPOT_LIGHTS = 8;
+
+struct pos_light_state_t {
+    glm::vec3 position;
+    glm::vec3 ambient  = {0.05f, 0.05f, 0.05f};
+    glm::vec3 diffuse  = {0.8f, 0.8f, 0.8f};
+    glm::vec3 specular = {1.0f, 1.0f, 1.0f};
+    float     constant = 1.0f, linear = 0.09f, quadratic = 0.032f;
+};
+
+struct spot_light_state_t {
+    glm::vec3 position;
+    glm::vec3 direction     = {0.0f, 0.0f, -1.0f};
+    glm::vec3 ambient       = {0.0f, 0.0f, 0.0f};
+    glm::vec3 diffuse       = {0.5f, 0.5f, 0.5f};
+    glm::vec3 specular      = {1.0f, 1.0f, 1.0f};
+    float     inner_degrees = 25.0f;
+    float     outer_degrees = 30.0f;
+    float     constant = 1.0f, linear = 0.09f, quadratic = 0.032f;
+};
+
+struct flashlight_state_t {
+    glm::vec3 ambient;
+    glm::vec3 diffuse;
+    glm::vec3 specular;
+    float     inner_degrees;
+    float     outer_degrees;
+    float     constant, linear, quadratic;
+};
+
+// GPU UBO array blocks — sent to the fragment shader each frame.
+// Parameterised by count so fixed-size scenes (e.g. 4 lights) and dynamic scenes
+// (e.g. MAX_POS_LIGHTS=16) can share the same struct name.
+template <int N> struct pos_lights_block_t {
+    std::array<positional_light_uniforms_t, N> lights;
+};
+
+template <int N> struct spot_lights_block_t {
+    std::array<spot_light_uniforms_t, N> lights;
 };

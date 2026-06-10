@@ -1,0 +1,11 @@
+add_executable(sdl3_24_grass grass.cpp)
+target_link_libraries(sdl3_24_grass sdl3_engine)
+chapter_spv_shaders(sdl3_24_grass)
+
+add_executable(sdl3_24_windows windows.cpp)
+target_link_libraries(sdl3_24_windows sdl3_engine)
+chapter_spv_shaders(sdl3_24_windows)
+
+add_executable(sdl3_24_multi_light_windows multi_light_windows.cpp)
+target_link_libraries(sdl3_24_multi_light_windows sdl3_engine)
+chapter_spv_shaders(sdl3_24_multi_light_windows)

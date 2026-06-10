@@ -368,6 +368,17 @@ create_pipeline(engine_t const &engine, pipeline_desc_t const &desc) {
 
     SDL_GPUColorTargetDescription color_target = {};
     color_target.format = SDL_GetGPUSwapchainTextureFormat(engine.gpu_device, engine.window);
+    if (desc.enable_blend) {
+        color_target.blend_state = {
+            .src_color_blendfactor = SDL_GPU_BLENDFACTOR_SRC_ALPHA,
+            .dst_color_blendfactor = SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA,
+            .color_blend_op        = SDL_GPU_BLENDOP_ADD,
+            .src_alpha_blendfactor = SDL_GPU_BLENDFACTOR_ONE,
+            .dst_alpha_blendfactor = SDL_GPU_BLENDFACTOR_ZERO,
+            .alpha_blend_op        = SDL_GPU_BLENDOP_ADD,
+            .enable_blend          = true,
+        };
+    }
 
     SDL_GPUGraphicsPipelineCreateInfo info             = {};
     info.vertex_shader                                 = vert->get();
@@ -380,21 +391,23 @@ create_pipeline(engine_t const &engine, pipeline_desc_t const &desc) {
     info.target_info.color_target_descriptions         = &color_target;
     info.target_info.num_color_targets                 = 1;
     if (desc.enable_depth_test || desc.enable_stencil_test) {
-        auto &ds                                  = info.depth_stencil_state;
-        ds.enable_depth_test                      = desc.enable_depth_test;
-        ds.enable_depth_write                     = desc.enable_depth_test;
-        ds.compare_op                             = desc.depth_compare_op;
-        ds.enable_stencil_test                    = desc.enable_stencil_test;
-        ds.front_stencil_state.fail_op            = desc.stencil_fail_op;
-        ds.front_stencil_state.pass_op            = desc.stencil_pass_op;
-        ds.front_stencil_state.depth_fail_op      = desc.stencil_depth_fail_op;
-        ds.front_stencil_state.compare_op         = desc.stencil_compare_op;
-        ds.back_stencil_state                     = ds.front_stencil_state;
-        ds.compare_mask                           = desc.stencil_compare_mask;
-        ds.write_mask                             = desc.stencil_write_mask;
-        info.target_info.depth_stencil_format     = SDL_GPU_TEXTUREFORMAT_D32_FLOAT_S8_UINT;
+        auto &ds                              = info.depth_stencil_state;
+        ds.enable_depth_test                  = desc.enable_depth_test;
+        ds.enable_depth_write                 = desc.enable_depth_test && desc.enable_depth_write;
+        ds.compare_op                         = desc.depth_compare_op;
+        ds.enable_stencil_test                = desc.enable_stencil_test;
+        ds.front_stencil_state.fail_op        = desc.stencil_fail_op;
+        ds.front_stencil_state.pass_op        = desc.stencil_pass_op;
+        ds.front_stencil_state.depth_fail_op  = desc.stencil_depth_fail_op;
+        ds.front_stencil_state.compare_op     = desc.stencil_compare_op;
+        ds.back_stencil_state                 = ds.front_stencil_state;
+        ds.compare_mask                       = desc.stencil_compare_mask;
+        ds.write_mask                         = desc.stencil_write_mask;
+        info.target_info.depth_stencil_format = SDL_GPU_TEXTUREFORMAT_D32_FLOAT_S8_UINT;
         info.target_info.has_depth_stencil_target = true;
     }
+
+    info.rasterizer_state.cull_mode = desc.cull_mode;
 
     gpu_pipeline_t pipeline{
         engine.gpu_device, SDL_CreateGPUGraphicsPipeline(engine.gpu_device, &info)
@@ -470,6 +483,60 @@ load_texture(engine_t const &engine, std::string_view path) {
     destination.texture              = texture.get();
     destination.w                    = tex_info.width;
     destination.h                    = tex_info.height;
+    destination.d                    = 1;
+
+    SDL_GPUCopyPass *copy_pass = SDL_BeginGPUCopyPass(cmd);
+    SDL_UploadToGPUTexture(copy_pass, &source, &destination, false);
+    SDL_EndGPUCopyPass(copy_pass);
+
+    if (!SDL_SubmitGPUCommandBuffer(cmd)) return sdl_error("SDL_SubmitGPUCommandBuffer failed");
+
+    return texture;
+}
+
+std::expected<gpu_texture_t, std::string>
+create_solid_texture(engine_t const &engine, glm::u8vec4 const &color) {
+    using transfer_t = gpu_resource_t<SDL_GPUTransferBuffer, SDL_ReleaseGPUTransferBuffer>;
+
+    Uint8 const pixels[4] = {color.r, color.g, color.b, color.a};
+
+    SDL_GPUTextureCreateInfo tex_info = {};
+    tex_info.type                     = SDL_GPU_TEXTURETYPE_2D;
+    tex_info.format                   = SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM;
+    tex_info.usage                    = SDL_GPU_TEXTUREUSAGE_SAMPLER;
+    tex_info.width                    = 1;
+    tex_info.height                   = 1;
+    tex_info.layer_count_or_depth     = 1;
+    tex_info.num_levels               = 1;
+
+    gpu_texture_t texture{engine.gpu_device, SDL_CreateGPUTexture(engine.gpu_device, &tex_info)};
+    if (!texture) return sdl_error("SDL_CreateGPUTexture failed");
+
+    SDL_GPUTransferBufferCreateInfo transfer_info = {};
+    transfer_info.usage                           = SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD;
+    transfer_info.size                            = 4;
+    transfer_t transfer{
+        engine.gpu_device, SDL_CreateGPUTransferBuffer(engine.gpu_device, &transfer_info)
+    };
+    if (!transfer) return sdl_error("SDL_CreateGPUTransferBuffer failed");
+
+    void *mapped = SDL_MapGPUTransferBuffer(engine.gpu_device, transfer.get(), false);
+    if (!mapped) return sdl_error("SDL_MapGPUTransferBuffer failed");
+    SDL_memcpy(mapped, pixels, 4);
+    SDL_UnmapGPUTransferBuffer(engine.gpu_device, transfer.get());
+
+    SDL_GPUCommandBuffer *cmd = SDL_AcquireGPUCommandBuffer(engine.gpu_device);
+    if (!cmd) return sdl_error("SDL_AcquireGPUCommandBuffer failed");
+
+    SDL_GPUTextureTransferInfo source = {};
+    source.transfer_buffer            = transfer.get();
+    source.pixels_per_row             = 1;
+    source.rows_per_layer             = 1;
+
+    SDL_GPUTextureRegion destination = {};
+    destination.texture              = texture.get();
+    destination.w                    = 1;
+    destination.h                    = 1;
     destination.d                    = 1;
 
     SDL_GPUCopyPass *copy_pass = SDL_BeginGPUCopyPass(cmd);

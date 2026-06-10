@@ -146,6 +146,11 @@ std::expected<tracked_depth_t, std::string> create_tracked_depth(engine_t const 
 std::expected<gpu_texture_t, std::string>
 load_texture(engine_t const &engine, std::string_view path);
 
+// Creates a 1x1 GPU texture filled with solid RGBA colour (components in [0, 255]).
+// Useful for placeholder textures (e.g. a pure-white specular map for glass materials).
+std::expected<gpu_texture_t, std::string>
+create_solid_texture(engine_t const &engine, glm::u8vec4 const &color);
+
 // Creates a sampler with linear filtering and the given address mode (default: repeat).
 std::expected<gpu_sampler_t, std::string> create_sampler(
     engine_t const           &engine,
@@ -162,17 +167,21 @@ struct pipeline_desc_t {
     Uint32           fragment_uniform_buffers = 0;
     Uint32           fragment_samplers        = 0;
     // When empty, defaults to one vertex_t (float3) at location 0.
-    std::span<SDL_GPUVertexBufferDescription const> vertex_buffer_descs  = {};
-    std::span<SDL_GPUVertexAttribute const>         vertex_attributes    = {};
-    bool                                            enable_depth_test    = false;
-    SDL_GPUCompareOp                                depth_compare_op     = SDL_GPU_COMPAREOP_LESS;
-    bool                                            enable_stencil_test  = false;
-    Uint8                                           stencil_write_mask   = 0xFF;
-    Uint8                                           stencil_compare_mask = 0xFF;
-    SDL_GPUCompareOp                                stencil_compare_op   = SDL_GPU_COMPAREOP_ALWAYS;
-    SDL_GPUStencilOp                                stencil_fail_op      = SDL_GPU_STENCILOP_KEEP;
-    SDL_GPUStencilOp                                stencil_depth_fail_op = SDL_GPU_STENCILOP_KEEP;
-    SDL_GPUStencilOp                                stencil_pass_op       = SDL_GPU_STENCILOP_KEEP;
+    std::span<SDL_GPUVertexBufferDescription const> vertex_buffer_descs = {};
+    std::span<SDL_GPUVertexAttribute const>         vertex_attributes   = {};
+    bool                                            enable_depth_test   = false;
+    SDL_GPUCompareOp                                depth_compare_op    = SDL_GPU_COMPAREOP_LESS;
+    bool            enable_depth_write = true; // only when enable_depth_test is true
+    SDL_GPUCullMode cull_mode          = SDL_GPU_CULLMODE_NONE;
+    // Standard src-alpha / one-minus-src-alpha blending for the single colour target.
+    bool             enable_blend          = false;
+    bool             enable_stencil_test   = false;
+    Uint8            stencil_write_mask    = 0xFF;
+    Uint8            stencil_compare_mask  = 0xFF;
+    SDL_GPUCompareOp stencil_compare_op    = SDL_GPU_COMPAREOP_ALWAYS;
+    SDL_GPUStencilOp stencil_fail_op       = SDL_GPU_STENCILOP_KEEP;
+    SDL_GPUStencilOp stencil_depth_fail_op = SDL_GPU_STENCILOP_KEEP;
+    SDL_GPUStencilOp stencil_pass_op       = SDL_GPU_STENCILOP_KEEP;
 };
 
 std::expected<gpu_pipeline_t, std::string>

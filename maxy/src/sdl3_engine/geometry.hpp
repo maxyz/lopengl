@@ -39,6 +39,18 @@ struct pos_normal_uv_vertex_t {
     uv_t     uv;       // location 2
 };
 
+// Vertical unit square in the XY plane, centered at the origin. Normal points +Z.
+// Use for billboard / vegetation quads. Back-face culling is off by default in SDL3 GPU,
+// so the quad is visible from both sides without duplicating vertices.
+inline constexpr std::array<pos_normal_uv_vertex_t, 6> vertical_quad_vertices = {{
+    {{-0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
+    {{-0.5f, -0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f}},
+    {{0.5f, -0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 0.0f}},
+    {{-0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
+    {{0.5f, -0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 0.0f}},
+    {{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
+}};
+
 // Tiled floor plane: 10x10 quad at y=0, normal up, UV tiles 2x in each direction.
 // Use with a REPEAT sampler (the engine default) for a seamless tile effect.
 inline constexpr std::array<pos_normal_uv_vertex_t, 6> floor_plane_vertices = {{
@@ -155,6 +167,23 @@ inline constexpr std::array<pos_normal_uv_vertex_t, 36> unit_cube_with_normals =
     {{-.5f, .5f, -.5f}, {.0f, 1.f, .0f}, {.0f, 1.f}},
     {{-.5f, .5f, .5f}, {.0f, 1.f, .0f}, {.0f, .0f}},
 }};
+
+// Pyramid indicator: apex at origin, base at z = -1.
+// Used for spot-light direction markers; pair with pyramid_buffer_descs / pyramid_vertex_attributes
+// from lights.hpp.
+inline constexpr float pyramid_vertices[] = {
+    0.0f,  0.0f,  0.0f,  // apex
+    -0.5f, 0.5f,  -1.0f, // base TL
+    0.5f,  0.5f,  -1.0f, // base TR
+    0.5f,  -0.5f, -1.0f, // base BR
+    -0.5f, -0.5f, -1.0f, // base BL
+};
+
+inline constexpr uint16_t pyramid_indices[] = {
+    0, 2, 1,                            // sides
+    0, 3, 2, 0, 4, 3, 0, 1, 4, 1, 2, 3, // base
+    1, 3, 4,
+};
 
 // Returns an equilateral triangle inscribed in a circle of the given
 // circumradius, top vertex pointing up.
