@@ -1,0 +1,3 @@
+add_executable(sdl3_23_stencil stencil.cpp)
+target_link_libraries(sdl3_23_stencil sdl3_engine)
+chapter_spv_shaders(sdl3_23_stencil)

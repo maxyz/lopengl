@@ -162,10 +162,17 @@ struct pipeline_desc_t {
     Uint32           fragment_uniform_buffers = 0;
     Uint32           fragment_samplers        = 0;
     // When empty, defaults to one vertex_t (float3) at location 0.
-    std::span<SDL_GPUVertexBufferDescription const> vertex_buffer_descs = {};
-    std::span<SDL_GPUVertexAttribute const>         vertex_attributes   = {};
-    bool             enable_depth_test = false;                     // enables depth test + write
-    SDL_GPUCompareOp depth_compare_op  = SDL_GPU_COMPAREOP_LESS; // only used when enable_depth_test
+    std::span<SDL_GPUVertexBufferDescription const> vertex_buffer_descs  = {};
+    std::span<SDL_GPUVertexAttribute const>         vertex_attributes    = {};
+    bool                                            enable_depth_test    = false;
+    SDL_GPUCompareOp                                depth_compare_op     = SDL_GPU_COMPAREOP_LESS;
+    bool                                            enable_stencil_test  = false;
+    Uint8                                           stencil_write_mask   = 0xFF;
+    Uint8                                           stencil_compare_mask = 0xFF;
+    SDL_GPUCompareOp                                stencil_compare_op   = SDL_GPU_COMPAREOP_ALWAYS;
+    SDL_GPUStencilOp                                stencil_fail_op      = SDL_GPU_STENCILOP_KEEP;
+    SDL_GPUStencilOp                                stencil_depth_fail_op = SDL_GPU_STENCILOP_KEEP;
+    SDL_GPUStencilOp                                stencil_pass_op       = SDL_GPU_STENCILOP_KEEP;
 };
 
 std::expected<gpu_pipeline_t, std::string>
@@ -344,12 +351,12 @@ struct camera_t {
     void process_keys(bool const *keys, float dt);
 
 private:
-    glm::vec3   m_front      = {0.0f, 0.0f, -1.0f};
-    glm::vec3   m_right      = {1.0f, 0.0f, 0.0f};
-    glm::vec3   m_up         = {0.0f, 1.0f, 0.0f};
-    glm::vec3   m_world_up   = {0.0f, 1.0f, 0.0f};
-    SDL_Window *m_window     = nullptr;
-    bool        m_ui_mode    = false;
+    glm::vec3   m_front    = {0.0f, 0.0f, -1.0f};
+    glm::vec3   m_right    = {1.0f, 0.0f, 0.0f};
+    glm::vec3   m_up       = {0.0f, 1.0f, 0.0f};
+    glm::vec3   m_world_up = {0.0f, 1.0f, 0.0f};
+    SDL_Window *m_window   = nullptr;
+    bool        m_ui_mode  = false;
     key_edge_t  m_grave_edge;
 
     void update_vectors();

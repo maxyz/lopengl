@@ -379,12 +379,21 @@ create_pipeline(engine_t const &engine, pipeline_desc_t const &desc) {
     info.primitive_type                                = SDL_GPU_PRIMITIVETYPE_TRIANGLELIST;
     info.target_info.color_target_descriptions         = &color_target;
     info.target_info.num_color_targets                 = 1;
-    if (desc.enable_depth_test) {
-        info.depth_stencil_state.compare_op         = desc.depth_compare_op;
-        info.depth_stencil_state.enable_depth_test  = true;
-        info.depth_stencil_state.enable_depth_write = true;
-        info.target_info.depth_stencil_format       = SDL_GPU_TEXTUREFORMAT_D32_FLOAT;
-        info.target_info.has_depth_stencil_target   = true;
+    if (desc.enable_depth_test || desc.enable_stencil_test) {
+        auto &ds                                  = info.depth_stencil_state;
+        ds.enable_depth_test                      = desc.enable_depth_test;
+        ds.enable_depth_write                     = desc.enable_depth_test;
+        ds.compare_op                             = desc.depth_compare_op;
+        ds.enable_stencil_test                    = desc.enable_stencil_test;
+        ds.front_stencil_state.fail_op            = desc.stencil_fail_op;
+        ds.front_stencil_state.pass_op            = desc.stencil_pass_op;
+        ds.front_stencil_state.depth_fail_op      = desc.stencil_depth_fail_op;
+        ds.front_stencil_state.compare_op         = desc.stencil_compare_op;
+        ds.back_stencil_state                     = ds.front_stencil_state;
+        ds.compare_mask                           = desc.stencil_compare_mask;
+        ds.write_mask                             = desc.stencil_write_mask;
+        info.target_info.depth_stencil_format     = SDL_GPU_TEXTUREFORMAT_D32_FLOAT_S8_UINT;
+        info.target_info.has_depth_stencil_target = true;
     }
 
     gpu_pipeline_t pipeline{
@@ -591,7 +600,7 @@ std::expected<gpu_texture_t, std::string>
 create_depth_texture(engine_t const &engine, int width, int height) {
     SDL_GPUTextureCreateInfo info = {};
     info.type                     = SDL_GPU_TEXTURETYPE_2D;
-    info.format                   = SDL_GPU_TEXTUREFORMAT_D32_FLOAT;
+    info.format                   = SDL_GPU_TEXTUREFORMAT_D32_FLOAT_S8_UINT;
     info.usage                    = SDL_GPU_TEXTUREUSAGE_DEPTH_STENCIL_TARGET;
     info.width                    = static_cast<Uint32>(width);
     info.height                   = static_cast<Uint32>(height);
@@ -650,7 +659,8 @@ std::expected<void, std::string> render_frame(
         depth.clear_depth                   = 1.0f;
         depth.load_op                       = SDL_GPU_LOADOP_CLEAR;
         depth.store_op                      = SDL_GPU_STOREOP_DONT_CARE;
-        depth.stencil_load_op               = SDL_GPU_LOADOP_DONT_CARE;
+        depth.clear_stencil                 = 0;
+        depth.stencil_load_op               = SDL_GPU_LOADOP_CLEAR;
         depth.stencil_store_op              = SDL_GPU_STOREOP_DONT_CARE;
         depth.cycle                         = true;
 
