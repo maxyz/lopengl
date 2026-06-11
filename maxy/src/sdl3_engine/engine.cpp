@@ -68,14 +68,6 @@ void imgui_process_event(SDL_Event const &event) {
     ImGui_ImplSDL3_ProcessEvent(&event);
 }
 
-void imgui_prepare_draw_data(SDL_GPUCommandBuffer *cmd) {
-    ImGui_ImplSDLGPU3_PrepareDrawData(ImGui::GetDrawData(), cmd);
-}
-
-void imgui_render_draw_data(SDL_GPUCommandBuffer *cmd, SDL_GPURenderPass *pass) {
-    ImGui_ImplSDLGPU3_RenderDrawData(ImGui::GetDrawData(), cmd, pass);
-}
-
 void imgui_new_frame() {
     ImGui_ImplSDLGPU3_NewFrame();
     ImGui_ImplSDL3_NewFrame();
@@ -83,6 +75,16 @@ void imgui_new_frame() {
 }
 
 } // namespace
+
+void imgui_prepare(SDL_GPUCommandBuffer *cmd) {
+    if (!ImGui::GetCurrentContext()) return;
+    ImGui_ImplSDLGPU3_PrepareDrawData(ImGui::GetDrawData(), cmd);
+}
+
+void imgui_render(SDL_GPUCommandBuffer *cmd, SDL_GPURenderPass *pass) {
+    if (!ImGui::GetCurrentContext()) return;
+    ImGui_ImplSDLGPU3_RenderDrawData(ImGui::GetDrawData(), cmd, pass);
+}
 
 engine_t::engine_t(engine_t &&other) noexcept
     : window(std::exchange(other.window, nullptr)),
@@ -176,80 +178,130 @@ bool poll_events() {
 
 namespace {
 
-std::expected<void, std::string> run_loop_impl(
+bool pump_events(engine_t &engine, bool &focused, float &scroll_delta) {
+    SDL_Event event;
+    while (SDL_PollEvent(&event)) {
+        if (ImGui::GetCurrentContext()) imgui_process_event(event);
+        if (event.type == SDL_EVENT_QUIT) return false;
+        if (event.type == SDL_EVENT_MOUSE_WHEEL) scroll_delta += event.wheel.y;
+        if (event.type == SDL_EVENT_WINDOW_FOCUS_LOST) {
+            focused = false;
+            SDL_SetWindowRelativeMouseMode(engine.window, false);
+        }
+        if (event.type == SDL_EVENT_WINDOW_FOCUS_GAINED) {
+            focused = true;
+            SDL_SetWindowRelativeMouseMode(engine.window, true);
+            float dx, dy;
+            SDL_GetRelativeMouseState(&dx, &dy); // drain delta accumulated while unfocused
+        }
+    }
+    return true;
+}
+
+input_t collect_input(engine_t &engine, bool focused, float scroll_delta, float dt) {
+    float dx = 0.0f, dy = 0.0f;
+    if (focused) SDL_GetRelativeMouseState(&dx, &dy);
+    return {
+        .keys         = SDL_GetKeyboardState(nullptr),
+        .dx           = dx,
+        .dy           = -dy,
+        .scroll       = scroll_delta,
+        .dt           = dt,
+        .aspect_ratio = aspect_ratio(engine),
+    };
+}
+
+} // namespace
+
+std::expected<void, std::string>
+render_frame(engine_t const &engine, std::span<pass_desc_t const> passes) {
+    SDL_GPUCommandBuffer *cmd = SDL_AcquireGPUCommandBuffer(engine.gpu_device);
+    if (!cmd) return sdl_error("SDL_AcquireGPUCommandBuffer failed");
+
+    SDL_GPUTexture *swapchain = nullptr;
+    if (!SDL_WaitAndAcquireGPUSwapchainTexture(cmd, engine.window, &swapchain, nullptr, nullptr)) {
+        SDL_CancelGPUCommandBuffer(cmd);
+        return sdl_error("SDL_WaitAndAcquireGPUSwapchainTexture failed");
+    }
+
+    if (swapchain) {
+        for (auto const &pass : passes) {
+            SDL_GPUColorTargetInfo color_info = {};
+            color_info.texture     = pass.color_target ? pass.color_target->get() : swapchain;
+            color_info.clear_color = pass.clear_color;
+            color_info.load_op     = pass.load_op;
+            color_info.store_op    = SDL_GPU_STOREOP_STORE;
+
+            SDL_GPUDepthStencilTargetInfo  depth_info = {};
+            SDL_GPUDepthStencilTargetInfo *depth_ptr  = nullptr;
+            if (pass.depth_texture) {
+                depth_info.texture          = pass.depth_texture->get();
+                depth_info.clear_depth      = 1.0f;
+                depth_info.load_op          = SDL_GPU_LOADOP_CLEAR;
+                depth_info.store_op         = SDL_GPU_STOREOP_DONT_CARE;
+                depth_info.clear_stencil    = 0;
+                depth_info.stencil_load_op  = SDL_GPU_LOADOP_CLEAR;
+                depth_info.stencil_store_op = SDL_GPU_STOREOP_DONT_CARE;
+                depth_info.cycle            = true;
+                depth_ptr                   = &depth_info;
+            }
+
+            if (pass.prepare) pass.prepare(cmd);
+
+            SDL_GPURenderPass *render_pass = SDL_BeginGPURenderPass(cmd, &color_info, 1, depth_ptr);
+            if (pass.draw) pass.draw(cmd, render_pass);
+            SDL_EndGPURenderPass(render_pass);
+        }
+    }
+
+    if (!SDL_SubmitGPUCommandBuffer(cmd)) return sdl_error("SDL_SubmitGPUCommandBuffer failed");
+    return {};
+}
+
+std::expected<void, std::string> run_loop(
+    engine_t &engine, SDL_FColor clear_color, std::function<bool(input_t const &)> update,
+    draw_fn draw
+) {
+    return run_loop(engine, [clear_color]() { return clear_color; }, update, std::move(draw));
+}
+
+std::expected<void, std::string> run_loop(
     engine_t &engine, std::function<SDL_FColor()> get_clear_color,
-    std::function<bool(input_t const &)>                             update,
-    std::function<void(SDL_GPUCommandBuffer *, SDL_GPURenderPass *)> draw
+    std::function<bool(input_t const &)> update, draw_fn draw
 ) {
     auto depth_result = create_tracked_depth(engine);
     if (!depth_result) return std::unexpected(depth_result.error());
     tracked_depth_t depth = std::move(*depth_result);
 
+    pass_desc_t frame_pass{
+        .depth_texture = &depth.texture,
+        .prepare       = imgui_prepare,
+        .draw          = [&draw](SDL_GPUCommandBuffer *cmd, SDL_GPURenderPass *pass) {
+            draw(cmd, pass);
+            imgui_render(cmd, pass);
+        },
+    };
+
     SDL_SetWindowRelativeMouseMode(engine.window, true);
     bool focused = true;
 
     while (true) {
-        bool      running      = true;
-        float     scroll_delta = 0.0f;
-        SDL_Event event;
-        while (SDL_PollEvent(&event)) {
-            if (ImGui::GetCurrentContext()) imgui_process_event(event);
-            if (event.type == SDL_EVENT_QUIT) running = false;
-            if (event.type == SDL_EVENT_MOUSE_WHEEL) scroll_delta += event.wheel.y;
-            if (event.type == SDL_EVENT_WINDOW_FOCUS_LOST) {
-                focused = false;
-                SDL_SetWindowRelativeMouseMode(engine.window, false);
-            }
-            if (event.type == SDL_EVENT_WINDOW_FOCUS_GAINED) {
-                focused = true;
-                SDL_SetWindowRelativeMouseMode(engine.window, true);
-                float dx, dy;
-                SDL_GetRelativeMouseState(&dx, &dy); // drain delta accumulated while unfocused
-            }
-        }
-        if (!running) break;
+        float scroll_delta = 0.0f;
+        if (!pump_events(engine, focused, scroll_delta)) break;
 
         float dt = tick(engine);
         depth.update(engine);
 
-        float dx = 0.0f, dy = 0.0f;
-        if (focused) SDL_GetRelativeMouseState(&dx, &dy);
-
-        input_t input{
-            .keys         = SDL_GetKeyboardState(nullptr),
-            .dx           = dx,
-            .dy           = -dy,
-            .scroll       = scroll_delta,
-            .dt           = dt,
-            .aspect_ratio = aspect_ratio(engine),
-        };
-
         if (ImGui::GetCurrentContext()) imgui_new_frame();
-        bool const should_continue = update(input);
+        bool const should_continue = update(collect_input(engine, focused, scroll_delta, dt));
         if (ImGui::GetCurrentContext()) ImGui::Render();
         if (!should_continue) break;
 
-        if (auto frame = render_frame(engine, get_clear_color(), depth.texture, draw); !frame)
-            return std::unexpected(frame.error());
+        frame_pass.clear_color = get_clear_color();
+        if (auto f = render_frame(engine, std::span{&frame_pass, 1}); !f)
+            return std::unexpected(f.error());
     }
     return {};
-}
-
-} // namespace
-
-std::expected<void, std::string> run_loop(
-    engine_t &engine, SDL_FColor clear_color, std::function<bool(input_t const &)> update,
-    std::function<void(SDL_GPUCommandBuffer *, SDL_GPURenderPass *)> draw
-) {
-    return run_loop_impl(engine, [clear_color]() { return clear_color; }, update, draw);
-}
-
-std::expected<void, std::string> run_loop(
-    engine_t &engine, std::function<SDL_FColor()> get_clear_color,
-    std::function<bool(input_t const &)>                             update,
-    std::function<void(SDL_GPUCommandBuffer *, SDL_GPURenderPass *)> draw
-) {
-    return run_loop_impl(engine, std::move(get_clear_color), update, draw);
 }
 
 float tick(engine_t &engine) {
@@ -268,40 +320,6 @@ glm::ivec2 window_pixel_size(engine_t const &engine) {
 float aspect_ratio(engine_t const &engine) {
     auto size = window_pixel_size(engine);
     return float(size.x) / float(size.y);
-}
-
-std::expected<void, std::string> render_frame(
-    engine_t const &engine, SDL_FColor clear_color,
-    std::function<void(SDL_GPUCommandBuffer *, SDL_GPURenderPass *)> draw
-) {
-    SDL_GPUCommandBuffer *command_buffer = SDL_AcquireGPUCommandBuffer(engine.gpu_device);
-    if (!command_buffer) return sdl_error("SDL_AcquireGPUCommandBuffer failed");
-
-    SDL_GPUTexture *swapchain_texture = nullptr;
-    if (!SDL_WaitAndAcquireGPUSwapchainTexture(
-            command_buffer, engine.window, &swapchain_texture, nullptr, nullptr
-        )) {
-        SDL_CancelGPUCommandBuffer(command_buffer);
-        return sdl_error("SDL_WaitAndAcquireGPUSwapchainTexture failed");
-    }
-
-    if (swapchain_texture) {
-        SDL_GPUColorTargetInfo target = {};
-        target.texture                = swapchain_texture;
-        target.clear_color            = clear_color;
-        target.load_op                = SDL_GPU_LOADOP_CLEAR;
-        target.store_op               = SDL_GPU_STOREOP_STORE;
-
-        SDL_GPURenderPass *render_pass =
-            SDL_BeginGPURenderPass(command_buffer, &target, 1, nullptr);
-        draw(command_buffer, render_pass);
-        SDL_EndGPURenderPass(render_pass);
-    }
-
-    if (!SDL_SubmitGPUCommandBuffer(command_buffer))
-        return sdl_error("SDL_SubmitGPUCommandBuffer failed");
-
-    return {};
 }
 
 std::expected<gpu_shader_t, std::string> load_shader(
@@ -696,50 +714,68 @@ std::expected<tracked_depth_t, std::string> create_tracked_depth(engine_t const 
     return tracked_depth_t{std::move(*result), size};
 }
 
-std::expected<void, std::string> render_frame(
-    engine_t const &engine, SDL_FColor clear_color, gpu_texture_t const &depth_texture,
-    std::function<void(SDL_GPUCommandBuffer *, SDL_GPURenderPass *)> draw
+std::expected<gpu_texture_t, std::string>
+create_color_target_texture(engine_t const &engine, int width, int height) {
+    SDL_GPUTextureCreateInfo info = {};
+    info.type                     = SDL_GPU_TEXTURETYPE_2D;
+    info.format               = SDL_GetGPUSwapchainTextureFormat(engine.gpu_device, engine.window);
+    info.usage                = SDL_GPU_TEXTUREUSAGE_COLOR_TARGET | SDL_GPU_TEXTUREUSAGE_SAMPLER;
+    info.width                = static_cast<Uint32>(width);
+    info.height               = static_cast<Uint32>(height);
+    info.layer_count_or_depth = 1;
+    info.num_levels           = 1;
+
+    SDL_GPUTexture *tex = SDL_CreateGPUTexture(engine.gpu_device, &info);
+    if (!tex) return sdl_error("SDL_CreateGPUTexture (color_target) failed");
+    return gpu_texture_t{engine.gpu_device, tex};
+}
+
+bool tracked_color_target_t::update(engine_t const &engine) {
+    auto current = window_pixel_size(engine);
+    if (current == size) return true;
+    auto result = create_color_target_texture(engine, current.x, current.y);
+    if (!result) return false;
+    texture = std::move(*result);
+    size    = current;
+    return true;
+}
+
+std::expected<tracked_color_target_t, std::string>
+create_tracked_color_target(engine_t const &engine) {
+    auto size   = window_pixel_size(engine);
+    auto result = create_color_target_texture(engine, size.x, size.y);
+    if (!result) return std::unexpected(result.error());
+    return tracked_color_target_t{std::move(*result), size};
+}
+
+std::expected<void, std::string> run_loop(
+    engine_t &engine, std::function<SDL_FColor()> get_clear_color, tracked_depth_t &depth,
+    tracked_color_target_t &color_target, std::function<bool(input_t const &)> update,
+    std::span<pass_desc_t> passes
 ) {
-    SDL_GPUCommandBuffer *command_buffer = SDL_AcquireGPUCommandBuffer(engine.gpu_device);
-    if (!command_buffer) return sdl_error("SDL_AcquireGPUCommandBuffer failed");
+    SDL_SetWindowRelativeMouseMode(engine.window, true);
+    bool focused = true;
 
-    SDL_GPUTexture *swapchain_texture = nullptr;
-    if (!SDL_WaitAndAcquireGPUSwapchainTexture(
-            command_buffer, engine.window, &swapchain_texture, nullptr, nullptr
-        )) {
-        SDL_CancelGPUCommandBuffer(command_buffer);
-        return sdl_error("SDL_WaitAndAcquireGPUSwapchainTexture failed");
+    while (true) {
+        float scroll_delta = 0.0f;
+        if (!pump_events(engine, focused, scroll_delta)) break;
+
+        float dt = tick(engine);
+        depth.update(engine);
+        color_target.update(engine);
+
+        if (ImGui::GetCurrentContext()) imgui_new_frame();
+        bool const should_continue = update(collect_input(engine, focused, scroll_delta, dt));
+        if (ImGui::GetCurrentContext()) ImGui::Render();
+        if (!should_continue) break;
+
+        auto clear = get_clear_color();
+        for (auto &pass : passes)
+            if (pass.load_op == SDL_GPU_LOADOP_CLEAR) pass.clear_color = clear;
+
+        if (auto f = render_frame(engine, std::span<pass_desc_t const>(passes)); !f)
+            return std::unexpected(f.error());
     }
-
-    if (swapchain_texture) {
-        // ImGui vertex/index upload must happen before the render pass (copy pass exclusivity).
-        if (ImGui::GetCurrentContext()) imgui_prepare_draw_data(command_buffer);
-
-        SDL_GPUColorTargetInfo color = {};
-        color.texture                = swapchain_texture;
-        color.clear_color            = clear_color;
-        color.load_op                = SDL_GPU_LOADOP_CLEAR;
-        color.store_op               = SDL_GPU_STOREOP_STORE;
-
-        SDL_GPUDepthStencilTargetInfo depth = {};
-        depth.texture                       = depth_texture.get();
-        depth.clear_depth                   = 1.0f;
-        depth.load_op                       = SDL_GPU_LOADOP_CLEAR;
-        depth.store_op                      = SDL_GPU_STOREOP_DONT_CARE;
-        depth.clear_stencil                 = 0;
-        depth.stencil_load_op               = SDL_GPU_LOADOP_CLEAR;
-        depth.stencil_store_op              = SDL_GPU_STOREOP_DONT_CARE;
-        depth.cycle                         = true;
-
-        SDL_GPURenderPass *render_pass = SDL_BeginGPURenderPass(command_buffer, &color, 1, &depth);
-        draw(command_buffer, render_pass);
-        if (ImGui::GetCurrentContext()) imgui_render_draw_data(command_buffer, render_pass);
-        SDL_EndGPURenderPass(render_pass);
-    }
-
-    if (!SDL_SubmitGPUCommandBuffer(command_buffer))
-        return sdl_error("SDL_SubmitGPUCommandBuffer failed");
-
     return {};
 }
 

@@ -98,17 +98,34 @@ glm::ivec2 window_pixel_size(engine_t const &engine);
 // Superseded by a proper projection matrix from chapter 8 onward.
 float aspect_ratio(engine_t const &engine);
 
-std::expected<void, std::string> render_frame(
-    engine_t const &engine, SDL_FColor clear_color,
-    std::function<void(SDL_GPUCommandBuffer *, SDL_GPURenderPass *)> draw
-);
+// Type aliases for pass callbacks.
+using cmd_fn  = std::function<void(SDL_GPUCommandBuffer *)>;
+using draw_fn = std::function<void(SDL_GPUCommandBuffer *, SDL_GPURenderPass *)>;
 
-// render_frame with depth -- depth_texture must be created with create_depth_texture.
-// Calls imgui_prepare_draw_data before the render pass when an ImGui context exists.
-std::expected<void, std::string> render_frame(
-    engine_t const &engine, SDL_FColor clear_color, gpu_texture_t const &depth_texture,
-    std::function<void(SDL_GPUCommandBuffer *, SDL_GPURenderPass *)> draw
-);
+// Describes one render pass in a frame.
+// color_target == null means the swapchain. depth_texture == null means no depth attachment.
+// prepare is called between passes, outside any render pass — use it for copy passes,
+// buffer uploads, or imgui_prepare. draw is called inside the open render pass.
+struct pass_desc_t {
+    gpu_texture_t const *color_target  = nullptr;
+    gpu_texture_t const *depth_texture = nullptr;
+    SDL_FColor           clear_color   = {};
+    SDL_GPULoadOp        load_op       = SDL_GPU_LOADOP_CLEAR;
+    cmd_fn               prepare;
+    draw_fn              draw;
+};
+
+// Upload ImGui vertex/index data to the GPU (must be called outside any render pass).
+// No-op when no ImGui context exists. Use as a pass_desc_t::prepare callback.
+void imgui_prepare(SDL_GPUCommandBuffer *cmd);
+
+// Render ImGui draw data into the active render pass.
+// No-op when no ImGui context exists. Call at the end of a pass_desc_t::draw callback.
+void imgui_render(SDL_GPUCommandBuffer *cmd, SDL_GPURenderPass *pass);
+
+// Execute a sequence of render passes in one command buffer submission.
+std::expected<void, std::string>
+render_frame(engine_t const &engine, std::span<pass_desc_t const> passes);
 
 // Reads a SPIR-V file and creates a GPU shader stage.
 // num_uniform_buffers and num_samplers must match the shader's declared bindings.
@@ -141,6 +158,23 @@ struct tracked_depth_t {
 };
 
 std::expected<tracked_depth_t, std::string> create_tracked_depth(engine_t const &engine);
+
+// Off-screen color texture for render-to-texture (RTT). Format matches the swapchain
+// so existing scene pipelines can render to it without recompilation.
+std::expected<gpu_texture_t, std::string>
+create_color_target_texture(engine_t const &engine, int width, int height);
+
+// Color target texture that automatically recreates itself on window resize.
+// Call update() once per frame (alongside tracked_depth_t) before the RTT render pass.
+struct tracked_color_target_t {
+    gpu_texture_t texture;
+    glm::ivec2    size;
+
+    bool update(engine_t const &engine);
+};
+
+std::expected<tracked_color_target_t, std::string>
+create_tracked_color_target(engine_t const &engine);
 
 // Loads an image file via SDL3_image and uploads it to a GPU texture.
 std::expected<gpu_texture_t, std::string>
@@ -301,18 +335,26 @@ struct input_t {
     float       aspect_ratio;
 };
 
-// Self-contained event loop: handles SDL events, focus tracking, relative mouse
-// mode, depth texture management, tick, and ImGui integration when a context exists.
+// Single-pass event loop: manages depth internally; draws to the swapchain each frame.
 std::expected<void, std::string> run_loop(
     engine_t &engine, SDL_FColor clear_color, std::function<bool(input_t const &)> update,
-    std::function<void(SDL_GPUCommandBuffer *, SDL_GPURenderPass *)> draw
+    draw_fn draw
 );
 
-// Variant that queries the clear colour each frame — use when the background changes at runtime.
+// Variant that queries the clear colour each frame.
 std::expected<void, std::string> run_loop(
     engine_t &engine, std::function<SDL_FColor()> get_clear_color,
-    std::function<bool(input_t const &)>                             update,
-    std::function<void(SDL_GPUCommandBuffer *, SDL_GPURenderPass *)> draw
+    std::function<bool(input_t const &)> update, draw_fn draw
+);
+
+// Multi-pass event loop: caller owns depth and color_target (created via create_tracked_*).
+// Each frame: updates depth and color_target, applies get_clear_color() to all passes with
+// load_op == CLEAR, then calls render_frame with the passes.
+// Use pass_desc_t::prepare for imgui_prepare; call imgui_render at the end of a draw callback.
+std::expected<void, std::string> run_loop(
+    engine_t &engine, std::function<SDL_FColor()> get_clear_color, tracked_depth_t &depth,
+    tracked_color_target_t &color_target, std::function<bool(input_t const &)> update,
+    std::span<pass_desc_t> passes
 );
 
 // FPS camera with Euler angles. Derives front/right/up axes on every update.

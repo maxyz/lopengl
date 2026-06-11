@@ -1,0 +1,3 @@
+add_executable(sdl3_25_cull cull.cpp)
+target_link_libraries(sdl3_25_cull sdl3_engine)
+chapter_spv_shaders(sdl3_25_cull)

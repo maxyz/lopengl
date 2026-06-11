@@ -1,0 +1,7 @@
+add_executable(sdl3_26_framebuffer framebuffer.cpp)
+target_link_libraries(sdl3_26_framebuffer sdl3_engine)
+chapter_spv_shaders(sdl3_26_framebuffer)
+
+add_executable(sdl3_26_mirror mirror.cpp)
+target_link_libraries(sdl3_26_mirror sdl3_engine)
+chapter_spv_shaders(sdl3_26_mirror)
