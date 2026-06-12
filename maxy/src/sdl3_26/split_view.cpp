@@ -660,8 +660,7 @@ bool scene_t::update(input_t const &in) {
 }
 
 void scene_t::draw_world(
-    SDL_GPUCommandBuffer *cmd, SDL_GPURenderPass *pass, glm::mat4 const &view,
-    glm::mat4 const &proj
+    SDL_GPUCommandBuffer *cmd, SDL_GPURenderPass *pass, glm::mat4 const &view, glm::mat4 const &proj
 ) {
     auto const &preset = PRESETS[m_preset_index];
 
@@ -840,8 +839,7 @@ void scene_t::render_main(SDL_GPUCommandBuffer *cmd, SDL_GPURenderPass *pass) {
 }
 
 void scene_t::render_composite(SDL_GPUCommandBuffer *cmd, SDL_GPURenderPass *pass) {
-    uint32_t scene_flags =
-        m_kernel_idx | (m_invert_on ? 0x8u : 0u) | (m_grey_on ? 0x10u : 0u);
+    uint32_t scene_flags  = m_kernel_idx | (m_invert_on ? 0x8u : 0u) | (m_grey_on ? 0x10u : 0u);
     uint32_t mirror_flags = scene_flags;
 
     SDL_BindGPUGraphicsPipeline(pass, composite_pipeline.get());
