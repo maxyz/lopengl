@@ -1,0 +1,11 @@
+add_executable(sdl3_27_skybox skybox.cpp)
+target_link_libraries(sdl3_27_skybox sdl3_engine)
+chapter_spv_shaders(sdl3_27_skybox)
+
+add_executable(sdl3_27_environment environment.cpp)
+target_link_libraries(sdl3_27_environment sdl3_engine)
+chapter_spv_shaders(sdl3_27_environment)
+
+add_executable(sdl3_27_inter_reflection inter_reflection.cpp)
+target_link_libraries(sdl3_27_inter_reflection sdl3_engine)
+chapter_spv_shaders(sdl3_27_inter_reflection)
