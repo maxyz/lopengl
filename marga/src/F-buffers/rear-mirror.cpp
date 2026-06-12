@@ -11,6 +11,8 @@
 #include "texture.h"
 #include "lights.h"
 #include "geometry.h"
+#include "scene_state.h"
+//#include "imgui_dock.h"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -26,17 +28,6 @@
     float shininess;
 };*/
 
-// SceneState holds the global variables that alter the state of the scene
-struct SceneState {
-        float width;
-        float height;
-        glm::vec3 bgColor;
-        Camera camera;
-        double lastX, lastY;
-        bool firstMouse, recalculateObjects;
-        float shininess;
-};
-
 const int INITIAL_WIDTH = 1024;
 const int INITIAL_HEIGHT = 768;
 
@@ -50,101 +41,6 @@ SceneState state = {
         .shininess = 32.0,
 };
 
-// Width and Height handling
-void framebuffer_size_callback(GLFWwindow* window, int _width, int _height)
-{
-    glViewport(0, 0, _width, _height);
-    state.width = (float) _width;
-    state.height = (float) _height;
-
-}
-
-// Handle mouse input
-void mouse_callback(GLFWwindow* window, double xpos, double ypos)
-{
-    // Let ImGui handle the mouse
-    ImGuiIO& io = ImGui::GetIO();
-    if (io.WantCaptureMouse)
-        return;  // let ImGui handle it
-
-    // Only move the camera when the cursor is captured
-    if (glfwGetInputMode(window, GLFW_CURSOR) != GLFW_CURSOR_DISABLED)
-        return;
-
-    float xoffset = xpos - state.lastX;
-    float yoffset = state.lastY - ypos; // reversed since y-coordinates range from bottom to top
-    state.lastX = xpos;
-    state.lastY = ypos;
-
-    if (state.firstMouse) {
-        state.firstMouse = false;
-        return;
-    }
-    state.camera.ProcessMouseMovement(xoffset, yoffset);
-    state.recalculateObjects = true;
-}
-
-void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
-{
-    state.camera.ProcessMouseScroll(yoffset);
-}
-
-void keyboard_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
-{
-    // Tab toggles capturing the mouse
-    if ((key == GLFW_KEY_TAB) && (action == GLFW_RELEASE)) {
-        if (glfwGetInputMode(window, GLFW_CURSOR) == GLFW_CURSOR_DISABLED) {
-            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-        } else {
-            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-            glfwGetCursorPos(window, &state.lastX, &state.lastY);
-            state.firstMouse = true;
-        }
-    }
-}
-
-void processInput(GLFWwindow *window, float deltaTime, Camera &camera)
-{
-    if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-        glfwSetWindowShouldClose(window, true);
-    if(glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
-        glfwSetWindowShouldClose(window, true);
-
-    const float cameraSpeed = 2.5f * deltaTime;
-    Camera_Movement direction = NONE;
-    if(glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
-        direction = UP;
-    if(glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
-        direction = DOWN;
-    if(glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
-        direction = RIGHT;
-    if(glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
-        direction = LEFT;
-    if(glfwGetKey(window, GLFW_KEY_PAGE_UP) == GLFW_PRESS)
-        direction = FORWARD;
-    if(glfwGetKey(window, GLFW_KEY_PAGE_DOWN) == GLFW_PRESS)
-        direction = BACKWARD;
-
-    if (direction != NONE) {
-        camera.ProcessKeyboard(direction, deltaTime);
-        state.recalculateObjects = true;
-    }
-}
-
-
-void sortTransparent(bool recalculateObjects, auto transparentObjects, auto *sorted)
-{
-    if (recalculateObjects == false)
-        return;
-    sorted->clear();
-    for (unsigned int i = 0; i < transparentObjects.size(); i++)
-    {
-        float distance = glm::length(state.camera.Position - transparentObjects[i]);
-        sorted->insert({distance, transparentObjects[i]});
-    }
-    recalculateObjects = true;
-}
-
 class SceneRenderer {
     public:
         Shader  *sceneShader;
@@ -156,11 +52,79 @@ class SceneRenderer {
         unsigned int cubeVAO, cubeVBO;
         unsigned int planeVAO, planeVBO;
         unsigned int quadVAO, quadVBO;
-        unsigned int lightVAO, lightVBO;
+        unsigned int lightVAO;
 
+    void init();
     void renderScene(SceneState state);
+    void teardown();
 };
 
+void SceneRenderer::init()
+{
+    // Read shaders
+    this->sceneShader = new Shader("shaders/vertex.glsl", "shaders/textured-multi-lights.glsl");
+    this->sourceShader = new Shader("shaders/source-vertex.glsl", "shaders/source-frag.glsl");
+    this->quadShader = new Shader("shaders/quad-vertex.glsl", "shaders/quad-edge-frag.glsl");
+
+    this->quadShader->use();
+    this->quadShader->setInt("screenTexture", 0);
+
+    Texture::flip_vertically();
+    this->floorMaterial = new Texture("../media/marble.jpg", GL_RGB);
+    this->cubeMaterial = new Texture("../media/container.jpg", GL_RGB);
+
+    /*Texture grass = Texture("../media/grass.png", GL_RGBA);
+    grass.set_wrap(GL_CLAMP_TO_EDGE);
+
+    Texture windowPane = Texture("../media/blending_transparent_window.png", GL_RGBA);
+    Texture windowSpecular = Texture("../media/transparent_window_specular.png", GL_RGBA);
+    windowPane.set_wrap(GL_CLAMP_TO_EDGE);*/
+    
+    this->sceneShader->use();
+    this->sceneShader->setInt("material.texture_diffuse1", 0);
+    this->sceneShader->setInt("material.texture_specular1", 1);
+
+    // VAOs and VBOs
+    getCubeBuffers(&this->cubeVAO, &this->cubeVBO);
+    getPlaneBuffers(&this->planeVAO, &this->planeVBO);
+    getQuadBuffers(&this->quadVAO, &this->quadVBO);
+    getLightBuffers(&this->lightVAO, this->cubeVBO);
+
+    // Starting lighting values (position, color, ambient, diffuse, specular, constant, linear, quadratic, cutoff)
+    DirectionalLight directionalLight(glm::vec3(-0.2f, 1.0f, 0.3f));
+    SpotLight spotLight;
+    std::array<PositionalLight, 4> positionalLights = {{
+    	PositionalLight(glm::vec3( 1.7f,  1.2f,  2.0f), glm::vec3( 1.0f,  1.0f,  1.0f), 0.2f, 0.5f),
+	    PositionalLight(glm::vec3( 4.3f, -3.3f, -4.0f), glm::vec3( 0.0f,  0.0f,  1.0f), 0.2f, 0.5f),
+    	PositionalLight(glm::vec3(-4.0f,  2.0f, -2.0f), glm::vec3( 1.0f,  0.0f,  0.0f), 0.2f, 0.5f),
+    	PositionalLight(glm::vec3( 1.0f,  0.0f, -3.0f), glm::vec3( 0.0f,  1.0f,  0.0f), 0.2f, 0.5f)
+    }};
+    this->lights = new LightSet(directionalLight, spotLight, 4, positionalLights);
+
+    // Transparent objects - not in use
+    /*std::vector<glm::vec3> transparentObjects;
+    transparentObjects.push_back(glm::vec3(-1.5f,  0.0f, -0.48f));
+    transparentObjects.push_back(glm::vec3( 1.5f,  0.0f,  0.51f));
+    transparentObjects.push_back(glm::vec3( 0.0f,  0.0f,  0.7f));
+    transparentObjects.push_back(glm::vec3(-0.3f,  0.0f, -2.3f));
+    transparentObjects.push_back(glm::vec3( 0.5f,  0.0f, -0.6f));  
+
+    std::multimap<float, glm::vec3> sorted;
+    sortTransparent(true, transparentObjects, &sorted);*/
+
+}
+
+void SceneRenderer::teardown()
+{
+    // Clean up buffers
+    glDeleteVertexArrays(1, &this->cubeVAO);
+    glDeleteVertexArrays(1, &this->planeVAO);
+    glDeleteVertexArrays(1, &this->lightVAO);
+    glDeleteVertexArrays(1, &this->quadVAO);
+    glDeleteBuffers(1, &this->cubeVBO);
+    glDeleteBuffers(1, &this->planeVBO);
+    glDeleteBuffers(1, &this->quadVBO);
+}
 
 void SceneRenderer::renderScene(SceneState state) 
 {
@@ -311,13 +275,6 @@ int main()
     glCullFace(GL_BACK);
     glFrontFace(GL_CCW); 
 
-    SceneRenderer renderer;
-
-    // Read shaders
-    renderer.sceneShader = new Shader("shaders/vertex.glsl", "shaders/textured-multi-lights.glsl");
-    renderer.sourceShader = new Shader("shaders/source-vertex.glsl", "shaders/source-frag.glsl");
-    renderer.quadShader = new Shader("shaders/quad-vertex.glsl", "shaders/quad-edge-frag.glsl");
-
     // Create framebuffer and bind it
     unsigned int framebuffer;
     glGenFramebuffers(1, &framebuffer);
@@ -350,75 +307,12 @@ int main()
     	std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << std::endl;
     glBindFramebuffer(GL_FRAMEBUFFER, 0);  
 
-    renderer.quadShader->use();
-    renderer.quadShader->setInt("screenTexture", 0);
-
-    // Vertex definition for cubes
-    // Create an Element Buffer Object
-    unsigned int EBO;
-    glGenBuffers(1, &EBO);
-
-    // Cube VAO
-    getCubeBuffers(&renderer.cubeVAO, &renderer.cubeVBO);
-
-    // plane VAO
-    getPlaneBuffers(&renderer.planeVAO, &renderer.planeVBO);
-
-    // screen quad VAO
-    getQuadBuffers(&renderer.quadVAO, &renderer.quadVBO);
-
-    // ..:: Create a light source object ::..
-    // It has its own VAO.
-    unsigned int lightVAO;
-    glGenVertexArrays(1, &lightVAO);
-    glBindVertexArray(lightVAO);
-    // we only need to bind to the VBO, the container's VBO's data already contains the data.
-    glBindBuffer(GL_ARRAY_BUFFER, renderer.cubeVBO);
-    // set the vertex attribute
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
-
     float deltaTime = 0.0f;	// Time between current frame and last frame
     float lastFrame = 0.0f; // Time of last frame
 
-    Texture::flip_vertically();
-    renderer.floorMaterial = new Texture("../media/marble.jpg", GL_RGB);
-    renderer.cubeMaterial = new Texture("../media/container.jpg", GL_RGB);
 
-    /*Texture grass = Texture("../media/grass.png", GL_RGBA);
-    grass.set_wrap(GL_CLAMP_TO_EDGE);
-
-    Texture windowPane = Texture("../media/blending_transparent_window.png", GL_RGBA);
-    Texture windowSpecular = Texture("../media/transparent_window_specular.png", GL_RGBA);
-    windowPane.set_wrap(GL_CLAMP_TO_EDGE);*/
-    
-    renderer.sceneShader->use();
-    renderer.sceneShader->setInt("material.texture_diffuse1", 0);
-    renderer.sceneShader->setInt("material.texture_specular1", 1);
-
-    std::vector<glm::vec3> transparentObjects;
-    transparentObjects.push_back(glm::vec3(-1.5f,  0.0f, -0.48f));
-    transparentObjects.push_back(glm::vec3( 1.5f,  0.0f,  0.51f));
-    transparentObjects.push_back(glm::vec3( 0.0f,  0.0f,  0.7f));
-    transparentObjects.push_back(glm::vec3(-0.3f,  0.0f, -2.3f));
-    transparentObjects.push_back(glm::vec3( 0.5f,  0.0f, -0.6f));  
-
-    std::multimap<float, glm::vec3> sorted;
-    sortTransparent(true, transparentObjects, &sorted);
-
-    // Starting material values
-    /*Material material = { {0.5f, 0.5f, 0.5f}, 32 };*/
-
-    // Starting lighting values (position, color, ambient, diffuse, specular, constant, linear, quadratic, cutoff)
-    DirectionalLight directionalLight(glm::vec3(-0.2f, 1.0f, 0.3f));
-    SpotLight spotLight;
-    std::array<PositionalLight, 4> positionalLights = {{
-    	PositionalLight(glm::vec3( 1.7f,  1.2f,  2.0f), glm::vec3( 1.0f,  1.0f,  1.0f), 0.2f, 0.5f),
-	    PositionalLight(glm::vec3( 4.3f, -3.3f, -4.0f), glm::vec3( 0.0f,  0.0f,  1.0f), 0.2f, 0.5f),
-    	PositionalLight(glm::vec3(-4.0f,  2.0f, -2.0f), glm::vec3( 1.0f,  0.0f,  0.0f), 0.2f, 0.5f),
-    	PositionalLight(glm::vec3( 1.0f,  0.0f, -3.0f), glm::vec3( 0.0f,  1.0f,  0.0f), 0.2f, 0.5f)
-    }};
-    renderer.lights = new LightSet(directionalLight, spotLight, 4, positionalLights);
+    SceneRenderer renderer;
+    renderer.init();
 
     // Starting Background
     state.bgColor = glm::vec3( 0.1f,  0.2f,  0.4f);
@@ -426,6 +320,7 @@ int main()
     // Wireframe mode
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
+    
     // Setup Dear ImGui context
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
@@ -523,12 +418,6 @@ int main()
         glfwSwapBuffers(window);
     }
 
-    // Clean up buffers
-    glDeleteVertexArrays(1, &renderer.cubeVAO);
-    glDeleteVertexArrays(1, &renderer.planeVAO);
-    glDeleteVertexArrays(1, &renderer.lightVAO);
-    glDeleteBuffers(1, &renderer.cubeVBO);
-    glDeleteBuffers(1, &renderer.planeVBO);
 
     // Cleanup Imgui
     ImGui_ImplOpenGL3_Shutdown();

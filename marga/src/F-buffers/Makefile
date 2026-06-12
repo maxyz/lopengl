@@ -27,11 +27,14 @@ model.o: ../lib/model.cpp ../lib/model.h
 mesh.o: ../lib/mesh.cpp ../lib/mesh.h
 	g++ $(CPPFLAGS) -c $< -o $@
 
+scene_state.o: ../lib/scene_state.cpp ../lib/scene_state.h
+	g++ $(CPPFLAGS) -c $< -o $@
+
 # This chapter's files
 framebuffers: framebuffers.cpp libGLAD.a shader.o lights.o texture.o ../lib/camera.h
 	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
 
-rear-mirror: rear-mirror.cpp libGLAD.a shader.o lights.o texture.o ../lib/camera.h ../lib/geometry.h
+rear-mirror: rear-mirror.cpp libGLAD.a shader.o lights.o texture.o ../lib/camera.h ../lib/geometry.h scene_state.o
 	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
 
 clean:
