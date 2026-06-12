@@ -30,11 +30,14 @@ mesh.o: ../lib/mesh.cpp ../lib/mesh.h
 scene_state.o: ../lib/scene_state.cpp ../lib/scene_state.h
 	g++ $(CPPFLAGS) -c $< -o $@
 
+imgui_dock.o: ../lib/imgui_dock.cpp ../lib/imgui_dock.h scene_state.o lights.o
+	g++ $(CPPFLAGS) -c $< -o $@
+
 # This chapter's files
 framebuffers: framebuffers.cpp libGLAD.a shader.o lights.o texture.o ../lib/camera.h
 	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
 
-rear-mirror: rear-mirror.cpp libGLAD.a shader.o lights.o texture.o ../lib/camera.h ../lib/geometry.h scene_state.o
+rear-mirror: rear-mirror.cpp libGLAD.a shader.o lights.o texture.o ../lib/camera.h ../lib/geometry.h scene_state.o imgui_dock.o
 	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
 
 clean:

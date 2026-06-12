@@ -12,7 +12,7 @@
 #include "lights.h"
 #include "geometry.h"
 #include "scene_state.h"
-//#include "imgui_dock.h"
+#include "imgui_dock.h"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -34,6 +34,7 @@ const int INITIAL_HEIGHT = 768;
 SceneState state = {
         .width = (float) INITIAL_WIDTH,
         .height = (float) INITIAL_HEIGHT,
+        .bgColor = glm::vec3( 0.2f,  0.3f,  0.5f),
         .camera = Camera(glm::vec3(0.0f, 0.0f, 5.0f)),
         .lastX = 400,
         .lastY = 300,
@@ -314,27 +315,11 @@ int main()
     SceneRenderer renderer;
     renderer.init();
 
-    // Starting Background
-    state.bgColor = glm::vec3( 0.1f,  0.2f,  0.4f);
+    ImguiDock dock;
+    dock.init(window);
 
     // Wireframe mode
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-
-    
-    // Setup Dear ImGui context
-    IMGUI_CHECKVERSION();
-    ImGui::CreateContext();
-    ImGuiIO& io = ImGui::GetIO();
-    //io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
-    //io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
-    io.Fonts->AddFontFromFileTTF("../media/Roboto-Regular.ttf", 20);
-    io.IniFilename = NULL; // Avoid creating imgui.ini
-
-    // Setup Dear ImGui style
-    ImGui::StyleColorsDark();
-    // Setup Platform/Renderer backends
-    ImGui_ImplGlfw_InitForOpenGL(window, true);
-    ImGui_ImplOpenGL3_Init();
 
     // Render loop
     while(!glfwWindowShouldClose(window))
@@ -372,46 +357,8 @@ int main()
 
 
         // ImGui dock
-        ImGui_ImplOpenGL3_NewFrame();
-        ImGui_ImplGlfw_NewFrame();
-        ImGui::NewFrame();
-        ImGui::SetNextWindowPos(ImVec2(20.0f, 20.0f), ImGuiCond_Once);
-        ImGui::Begin("Scene information", NULL, ImGuiWindowFlags_AlwaysAutoResize);
-        ImGui::PushItemWidth(150.0f);
-        ImGui::LabelText("Pos","(%.2f, %.2f, %.2f)", state.camera.Position.x, state.camera.Position.y, state.camera.Position.z);
-        ImGui::LabelText("Front","(%.2f, %.2f, %.2f)", state.camera.Front.x, state.camera.Front.y, state.camera.Front.z);
-        // Only show the controls when the mouse is not captured by the camera
-        if (glfwGetInputMode(window, GLFW_CURSOR) != GLFW_CURSOR_DISABLED) {
-            ImGui::ColorEdit3("Background", glm::value_ptr(state.bgColor));
-            ImGui::SliderFloat("Shininess", &state.shininess, 0.0f, 256.0f);
-
-            renderer.lights->directionalLight.showImGuiControls("Directional Light");
-            for (int i = 0; i < renderer.lights->positionalLightAmount; i++) {
-                renderer.lights->positionalLights[i].showImGuiControls(std::format("Positional Light {}", i));
-            }
-            renderer.lights->spotLight.showImGuiControls("Spot Light");
-
-            if (ImGui::Button("Desert"))
-                SetLights("Desert", state.bgColor, renderer.lights);
-            ImGui::SameLine();
-            if (ImGui::Button("Factory"))
-                SetLights("Factory", state.bgColor, renderer.lights);
-            ImGui::SameLine();
-            if (ImGui::Button("Horror"))
-                SetLights("Horror", state.bgColor, renderer.lights);
-            ImGui::SameLine();
-            if (ImGui::Button("BioLab"))
-                SetLights("BioLab", state.bgColor, renderer.lights);
-        }
-        ImGui::SeparatorText("");
-        ImGui::Text("Press TAB to switch modes");
-        ImGui::PopItemWidth();
-        ImGui::End();
-
-        // Render ImGui
-        ImGui::Render();
-        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
+        dock.setup(window, state, renderer.lights);
+        dock.render();
 
         // check and call events and swap buffers
         glfwPollEvents();
@@ -419,10 +366,8 @@ int main()
     }
 
 
-    // Cleanup Imgui
-    ImGui_ImplOpenGL3_Shutdown();
-    ImGui_ImplGlfw_Shutdown();
-    ImGui::DestroyContext();
+    renderer.teardown();
+    dock.teardown();
 
     // Clean up
     glfwTerminate();
