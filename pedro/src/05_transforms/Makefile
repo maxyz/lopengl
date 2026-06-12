@@ -1,4 +1,4 @@
-EXES = cam cam2 camDebounce1 camDebounce2 camLockPerspective cam_ejs refactor_buckbeak
+EXES = transforms
 
 LIB = libGLAD.a stb_image.o shader.o texture.o camera.o material.o model.o mesh.o  key_command.o
 
@@ -13,27 +13,9 @@ LDFLAGS = -lglfw -lGL -lX11 -lpthread -lXrandr -lXi -ldl -lassimp -g
 CPPFLAGS = -I ../../include/ -I ../lib/ $(shell pkg-config --cflags assimp)
 EXTRAS = /usr/lib/x86_64-linux-gnu/libglfw.so libGLAD.a
 
-refactor_buckbeak: refactor_buckbeak_debug.cpp $(LIB)
+transforms: transforms02.cpp $(LIB)
 	g++ $(CPPFLAGS) $^ $(EXTRAS) -o $@ $(LDFLAGS)
 
-cam: cam.cpp $(LIB)
-	g++ $(CPPFLAGS) $^ $(EXTRAS) -o $@ $(LDFLAGS)
-
-cam2: cam2.cpp $(LIB)
-	g++ $(CPPFLAGS) $^ $(EXTRAS) -o $@ $(LDFLAGS)
-
-camDebounce1: camDebounce1.cpp $(LIB)
-	g++ $(CPPFLAGS) $^ $(EXTRAS) -o $@ $(LDFLAGS)
-
-camDebounce2: camDebounce2.cpp $(LIB)
-	g++ $(CPPFLAGS) $^ $(EXTRAS) -o $@ $(LDFLAGS)
-
-camLockPerspective: camLockPerspective.cpp $(LIB)
-	g++ $(CPPFLAGS) $^ $(EXTRAS) -o $@ $(LDFLAGS)
-
-cam_ejs: cam_ejs.cpp $(LIB)
-	g++ $(CPPFLAGS) $^ $(EXTRAS) -o $@ $(LDFLAGS)
-	
 camera.o: ../lib/camera.cpp ../lib/camera.h
 	g++ $(CPPFLAGS) -c $< -o $@
 
@@ -62,5 +44,5 @@ clean:
 	rm -f glad.o $(LIB) $(EXES)
 
 # en general:
-# file: file.cpp libGLAD.a stb_image.o shader.o texture.o
+# file: file.cpp libGLAD.a stb_image.o shader.o texture.o camera.o
 #	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@

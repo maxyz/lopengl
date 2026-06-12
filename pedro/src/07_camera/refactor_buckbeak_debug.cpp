@@ -25,6 +25,7 @@ struct Engine {
 
 };
 
+bool setupBuffers(uint *VAO);
 GLFWwindow* windowAndContext();
 void framebuffer_size_callback(GLFWwindow* window, int _width, int _height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
@@ -88,60 +89,35 @@ int main()
     if (window == NULL) return -1;
 
     glEnable(GL_DEPTH_TEST);
-    // glDepthMask(GL_FALSE); Si por alguna razón necesitamos que el buffer sea read only
-    // glDepthFunc(GL_*COMPARISON CONSTANT*); // Para cambiar la función de testing 
-    glDepthFunc(GL_LESS);
+    
+    Shader shader("shaders/shader02.vs", "shaders/shader01.frag");
+    VAO myVAO(cube);
+    
+    // uint VAO;
+    // if (!setupBuffers(&VAO)) return -1;
 
-    // Setup Shaders
-    Shader renderShader("shaders/shader01.vs", "shaders/shader01.frag");
-    Shader postShaderDefault("shaders/post1.vs", "shaders/postDefault.frag");
-    Shader postShaderInverse("shaders/post1.vs", "shaders/postInverse.frag");
-    Shader postShaderGreyscale("shaders/post1.vs", "shaders/postGreyscale.frag");
-    Shader postShaderKernel1("shaders/post1.vs", "shaders/postKernel1.frag");
-    Shader postShaderKernel2("shaders/post1.vs", "shaders/postKernel2.frag");
+    stbi_set_flip_vertically_on_load(true);
 
-    std::vector<Shader> postprocShaders = {postShaderDefault, postShaderInverse, postShaderGreyscale, postShaderKernel1, postShaderKernel2};
+    Texture2D tex1("../media/container.jpg", JPG), tex2("../media/awesomeface.png", PNG);
+    
+    glm::vec3 cubePositions[] = {
+        glm::vec3( 0.0f,  0.0f,  0.0f), 
+        glm::vec3( 2.0f,  5.0f, -15.0f), 
+        glm::vec3(-1.5f, -2.2f, -2.5f),  
+        glm::vec3(-3.8f, -2.0f, -12.3f),  
+        glm::vec3( 2.4f, -0.4f, -3.5f),  
+        glm::vec3(-1.7f,  3.0f, -7.5f),  
+        glm::vec3( 1.3f, -2.0f, -2.5f),  
+        glm::vec3( 1.5f,  2.0f, -2.5f), 
+        glm::vec3( 1.5f,  0.2f, -1.5f), 
+        glm::vec3(-1.3f,  1.0f, -1.5f)  
+    };
 
-    uint current_shader = 0;
+    shader.use();
 
-    // VAOs
-    VAO cubeVAO(cube);
-    VAO planeVAO(plane);
-    VAO quadVAO(quad);
+    shader.setInt("tex1", 0);
+    shader.setInt("tex2", 1);//
 
-    // Framebuffers
-    unsigned int framebuffer;
-    glGenFramebuffers(1, &framebuffer);
-    glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
-    // create a color attachment texture
-    unsigned int textureColorbuffer;
-    glGenTextures(1, &textureColorbuffer);
-    glBindTexture(GL_TEXTURE_2D, textureColorbuffer);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureColorbuffer, 0);
-
-    // create a renderbuffer object for depth and stencil attachment (we won't be sampling these)
-    unsigned int rbo;
-    glGenRenderbuffers(1, &rbo);
-    glBindRenderbuffer(GL_RENDERBUFFER, rbo);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height); // use a single renderbuffer object for both a depth AND stencil buffer.
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo); // now actually attach it
-    // now that we actually created the framebuffer and added all attachments we want to check if it is actually complete now
-    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-        std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!\n";
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-    Texture2D cubeTexture("../media/container.jpg", JPG);
-    Texture2D floorTexture("../media/metal.png", PNG);
-
-    renderShader.use();
-    renderShader.setInt("material.texture_diffuse1", 0);
-
-    glm::mat4 model;
-    glm::mat4 view;
-    glm::mat4 projection;
 
     while(!glfwWindowShouldClose(window))
     {
@@ -150,80 +126,86 @@ int main()
         lastFrame = currentFrame;
 
         processInput(window);
-        if (shaderNeedsToBeChanged)
-        {
-            current_shader = (current_shader + 1) % postprocShaders.size();
-            shaderNeedsToBeChanged = false;
-        }
-        
-        glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
-        glEnable(GL_DEPTH_TEST);
+        // processInput(window);
+
+        // printf("DEBUG >> DELTA TIME (in ms): %f\n", deltaTime*1000);
 
         // Render:
-        // glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+        glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        // MATRIXES
-        model = glm::mat4(1.0f);
-        view = cam.lookFront();
+        shader.use();
+
+        tex1.activate(0);
+        tex2.activate(1);
+
+        glm::mat4 view = cam.lookFront();
+
+        shader.setMat4("view", view);
+
+        // PROJECTION MATRIX
+        glm::mat4 projection;
         projection = glm::perspective(glm::radians(cam.fov), width / height, 0.1f, 100.0f);
 
-        renderShader.use();
-        renderShader.setVertexMatrices(view, model, projection);
+        shader.setMat4("projection", projection);
 
-        // cubes
-        cubeVAO.bind();
+        myVAO.bind();
 
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, cubeTexture.texture); 	
-        model = glm::translate(model, glm::vec3(-1.0f, 0.0f, -1.0f));
-        renderShader.setMat4("model", model);
-        glDrawArrays(GL_TRIANGLES, 0, 36);
-        model = glm::mat4(1.0f);
-        model = glm::translate(model, glm::vec3(2.0f, 0.0f, 0.0f));
-        renderShader.setMat4("model", model);
-        glDrawArrays(GL_TRIANGLES, 0, 36);
+        for(unsigned int i = 0; i < 10; i++)
+        {
+            glm::mat4 model = glm::mat4(1.0f);
+            model = glm::translate(model, cubePositions[i]);
+            float angle = 20.0f * i, extraAngle = 1.0;
 
-        cubeVAO.unbind();
+            if (i % 3 == 0) extraAngle = (float)glfwGetTime();
+            
+            model = glm::rotate(model, extraAngle * glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
+            shader.setMat4("model", model);
 
-        // floor
-        planeVAO.bind();
 
-        glBindTexture(GL_TEXTURE_2D, floorTexture.texture);
-        renderShader.setMat4("model", glm::mat4(1.0f));
-        model = glm::mat4(1.0f);
-        renderShader.setVertexMatrices(view, model, projection);
-        glDrawArrays(GL_TRIANGLES, 0, 6);
-
-        planeVAO.unbind();
-
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        glDisable(GL_DEPTH_TEST);
-
-        glClearColor(1.0f, 1.0f, 1.0f, 1.0f); 
-        glClear(GL_COLOR_BUFFER_BIT);
-
-        postprocShaders[current_shader].use();
-
-        quadVAO.bind();
-        glBindTexture(GL_TEXTURE_2D, textureColorbuffer);
-        glDrawArrays(GL_TRIANGLES, 0, 6);
-        quadVAO.unbind();
+            glDrawArrays(GL_TRIANGLES, 0, 36);
+        }
 
         glfwSwapBuffers(window);
         glfwPollEvents();    
     }
-
-    cubeVAO.deleteBuffers();
-    planeVAO.deleteBuffers();
-    quadVAO.deleteBuffers();
 
     glfwTerminate();
     return 0;
 }
 
 #pragma region 
+
+bool setupBuffers(uint *VAO) {
+
+    uint VBO;
+    glGenVertexArrays(1, VAO);
+    glGenBuffers(1, &VBO);
+
+    // bind the Vertex Array Object first, then bind and set vertex buffer(s), and then configure vertex attributes(s).
+    glBindVertexArray(*VAO);
+
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+
+    glBufferData(GL_ARRAY_BUFFER, cube.size() * sizeof(float), cube.data(), GL_STATIC_DRAW);
+
+    // position attribute
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+
+    // texture coord attribute
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+
+    // note that this is allowed, the call to glVertexAttribPointer registered VBO as the vertex attribute's bound vertex buffer object so afterwards we can safely unbind
+    glBindBuffer(GL_ARRAY_BUFFER, 0); 
+
+    // You can unbind the VAO afterwards so other VAO calls won't accidentally modify this VAO, but this rarely happens. Modifying other
+    // VAOs requires a call to glBindVertexArray anyways so we generally don't unbind VAOs (nor VBOs) when it's not directly necessary.
+    glBindVertexArray(0);
+
+    return 1;
+}
 
 GLFWwindow* windowAndContext() {
     glfwInit();

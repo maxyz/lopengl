@@ -1,6 +1,6 @@
 EXES = 01depth_testing 02depth_stencil_testing 03blending01 03blending02 05framebuffers refactor_buckbeak
 
-LIB = libGLAD.a stb_image.o shader.o texture.o camera.o material.o model.o mesh.o  key_command.o buffers.o
+LIB = libGLAD.a stb_image.o shader.o texture.o camera.o material.o model.o mesh.o  key_command.o
 
 default_target: $(EXES)
 
@@ -47,9 +47,6 @@ model.o: ../lib/model.cpp ../lib/model.h
 	g++ $(CPPFLAGS) -c $< -o $@
 
 key_command.o: ../lib/key_command.cpp ../lib/key_command.h
-	g++ $(CPPFLAGS) -c $< -o $@
-
-buffers.o: ../lib/buffers.h
 	g++ $(CPPFLAGS) -c $< -o $@
 
 stb_image.o: ../lib/stb_image.cpp

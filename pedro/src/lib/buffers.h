@@ -5,6 +5,9 @@
 
 class VAO {
 
+private:
+    
+
 public:
     unsigned int vao, vbo;
 
@@ -13,13 +16,14 @@ public:
         glGenBuffers(1, &vbo);
         glBindVertexArray(vao);
         glBindBuffer(GL_ARRAY_BUFFER, vbo);
-        glBufferData(GL_ARRAY_BUFFER, verticesVector.size, &verticesVector.vertices, GL_STATIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, verticesVector.size() * sizeof(float), verticesVector.data(), GL_STATIC_DRAW);
 
         for (auto info : verticesVector.attribInfo)
         {
             auto& [location, size, stride, pointer] = info;
+
+            glVertexAttribPointer(location, size, GL_FLOAT, GL_FALSE, stride * sizeof(float) , (void*) (pointer * sizeof(float)));
             glEnableVertexAttribArray(location);
-            glVertexAttribPointer(location, size, GL_FLOAT, GL_FALSE, stride, (void*)pointer);
         }
 
         glBindVertexArray(0);
