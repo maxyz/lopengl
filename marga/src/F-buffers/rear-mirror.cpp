@@ -10,6 +10,7 @@
 #include "camera.h"
 #include "texture.h"
 #include "lights.h"
+#include "geometry.h"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -19,8 +20,6 @@
 #include "imgui.h"
 #include "backends/imgui_impl_glfw.h"
 #include "backends/imgui_impl_opengl3.h"
-
-#include "texture_vertices.cpp"
 
 /*struct Material {
     float specular[3];
@@ -154,10 +153,10 @@ class SceneRenderer {
         Texture *cubeMaterial;
         Texture *floorMaterial;
         LightSet *lights;
-        unsigned int cubeVAO;
-        unsigned int planeVAO;
-        unsigned int quadVAO;
-        unsigned int lightVAO;
+        unsigned int cubeVAO, cubeVBO;
+        unsigned int planeVAO, planeVBO;
+        unsigned int quadVAO, quadVBO;
+        unsigned int lightVAO, lightVBO;
 
     void renderScene(SceneState state);
 };
@@ -358,62 +357,15 @@ int main()
     // Create an Element Buffer Object
     unsigned int EBO;
     glGenBuffers(1, &EBO);
-    // Create a buffer object called VBO
-    unsigned int VBO;
-    glGenBuffers(1, &VBO);
-    // Generate a Vertex array
-    //unsigned int VAO;
-    glGenVertexArrays(1, &renderer.cubeVAO);
 
-    // 1. bind Vertex Array Object
-    glBindVertexArray(renderer.cubeVAO);
-    // 2. copy our vertices array in a buffer for OpenGL to use
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-    // 3. then set our vertex attributes pointers (the vertices are in lighting_vertices.cpp)
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
-    glEnableVertexAttribArray(2);
+    // Cube VAO
+    getCubeBuffers(&renderer.cubeVAO, &renderer.cubeVBO);
 
-    // Plane definition
-    float planeVertices[] = {
-        // positions          // texture Coords (note we set these higher than 1 (together with GL_REPEAT as texture wrapping mode). this will cause the floor texture to repeat)
-         5.0f, -0.6f,  5.0f,  0.0f, 1.0f, 0.0f, 2.0f, 0.0f,
-        -5.0f, -0.6f, -5.0f,  0.0f, 1.0f, 0.0f, 0.0f, 2.0f,
-        -5.0f, -0.6f,  5.0f,  0.0f, 1.0f, 0.0f, 0.0f, 0.0f,
-
-         5.0f, -0.6f,  5.0f,  0.0f, 1.0f, 0.0f, 2.0f, 0.0f,
-         5.0f, -0.6f, -5.0f,  0.0f, 1.0f, 0.0f, 2.0f, 2.0f,	
-        -5.0f, -0.6f, -5.0f,  0.0f, 1.0f, 0.0f, 0.0f, 2.0f
-    };    
     // plane VAO
-    unsigned int planeVBO;
-    glGenVertexArrays(1, &renderer.planeVAO);
-    glGenBuffers(1, &planeVBO);
-    glBindVertexArray(renderer.planeVAO);
-    glBindBuffer(GL_ARRAY_BUFFER, planeVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(planeVertices), &planeVertices, GL_STATIC_DRAW);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
-    glEnableVertexAttribArray(2);
+    getPlaneBuffers(&renderer.planeVAO, &renderer.planeVBO);
 
     // screen quad VAO
-    unsigned int quadVBO;
-    glGenVertexArrays(1, &renderer.quadVAO);
-    glGenBuffers(1, &quadVBO);
-    glBindVertexArray(renderer.quadVAO);
-    glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+    getQuadBuffers(&renderer.quadVAO, &renderer.quadVBO);
 
     // ..:: Create a light source object ::..
     // It has its own VAO.
@@ -421,7 +373,7 @@ int main()
     glGenVertexArrays(1, &lightVAO);
     glBindVertexArray(lightVAO);
     // we only need to bind to the VBO, the container's VBO's data already contains the data.
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBindBuffer(GL_ARRAY_BUFFER, renderer.cubeVBO);
     // set the vertex attribute
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
@@ -500,21 +452,27 @@ int main()
         // input
         processInput(window, deltaTime, state.camera);
 
-        // first pass: draw to the framebuffer
+        // first pass: draw to the framebuffer with the inverted camera
         glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
-        //glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-        //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // we're not using the stencil buffer now
+        state.camera.setRearView();
         renderer.renderScene(state);
-        // second pass: use the framebuffer as a texture and render that
+        state.camera.unsetRearView();
+
+        // second pass: draw the main scene with the restored camera
         glBindFramebuffer(GL_FRAMEBUFFER, 0); // back to default framebuffer
-        glClearColor(1.0f, 1.0f, 1.0f, 1.0f); 
         glClear(GL_COLOR_BUFFER_BIT);
-  
+        renderer.renderScene(state);
+
+        // And now draw the background mirror
         renderer.quadShader->use();  
         glBindVertexArray(renderer.quadVAO);
         glDisable(GL_DEPTH_TEST);
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, textureColorbuffer);
+        glm::mat4 model = glm::mat4(1.0f);
+        model = glm::translate(model, glm::vec3(0.0f, 0.8f, 0.0f));
+        model = glm::scale(model, glm::vec3(0.2f));
+        renderer.quadShader->setMatrix4fv("model", glm::value_ptr(model));
         glDrawArrays(GL_TRIANGLES, 0, 6);  
 
 
@@ -569,8 +527,8 @@ int main()
     glDeleteVertexArrays(1, &renderer.cubeVAO);
     glDeleteVertexArrays(1, &renderer.planeVAO);
     glDeleteVertexArrays(1, &renderer.lightVAO);
-    glDeleteBuffers(1, &VBO);
-    glDeleteBuffers(1, &planeVBO);
+    glDeleteBuffers(1, &renderer.cubeVBO);
+    glDeleteBuffers(1, &renderer.planeVBO);
 
     // Cleanup Imgui
     ImGui_ImplOpenGL3_Shutdown();

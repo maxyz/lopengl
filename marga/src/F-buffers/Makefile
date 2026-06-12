@@ -31,7 +31,7 @@ mesh.o: ../lib/mesh.cpp ../lib/mesh.h
 framebuffers: framebuffers.cpp libGLAD.a shader.o lights.o texture.o ../lib/camera.h
 	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
 
-rear-mirror: rear-mirror.cpp libGLAD.a shader.o lights.o texture.o ../lib/camera.h
+rear-mirror: rear-mirror.cpp libGLAD.a shader.o lights.o texture.o ../lib/camera.h ../lib/geometry.h
 	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
 
 clean:
