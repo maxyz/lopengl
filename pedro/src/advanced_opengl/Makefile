@@ -1,4 +1,4 @@
-EXES = depth_testing depth_stencil_testing blending01 blending02 framebuffers refactor_buckbeak
+EXES = 01depth_testing 02depth_stencil_testing 03blending01 03blending02 05framebuffers refactor_buckbeak
 
 LIB = libGLAD.a stb_image.o shader.o texture.o camera.o material.o model.o mesh.o  key_command.o buffers.o
 
@@ -13,19 +13,19 @@ LDFLAGS = -lglfw -lGL -lX11 -lpthread -lXrandr -lXi -ldl -lassimp -g
 CPPFLAGS = -I ../../include/ -I ../lib/ $(shell pkg-config --cflags assimp)
 EXTRAS = /usr/lib/x86_64-linux-gnu/libglfw.so libGLAD.a
 
-depth_testing: depth_testing.cpp $(LIB)
+01depth_testing: 01depth_testing.cpp $(LIB)
 	g++ $(CPPFLAGS) $^ $(EXTRAS) -o $@ $(LDFLAGS)
 
-depth_stencil_testing: depth_stencil_testing.cpp $(LIB)
+02depth_stencil_testing: 02depth_stencil_testing.cpp $(LIB)
 	g++ $(CPPFLAGS) $^ $(EXTRAS) -o $@ $(LDFLAGS)
 	
-blending01: blending01.cpp $(LIB)
+03blending01: 03blending01.cpp $(LIB)
 	g++ $(CPPFLAGS) $^ $(EXTRAS) -o $@ $(LDFLAGS)
 
-blending02: blending02.cpp $(LIB)
+03blending02: 03blending02.cpp $(LIB)
 	g++ $(CPPFLAGS) $^ $(EXTRAS) -o $@ $(LDFLAGS)
 
-framebuffers: framebuffers.cpp $(LIB)
+05framebuffers: 05framebuffers.cpp $(LIB)
 	g++ $(CPPFLAGS) $^ $(EXTRAS) -o $@ $(LDFLAGS)
 
 refactor_buckbeak: refactor_buckbeak.cpp $(LIB)
