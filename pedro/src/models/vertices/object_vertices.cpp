@@ -117,7 +117,7 @@ std::vector<float> verticesQuad = { // vertex attributes for a quad that fills t
      1.0f,  1.0f,  1.0f, 1.0f
 };
 
-VertexVector quad(verticesCube, 
+VertexVector quad(verticesQuad, 
     AttribInfo{
         VertexAttribInfo{0, 2, 4, 0},
         VertexAttribInfo{1, 2, 4, 2}
@@ -132,10 +132,10 @@ std::vector<float> verticesPlane = {
 
     5.0f, -0.5f,  5.0f,  1.0f, 0.0f,
     -5.0f, -0.5f, -5.0f,  0.0f, 1.0f,
-    5.0f, -0.5f, -5.0f,  1.0f, 1.0f								
+    5.0f, -0.5f, -5.0f,  1.0f, 1.0f
 };
 
-VertexVector plane(verticesCube, 
+VertexVector plane(verticesPlane, 
     AttribInfo{
         VertexAttribInfo{0, 3, 5, 0},
         VertexAttribInfo{1, 2, 5, 3}

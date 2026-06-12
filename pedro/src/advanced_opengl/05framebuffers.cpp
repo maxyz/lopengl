@@ -279,7 +279,6 @@ int main()
         // floor
         glBindVertexArray(planeVAO);
         glBindTexture(GL_TEXTURE_2D, floorTexture.texture);
-        renderShader.setMat4("model", glm::mat4(1.0f));
         model = glm::mat4(1.0f);
         renderShader.setVertexMatrices(view, model, projection);
         glDrawArrays(GL_TRIANGLES, 0, 6);
