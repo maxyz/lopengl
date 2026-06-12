@@ -5,3 +5,7 @@ chapter_spv_shaders(sdl3_26_framebuffer)
 add_executable(sdl3_26_mirror mirror.cpp)
 target_link_libraries(sdl3_26_mirror sdl3_engine)
 chapter_spv_shaders(sdl3_26_mirror)
+
+add_executable(sdl3_26_split_view split_view.cpp)
+target_link_libraries(sdl3_26_split_view sdl3_engine)
+chapter_spv_shaders(sdl3_26_split_view)

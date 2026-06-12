@@ -214,6 +214,19 @@ input_t collect_input(engine_t &engine, bool focused, float scroll_delta, float 
 } // namespace
 
 std::expected<void, std::string>
+render_frame(engine_t const &engine, SDL_FColor clear_color, draw_fn draw) {
+    pass_desc_t pass{.clear_color = clear_color, .draw = std::move(draw)};
+    return render_frame(engine, std::span{&pass, 1});
+}
+
+std::expected<void, std::string> render_frame(
+    engine_t const &engine, SDL_FColor clear_color, gpu_texture_t const &depth, draw_fn draw
+) {
+    pass_desc_t pass{.depth_texture = &depth, .clear_color = clear_color, .draw = std::move(draw)};
+    return render_frame(engine, std::span{&pass, 1});
+}
+
+std::expected<void, std::string>
 render_frame(engine_t const &engine, std::span<pass_desc_t const> passes) {
     SDL_GPUCommandBuffer *cmd = SDL_AcquireGPUCommandBuffer(engine.gpu_device);
     if (!cmd) return sdl_error("SDL_AcquireGPUCommandBuffer failed");
@@ -256,6 +269,10 @@ render_frame(engine_t const &engine, std::span<pass_desc_t const> passes) {
 
     if (!SDL_SubmitGPUCommandBuffer(cmd)) return sdl_error("SDL_SubmitGPUCommandBuffer failed");
     return {};
+}
+
+std::expected<void, std::string> run_loop(engine_t &engine, SDL_FColor clear_color, draw_fn draw) {
+    return run_loop(engine, clear_color, [](input_t const &) { return true; }, std::move(draw));
 }
 
 std::expected<void, std::string> run_loop(

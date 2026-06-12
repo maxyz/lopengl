@@ -123,6 +123,15 @@ void imgui_prepare(SDL_GPUCommandBuffer *cmd);
 // No-op when no ImGui context exists. Call at the end of a pass_desc_t::draw callback.
 void imgui_render(SDL_GPUCommandBuffer *cmd, SDL_GPURenderPass *pass);
 
+// Simple single-pass render: no depth attachment, fixed clear colour.
+std::expected<void, std::string>
+render_frame(engine_t const &engine, SDL_FColor clear_color, draw_fn draw);
+
+// Single-pass render with a caller-supplied depth texture.
+std::expected<void, std::string> render_frame(
+    engine_t const &engine, SDL_FColor clear_color, gpu_texture_t const &depth, draw_fn draw
+);
+
 // Execute a sequence of render passes in one command buffer submission.
 std::expected<void, std::string>
 render_frame(engine_t const &engine, std::span<pass_desc_t const> passes);
@@ -336,6 +345,10 @@ struct input_t {
 };
 
 // Single-pass event loop: manages depth internally; draws to the swapchain each frame.
+// Quits on SDL_EVENT_QUIT only (no update callback).
+std::expected<void, std::string> run_loop(engine_t &engine, SDL_FColor clear_color, draw_fn draw);
+
+// Variant with an update callback; return false from update to quit.
 std::expected<void, std::string> run_loop(
     engine_t &engine, SDL_FColor clear_color, std::function<bool(input_t const &)> update,
     draw_fn draw
