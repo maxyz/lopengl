@@ -1,6 +1,6 @@
-EXES = depth_testing depth_stencil_testing blending01 blending02 framebuffers
+EXES = depth_testing depth_stencil_testing blending01 blending02 framebuffers refactor_buckbeak
 
-LIB = libGLAD.a stb_image.o shader.o texture.o camera.o material.o model.o mesh.o key_command.o
+LIB = libGLAD.a stb_image.o shader.o texture.o camera.o material.o model.o mesh.o  key_command.o buffers.o
 
 default_target: $(EXES)
 
@@ -28,6 +28,9 @@ blending02: blending02.cpp $(LIB)
 framebuffers: framebuffers.cpp $(LIB)
 	g++ $(CPPFLAGS) $^ $(EXTRAS) -o $@ $(LDFLAGS)
 
+refactor_buckbeak: refactor_buckbeak.cpp $(LIB)
+	g++ $(CPPFLAGS) $^ $(EXTRAS) -o $@ $(LDFLAGS)
+
 camera.o: ../lib/camera.cpp ../lib/camera.h
 	g++ $(CPPFLAGS) -c $< -o $@
 
@@ -44,6 +47,9 @@ model.o: ../lib/model.cpp ../lib/model.h
 	g++ $(CPPFLAGS) -c $< -o $@
 
 key_command.o: ../lib/key_command.cpp ../lib/key_command.h
+	g++ $(CPPFLAGS) -c $< -o $@
+
+buffers.o: ../lib/buffers.h
 	g++ $(CPPFLAGS) -c $< -o $@
 
 stb_image.o: ../lib/stb_image.cpp

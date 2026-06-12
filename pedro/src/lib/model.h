@@ -36,4 +36,24 @@ private:
 
 };
 
+struct VertexAttribInfo {
+    unsigned int location;
+    unsigned int size;
+    unsigned int stride;
+    unsigned int pointer;
+};
+
+using AttribInfo = std::vector<VertexAttribInfo>;
+class VertexVector {
+
+public:
+    AttribInfo attribInfo;
+    float* vertices;
+    size_t size;
+
+    VertexVector(float* vertices, AttribInfo attribInfo) : vertices(vertices), attribInfo(attribInfo) {
+        size = sizeof(vertices);
+    }
+};
+
 #endif
