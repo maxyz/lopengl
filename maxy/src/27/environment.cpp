@@ -17,7 +17,7 @@
 
 #include "common/common.hpp"
 
-constexpr const char *TITLE  = "Scene in a Skybox cube";
+constexpr const char *TITLE  = "Reflecting models";
 constexpr GLuint      WIDTH  = 1024;
 constexpr GLuint      HEIGHT = 768;
 
@@ -468,7 +468,7 @@ const std::array<depth_mode_t, 8> depth_modes = {{
 }};
 
 std::expected<shaders_t, std::string> load_shaders() {
-    auto view_shader = Shader::build("shaders/27_lit.vert", "shaders/27_lit.frag");
+    auto view_shader = Shader::build("shaders/27_lit_ref.vert", "shaders/27_lit_ref.frag");
     if (!view_shader) return std::unexpected(view_shader.error());
 
     auto light_marker_shader =
@@ -708,6 +708,7 @@ SceneRenderer::create(GLFWwindow *window) {
     shaders->view.set_int("material.diffuse", 0);
     shaders->view.set_int("material.specular", 1);
     shaders->view.set_float("normal_flip", 1.0f);
+    shaders->view.set_int("skybox", 2);
     shaders->skybox.use();
     shaders->skybox.set_int("screen_texture", 0);
     shaders->screen.use();
@@ -860,6 +861,8 @@ void SceneRenderer::render_scene_draw_cubes() {
     glBindTexture(GL_TEXTURE_2D, m_textures.metal);
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, m_textures.metal);
+    glActiveTexture(GL_TEXTURE2);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, m_textures.skybox);
 
     m_shaders.view.set_float("material.shininess", 32.f);
 
@@ -892,6 +895,8 @@ void SceneRenderer::render_scene_draw_windows() {
     glBindTexture(GL_TEXTURE_2D, m_textures.window);
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, m_textures.white);
+    glActiveTexture(GL_TEXTURE2);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, m_textures.skybox);
 
     glDepthMask(GL_FALSE);
 
@@ -931,6 +936,8 @@ void SceneRenderer::render_scene_draw_plane() {
     glBindTexture(GL_TEXTURE_2D, m_textures.marble);
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, m_textures.marble);
+    glActiveTexture(GL_TEXTURE2);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, m_textures.skybox);
 
     m_shaders.view.set_float("material.shininess", 32.f);
 
@@ -962,7 +969,7 @@ void SceneRenderer::render_scene_draw_skybox() {
     glBindVertexArray(m_vaos.skybox);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_CUBE_MAP, m_textures.skybox);
-    glDrawArrays(GL_TRIANGLES, 0, 36);
+    glDrawArrays(GL_TRIANGLES, 0, cube_vertices.size());
     glDepthFunc(GL_LESS);
 }
 
