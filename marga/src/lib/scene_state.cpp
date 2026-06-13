@@ -83,16 +83,16 @@ void processInput(GLFWwindow *window, float deltaTime, Camera &camera)
 }
 
 // Sort an array of transparent objects according to their distance to the camera
-void sortTransparent(bool recalculateObjects, auto transparentObjects, auto *sorted)
+void sortObjects(bool recalculate, std::vector<glm::vec3> objects, std::multimap<float, glm::vec3> *sorted)
 {
-    if (recalculateObjects == false)
+    if (recalculate == false)
         return;
     sorted->clear();
-    for (unsigned int i = 0; i < transparentObjects.size(); i++)
+    for (unsigned int i = 0; i < objects.size(); i++)
     {
-        float distance = glm::length(state.camera.Position - transparentObjects[i]);
-        sorted->insert({distance, transparentObjects[i]});
+        float distance = glm::length(state.camera.Position - objects[i]);
+        sorted->insert({distance, objects[i]});
     }
-    recalculateObjects = true;
+    recalculate = true;
 }
 

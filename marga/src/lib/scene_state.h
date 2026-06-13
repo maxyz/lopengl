@@ -5,6 +5,8 @@
 #include <GLFW/glfw3.h>
 #include "imgui.h"
 #include "camera.h"
+#include <vector>
+#include <map>
 
 // Global state
 struct SceneState {
@@ -24,7 +26,7 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void keyboard_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
 void processInput(GLFWwindow *window, float deltaTime, Camera &camera);
-void sortTransparent(bool recalculateObjects, auto transparentObjects, auto *sorted);
+void sortObjects(bool recalculate, std::vector<glm::vec3> objects, std::multimap<float, glm::vec3> *sorted);
 
 // Abstract class programs must inherit from
 class AbstractSceneRenderer {

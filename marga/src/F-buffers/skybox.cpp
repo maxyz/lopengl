@@ -54,6 +54,7 @@ class SceneRenderer: public AbstractSceneRenderer {
         Texture *cubeMaterial;
         Texture *floorMaterial;
         LightSet *lights;
+
         unsigned int skyboxVAO, skyboxVBO;
         unsigned int cubeVAO, cubeVBO;
         unsigned int planeVAO, planeVBO;
@@ -61,6 +62,12 @@ class SceneRenderer: public AbstractSceneRenderer {
         unsigned int lightVAO;
 
         void setOptions();
+
+        /* Transparent Windows*/
+        Texture *windowPane;
+        Texture *windowSpecular;
+        std::vector<glm::vec3> transparentObjects;
+        std::multimap<float, glm::vec3> sorted;
 
         // Framebuffer specific attributes and methods
         unsigned int sceneFB, sceneTCB, sceneRBO;
@@ -118,7 +125,8 @@ void SceneRenderer::createShaders()
     // Set the main attributes
     this->sourceShader = new Shader("shaders/source-vertex.glsl", "shaders/source-frag.glsl");
     //this->sceneShader = new Shader("shaders/reflection-vertex.glsl", "shaders/reflection-frag.glsl");
-    this->sceneShader = new Shader("shaders/reflection-vertex.glsl", "shaders/refraction-frag.glsl");
+    //this->sceneShader = new Shader("shaders/reflection-vertex.glsl", "shaders/refraction-frag.glsl");
+    this->sceneShader = new Shader("shaders/vertex.glsl", "shaders/textured-multi-lights.glsl");
     this->skyboxShader = new Shader("shaders/skybox-vertex.glsl", "shaders/skybox-frag.glsl");
 
     // Get the names for the ImGui interface
@@ -159,11 +167,11 @@ void SceneRenderer::init()
     this->skybox = new CubeTexture(faces);
 
     /*Texture grass = Texture("../media/grass.png", GL_RGBA);
-    grass.set_wrap(GL_CLAMP_TO_EDGE);
+    grass.set_wrap(GL_CLAMP_TO_EDGE);*/
 
-    Texture windowPane = Texture("../media/blending_transparent_window.png", GL_RGBA);
-    Texture windowSpecular = Texture("../media/transparent_window_specular.png", GL_RGBA);
-    windowPane.set_wrap(GL_CLAMP_TO_EDGE);*/
+    this->windowPane = new Texture("../media/blending_transparent_window.png", GL_RGBA);
+    this->windowSpecular = new Texture("../media/transparent_window_specular.png", GL_RGBA);
+    this->windowPane->set_wrap(GL_CLAMP_TO_EDGE);
     
     this->sceneShader->use();
     this->sceneShader->setInt("material.texture_diffuse1", 0);
@@ -190,16 +198,14 @@ void SceneRenderer::init()
     }};
     this->lights = new LightSet(directionalLight, spotLight, 4, positionalLights);
 
-    // Transparent objects - not in use
-    /*std::vector<glm::vec3> transparentObjects;
-    transparentObjects.push_back(glm::vec3(-1.5f,  0.0f, -0.48f));
-    transparentObjects.push_back(glm::vec3( 1.5f,  0.0f,  0.51f));
-    transparentObjects.push_back(glm::vec3( 0.0f,  0.0f,  0.7f));
-    transparentObjects.push_back(glm::vec3(-0.3f,  0.0f, -2.3f));
-    transparentObjects.push_back(glm::vec3( 0.5f,  0.0f, -0.6f));  
+    // Transparent objects
+    this->transparentObjects.push_back(glm::vec3(-1.5f,  0.0f, -0.48f));
+    this->transparentObjects.push_back(glm::vec3( 1.5f,  0.0f,  0.51f));
+    this->transparentObjects.push_back(glm::vec3( 0.0f,  0.0f,  0.7f));
+    this->transparentObjects.push_back(glm::vec3(-0.3f,  0.0f, -2.3f));
+    this->transparentObjects.push_back(glm::vec3( 0.5f,  0.0f, -0.6f));  
 
-    std::multimap<float, glm::vec3> sorted;
-    sortTransparent(true, transparentObjects, &sorted);*/
+    sortObjects(true, this->transparentObjects, &this->sorted);
 
     this->createFrameBuffers();
 }
@@ -285,24 +291,6 @@ void SceneRenderer::renderMainScene(SceneState &state)
     glDrawArrays(GL_TRIANGLES, 0, 6);
     glBindVertexArray(0);
 
-    // Put the transparent objects into a map to get them sorted by distance
-    /*
-    glBindVertexArray(VAO);
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, windowPane.ID);
-
-    glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, windowSpecular.ID);
-    sortTransparent(recalculateObjects, transparentObjects, &sorted);
-    for(std::map<float,glm::vec3>::reverse_iterator it = sorted.rbegin(); it != sorted.rend(); ++it) 
-    {
-        model = glm::mat4(1.0f);
-        model = glm::translate(model, it->second);				
-        this->sceneShader.setMatrix4fv("model", glm::value_ptr(model));
-        glDrawArrays(GL_TRIANGLES, 0, 6);
-    }*/
-    glEnable(GL_CULL_FACE);
-
      // The skybox goes at the end, with depth testing enabled
     this->skyboxShader->use();
     this->skyboxShader->setMatrix4fv("view", glm::value_ptr(skyboxView));
@@ -310,7 +298,27 @@ void SceneRenderer::renderMainScene(SceneState &state)
     glBindVertexArray(this->skyboxVAO);
     glBindTexture(GL_TEXTURE_CUBE_MAP, this->skybox->ID);
     glDrawArrays(GL_TRIANGLES, 0, 36);
-   
+
+    // Finally the transparent objects
+    this->sceneShader->use();
+    glBindVertexArray(this->cubeVAO);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, this->windowPane->ID);
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, this->windowSpecular->ID);
+    // Sort transparent objects by distance
+    sortObjects(state.recalculateObjects, this->transparentObjects, &this->sorted);
+    for(std::map<float,glm::vec3>::reverse_iterator it = this->sorted.rbegin(); it != this->sorted.rend(); ++it) 
+    {
+        model = glm::mat4(1.0f);
+        model = glm::translate(model, it->second);				
+        this->sceneShader->setMatrix4fv("model", glm::value_ptr(model));
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+    }
+
+    // Re-enable culling
+    glEnable(GL_CULL_FACE);
+  
 }
 
 void SceneRenderer::showImGuiControls(SceneState &state) {
