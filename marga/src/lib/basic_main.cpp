@@ -75,6 +75,8 @@ int main()
     renderer->teardown();
     dock.teardown();
     glfwTerminate();
+
+    delete renderer;
     return 0;
 }
 

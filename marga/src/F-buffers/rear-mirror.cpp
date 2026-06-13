@@ -5,6 +5,7 @@
 #include <map>
 #include <format>
 #include <cmath>
+#include <unordered_map>
 #include "stb_image.h"
 #include "shader.h"
 #include "camera.h"
@@ -37,9 +38,17 @@ SceneState state = {
 
 class SceneRenderer: public AbstractSceneRenderer {
     private:
+        // Main Shaders
         Shader  *sceneShader;
         Shader  *sourceShader;
-        Shader  *quadShader;
+        Shader  *sceneFBShader;
+        Shader  *mirrorShader;
+        // Helper shader structures and data
+        std::unordered_map<std::string, Shader*> shaders;
+        std::vector<const char*> shaderNames;
+        int selectedSceneShader, selectedMirrorShader;
+        void createShaders();
+
         Texture *cubeMaterial;
         Texture *floorMaterial;
         LightSet *lights;
@@ -51,8 +60,10 @@ class SceneRenderer: public AbstractSceneRenderer {
         void setOptions();
 
         // Framebuffer specific attributes and methods
-        unsigned int framebuffer, textureColorbuffer, rbo;
-        void createFrameBuffer();
+        unsigned int sceneFB, sceneTCB, sceneRBO;
+        unsigned int mirrorFB, mirrorTCB, mirrorRBO;
+        void createFrameBuffers();
+        void createFrameBuffer(unsigned int *, unsigned int *, unsigned int *);
         void renderMainScene(SceneState state);
 
     public:
@@ -87,17 +98,43 @@ void SceneRenderer::setOptions()
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 }
 
+void SceneRenderer::createShaders()
+{
+    // Populate the map with all shaders
+    this->shaders["Basic"] = new Shader("shaders/quad-vertex.glsl", "shaders/quad-frag.glsl");
+    this->shaders["Blur"] = new Shader("shaders/quad-vertex.glsl", "shaders/quad-blur-frag.glsl");
+    this->shaders["Edges"] = new Shader("shaders/quad-vertex.glsl", "shaders/quad-edge-frag.glsl");
+    this->shaders["Inverse"] = new Shader("shaders/quad-vertex.glsl", "shaders/quad-inv-frag.glsl");
+    this->shaders["Grayscale"] = new Shader("shaders/quad-vertex.glsl", "shaders/quad-grayscale-frag.glsl");
+    this->shaders["Sharpen"] = new Shader("shaders/quad-vertex.glsl", "shaders/quad-sharpen-frag.glsl");
+
+    // Set the main attributes
+    this->sourceShader = new Shader("shaders/source-vertex.glsl", "shaders/source-frag.glsl");
+    this->sceneShader = new Shader("shaders/vertex.glsl", "shaders/textured-multi-lights.glsl");
+    /*this->quadShader = shaders["Basic"];*/
+
+    // Get the names for the ImGui interface
+    for (auto& [name, shader] : this->shaders) {
+        this->shaderNames.push_back(name.c_str()); 
+        // Preselect shaders
+        if (name == "Basic") {
+            this->sceneFBShader = shader;
+            this->selectedSceneShader = this->shaderNames.size() - 1;
+        }
+        if (name == "Inverse") {
+            this->mirrorShader = shader;
+            this->selectedMirrorShader = this->shaderNames.size() - 1;
+        }
+    }
+}
+
 void SceneRenderer::init()
 {
     this->setOptions();
+    this->createShaders();
 
-    // Read shaders
-    this->sceneShader = new Shader("shaders/vertex.glsl", "shaders/textured-multi-lights.glsl");
-    this->sourceShader = new Shader("shaders/source-vertex.glsl", "shaders/source-frag.glsl");
-    this->quadShader = new Shader("shaders/quad-vertex.glsl", "shaders/quad-edge-frag.glsl");
-
-    this->quadShader->use();
-    this->quadShader->setInt("screenTexture", 0);
+    this->mirrorShader->use();
+    this->mirrorShader->setInt("screenTexture", 0);
 
     Texture::flip_vertically();
     this->floorMaterial = new Texture("../media/marble.jpg", GL_RGB);
@@ -142,7 +179,7 @@ void SceneRenderer::init()
     std::multimap<float, glm::vec3> sorted;
     sortTransparent(true, transparentObjects, &sorted);*/
 
-    this->createFrameBuffer();
+    this->createFrameBuffers();
 }
 
 void SceneRenderer::renderMainScene(SceneState state) 
@@ -246,36 +283,46 @@ void SceneRenderer::renderMainScene(SceneState state)
 }
 
 void SceneRenderer::showImGuiControls(SceneState state) {
-    lights->showImGuiControls(state);
-    
+    this->lights->showImGuiControls(state);
+
+    // Shader selector
+    ImGui::Combo("Scene Shader", &this->selectedSceneShader, shaderNames.data(), shaderNames.size());
+    ImGui::Combo("Mirror Shader", &this->selectedMirrorShader, shaderNames.data(), shaderNames.size());
+    this->sceneFBShader = this->shaders[shaderNames[selectedSceneShader]];
+    this->mirrorShader = this->shaders[shaderNames[selectedMirrorShader]];
 }
 
+void SceneRenderer::createFrameBuffers()
+{
+    this->createFrameBuffer(&this->sceneFB, &this->sceneTCB, &this->sceneRBO);
+    this->createFrameBuffer(&this->mirrorFB, &this->mirrorTCB, &this->mirrorRBO);
+}
 
-void SceneRenderer::createFrameBuffer()
+void SceneRenderer::createFrameBuffer(unsigned int *fb, unsigned int *tcb, unsigned int *rbo)
 {
     // Create framebuffer and bind it
-    glGenFramebuffers(1, &this->framebuffer);
-    glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+    glGenFramebuffers(1, fb);
+    glBindFramebuffer(GL_FRAMEBUFFER, *fb);
 
     // generate texture for the framebuffer
-    glGenTextures(1, &this->textureColorbuffer);
-    glBindTexture(GL_TEXTURE_2D, this->textureColorbuffer);
+    glGenTextures(1, tcb);
+    glBindTexture(GL_TEXTURE_2D, *tcb);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, state.width, state.height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glBindTexture(GL_TEXTURE_2D, 0);
 
     // attach it to currently bound framebuffer object
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, this->textureColorbuffer, 0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, *tcb, 0);
 
     // Generate stencil and depth testing renderbuffer
-    glGenRenderbuffers(1, &this->rbo);
-    glBindRenderbuffer(GL_RENDERBUFFER, this->rbo); 
+    glGenRenderbuffers(1, rbo);
+    glBindRenderbuffer(GL_RENDERBUFFER, *rbo); 
     glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, state.width, state.height);
     glBindRenderbuffer(GL_RENDERBUFFER, 0);
 
     // Attach the renderbuffer to the framebuffer
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, this->rbo);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, *rbo);
 
     // Check if the framebuffer is complete
     if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
@@ -286,27 +333,39 @@ void SceneRenderer::createFrameBuffer()
 // The full scene in this case uses a framebuffer and calls to the renderMainScene method twice
 void SceneRenderer::renderScene(SceneState state) 
 {
-    // first pass: draw to the framebuffer with the inverted camera
-    glBindFramebuffer(GL_FRAMEBUFFER, this->framebuffer);
+    // Draw to the mirror framebuffer with the inverted camera and no spotlight
+    glBindFramebuffer(GL_FRAMEBUFFER, this->mirrorFB);
     state.camera.setRearView();
+    bool spotlightActive = this->lights->spotLight.active;
+    this->lights->spotLight.active = false;
     this->renderMainScene(state);
+    this->lights->spotLight.active = spotlightActive;
     state.camera.unsetRearView();
 
-    // second pass: draw the main scene with the restored camera
-    glBindFramebuffer(GL_FRAMEBUFFER, 0); // back to default framebuffer
+    // Draw the main scene with the restored camera into the scene framebuffer
+    glBindFramebuffer(GL_FRAMEBUFFER, this->sceneFB); 
     glClear(GL_COLOR_BUFFER_BIT);
     this->renderMainScene(state);
 
-    // And now draw the background mirror
-    this->quadShader->use();  
+    // Use the default framebuffer to render the final scene
+    glBindFramebuffer(GL_FRAMEBUFFER, 0); // back to default framebuffer
     glBindVertexArray(this->quadVAO);
-    glDisable(GL_DEPTH_TEST);
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, this->textureColorbuffer);
+    glDisable(GL_DEPTH_TEST);
     glm::mat4 model = glm::mat4(1.0f);
+
+    // Apply the scene shader to the mainScene
+    glBindTexture(GL_TEXTURE_2D, this->sceneTCB);
+    this->sceneFBShader->use();
+    this->sceneFBShader->setMatrix4fv("model", glm::value_ptr(model));
+    glDrawArrays(GL_TRIANGLES, 0, 6);  
+
+    // And now draw the background mirror
+    glBindTexture(GL_TEXTURE_2D, this->mirrorTCB);
+    this->mirrorShader->use();  
     model = glm::translate(model, glm::vec3(0.0f, 0.8f, 0.0f));
     model = glm::scale(model, glm::vec3(0.2f));
-    this->quadShader->setMatrix4fv("model", glm::value_ptr(model));
+    this->mirrorShader->setMatrix4fv("model", glm::value_ptr(model));
     glDrawArrays(GL_TRIANGLES, 0, 6);  
 }
 
@@ -320,7 +379,8 @@ void SceneRenderer::teardown()
     glDeleteBuffers(1, &this->cubeVBO);
     glDeleteBuffers(1, &this->planeVBO);
     glDeleteBuffers(1, &this->quadVBO);
-    glDeleteFramebuffers(1, &this->framebuffer);
+    glDeleteFramebuffers(1, &this->mirrorFB);
+    glDeleteFramebuffers(1, &this->sceneFB);
 }
 
 
