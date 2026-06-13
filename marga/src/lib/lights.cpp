@@ -20,10 +20,10 @@ void Light::setBasicValues(Shader lightShader, std::string name) {
 /****** Directional ******/
 
 DirectionalLight::DirectionalLight(glm::vec3 direction, glm::vec3 color, float ambient, float diffuse, float specular):
-        direction(direction), Light(color, ambient, diffuse, specular) { }
+        Light(color, ambient, diffuse, specular), direction(direction) { }
 
 DirectionalLight::DirectionalLight(glm::vec3 direction, float ambient, float diffuse):
-        direction(direction), Light(ambient, diffuse) { }
+        Light(ambient, diffuse), direction(direction) { }
  
 DirectionalLight::DirectionalLight(glm::vec3 direction):
         DirectionalLight(direction, 0.2f, 0.5f) { }
@@ -48,10 +48,10 @@ void DirectionalLight::showImGuiControls(std::string header) {
 /****** Positional ******/
 
 PositionalLight::PositionalLight(glm::vec3 position, glm::vec3 color, float ambient, float diffuse, float specular, float constant, float linear, float quadratic):
-        position(position), Light(color, ambient, diffuse, specular), constant(constant), linear(linear), quadratic(quadratic) { }
+        Light(color, ambient, diffuse, specular), position(position), constant(constant), linear(linear), quadratic(quadratic) { }
 
 PositionalLight::PositionalLight(glm::vec3 position, glm::vec3 color, float ambient, float diffuse):
-        position(position), Light(color, ambient, diffuse, 1.0), constant(1.0), linear(0.09f), quadratic(0.032f) { }
+        Light(color, ambient, diffuse, 1.0), position(position), constant(1.0), linear(0.09f), quadratic(0.032f) { }
 
 PositionalLight::PositionalLight(glm::vec3 position):
         PositionalLight(position, glm::vec3( 1.0f,  1.0f,  1.0f), 0.1f, 0.4f) {}
@@ -215,8 +215,26 @@ void SetLights(std::string name, glm::vec3 &backgroundColor, DirectionalLight &d
         positionalLights[i].linear = positionalAttLin;
         positionalLights[i].quadratic = positionalAttQua;
     }
+}
 
+void LightSet::showImGuiControls(SceneState state) {
+        this->directionalLight.showImGuiControls("Directional Light");
+        for (int i = 0; i < this->positionalLightAmount; i++) {
+            this->positionalLights[i].showImGuiControls(std::format("Positional Light {}", i));
+        }
+        this->spotLight.showImGuiControls("Spot Light");
 
+        if (ImGui::Button("Desert"))
+            SetLights("Desert", state.bgColor, this);
+        ImGui::SameLine();
+        if (ImGui::Button("Factory"))
+            SetLights("Factory", state.bgColor, this);
+        ImGui::SameLine();
+        if (ImGui::Button("Horror"))
+            SetLights("Horror", state.bgColor, this);
+        ImGui::SameLine();
+        if (ImGui::Button("BioLab"))
+            SetLights("BioLab", state.bgColor, this);
 }
 
 

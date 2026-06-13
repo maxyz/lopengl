@@ -18,7 +18,7 @@ void ImguiDock::init(GLFWwindow* window) {
     ImGui_ImplOpenGL3_Init();
 }
 
-void ImguiDock::setup(GLFWwindow* window, SceneState state, LightSet *lights) {
+void ImguiDock::render(GLFWwindow* window, SceneState state, AbstractSceneRenderer* renderer) {
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
@@ -32,37 +32,17 @@ void ImguiDock::setup(GLFWwindow* window, SceneState state, LightSet *lights) {
         ImGui::ColorEdit3("Background", glm::value_ptr(state.bgColor));
         ImGui::SliderFloat("Shininess", &state.shininess, 0.0f, 256.0f);
 
-        lights->directionalLight.showImGuiControls("Directional Light");
-        for (int i = 0; i < lights->positionalLightAmount; i++) {
-            lights->positionalLights[i].showImGuiControls(std::format("Positional Light {}", i));
-        }
-        lights->spotLight.showImGuiControls("Spot Light");
-
-        if (ImGui::Button("Desert"))
-            SetLights("Desert", state.bgColor, lights);
-        ImGui::SameLine();
-        if (ImGui::Button("Factory"))
-            SetLights("Factory", state.bgColor, lights);
-        ImGui::SameLine();
-        if (ImGui::Button("Horror"))
-            SetLights("Horror", state.bgColor, lights);
-        ImGui::SameLine();
-        if (ImGui::Button("BioLab"))
-            SetLights("BioLab", state.bgColor, lights);
+        // Additional ImGui controls
+        renderer->showImGuiControls(state);
     }
     ImGui::SeparatorText("");
     ImGui::Text("Press TAB to switch modes");
     ImGui::PopItemWidth();
     ImGui::End();
-}
-
-// This is in a separate function to allow other code to inject additional fields
-void ImguiDock::render() {
-    // Render ImGui
+    // Once it's setup, render it to screen
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
-
 
 void ImguiDock::teardown() {
     // Cleanup Imgui

@@ -98,7 +98,6 @@ void processInput(GLFWwindow *window, float deltaTime, Camera &camera)
     if(glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
 
-    const float cameraSpeed = 2.5f * deltaTime;
     Camera_Movement direction = NONE;
     if(glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
         direction = UP;
@@ -299,7 +298,7 @@ int main()
     float lastFrame = 0.0f; // Time of last frame
 
     Texture::flip_vertically();
-    Texture marble = Texture("../media/marble.jpg", GL_RGB);
+    //Texture marble = Texture("../media/marble.jpg", GL_RGB);
     Texture metal = Texture("../media/metal.png", GL_RGB);
     Texture wood = Texture("../media/container.jpg", GL_RGB);
 
@@ -387,7 +386,7 @@ int main()
 
         directionalLight.setShaderValues(ourShader, "dirLight");
 
-        for (int i = 0; i < sizeof(positionalLights)/sizeof(PositionalLight); i++) {
+        for (int i = 0; i < 4; i++) {
             positionalLights[i].setShaderValues(ourShader, std::format("pointLights[{}]", i));
         }
 
@@ -425,7 +424,7 @@ int main()
         sourceShader.setMatrix4fv("view", glm::value_ptr(view));
         sourceShader.setMatrix4fv("projection", glm::value_ptr(projection));
 
-        for (int i = 0; i < sizeof(positionalLights)/sizeof(PositionalLight); i++) {
+        for (int i = 0; i < 4; i++) {
             PositionalLight light = positionalLights[i];
             glm::mat4 model = glm::mat4(1.0f);
             model = glm::translate(model, light.position);
@@ -497,7 +496,7 @@ int main()
             ImGui::SliderFloat("Shininess", &material.shininess, 0.0f, 256.0f);
 
             directionalLight.showImGuiControls("Directional Light");
-            for (int i = 0; i < sizeof(positionalLights)/sizeof(PositionalLight); i++) {
+            for (int i = 0; i < 4; i++) {
                 positionalLights[i].showImGuiControls(std::format("Positional Light {}", i));
             }
             spotLight.showImGuiControls("Spot Light");

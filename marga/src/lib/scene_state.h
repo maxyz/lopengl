@@ -10,6 +10,7 @@
 struct SceneState {
         float width;
         float height;
+        const char* title;
         glm::vec3 bgColor;
         Camera camera;
         double lastX, lastY;
@@ -24,5 +25,15 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void keyboard_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
 void processInput(GLFWwindow *window, float deltaTime, Camera &camera);
 void sortTransparent(bool recalculateObjects, auto transparentObjects, auto *sorted);
+
+// Abstract class programs must inherit from
+class AbstractSceneRenderer {
+    public:
+        virtual void init() = 0;
+        virtual void renderScene(SceneState state) = 0;
+        virtual void showImGuiControls(SceneState state) = 0;
+        virtual void teardown() = 0;
+};
+
 
 #endif
