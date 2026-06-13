@@ -1,4 +1,4 @@
-EXES = framebuffers rear-mirror
+EXES = framebuffers rear-mirror skybox
 
 default_target: $(EXES)
 
@@ -41,6 +41,9 @@ framebuffers: framebuffers.cpp libGLAD.a shader.o lights.o texture.o ../lib/came
 	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
 
 rear-mirror: rear-mirror.cpp libGLAD.a shader.o lights.o texture.o ../lib/camera.h ../lib/geometry.h scene_state.o imgui_dock.o basic_main.o
+	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
+
+skybox: skybox.cpp libGLAD.a shader.o lights.o texture.o ../lib/camera.h ../lib/geometry.h scene_state.o imgui_dock.o basic_main.o
 	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
 
 clean:
