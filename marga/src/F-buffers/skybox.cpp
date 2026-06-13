@@ -117,7 +117,8 @@ void SceneRenderer::createShaders()
 
     // Set the main attributes
     this->sourceShader = new Shader("shaders/source-vertex.glsl", "shaders/source-frag.glsl");
-    this->sceneShader = new Shader("shaders/reflection-vertex.glsl", "shaders/reflection-frag.glsl");
+    //this->sceneShader = new Shader("shaders/reflection-vertex.glsl", "shaders/reflection-frag.glsl");
+    this->sceneShader = new Shader("shaders/reflection-vertex.glsl", "shaders/refraction-frag.glsl");
     this->skyboxShader = new Shader("shaders/skybox-vertex.glsl", "shaders/skybox-frag.glsl");
 
     // Get the names for the ImGui interface
