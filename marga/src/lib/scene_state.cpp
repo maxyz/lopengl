@@ -64,17 +64,17 @@ void processInput(GLFWwindow *window, float deltaTime, Camera &camera)
 
     Camera_Movement direction = NONE;
     if(glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
-        direction = UP;
+        direction = FORWARD;
     if(glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
-        direction = DOWN;
+        direction = BACKWARD;
     if(glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
         direction = RIGHT;
     if(glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
         direction = LEFT;
     if(glfwGetKey(window, GLFW_KEY_PAGE_UP) == GLFW_PRESS)
-        direction = FORWARD;
+        direction = UP;
     if(glfwGetKey(window, GLFW_KEY_PAGE_DOWN) == GLFW_PRESS)
-        direction = BACKWARD;
+        direction = DOWN;
 
     if (direction != NONE) {
         camera.ProcessKeyboard(direction, deltaTime);

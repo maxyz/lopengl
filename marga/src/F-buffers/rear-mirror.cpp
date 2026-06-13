@@ -102,11 +102,15 @@ void SceneRenderer::createShaders()
 {
     // Populate the map with all shaders
     this->shaders["Basic"] = new Shader("shaders/quad-vertex.glsl", "shaders/quad-frag.glsl");
-    this->shaders["Blur"] = new Shader("shaders/quad-vertex.glsl", "shaders/quad-blur-frag.glsl");
+    this->shaders["Box Blur"] = new Shader("shaders/quad-vertex.glsl", "shaders/quad-blur-frag.glsl");
+    this->shaders["Gaussian Blur 3x3"] = new Shader("shaders/quad-vertex.glsl", "shaders/quad-gaussian-blur-frag.glsl");
+    this->shaders["Gaussian Blur 5x5"] = new Shader("shaders/quad-vertex.glsl", "shaders/quad-big-gaussian-blur-frag.glsl");
     this->shaders["Edges"] = new Shader("shaders/quad-vertex.glsl", "shaders/quad-edge-frag.glsl");
     this->shaders["Inverse"] = new Shader("shaders/quad-vertex.glsl", "shaders/quad-inv-frag.glsl");
     this->shaders["Grayscale"] = new Shader("shaders/quad-vertex.glsl", "shaders/quad-grayscale-frag.glsl");
     this->shaders["Sharpen"] = new Shader("shaders/quad-vertex.glsl", "shaders/quad-sharpen-frag.glsl");
+    this->shaders["Emboss"] = new Shader("shaders/quad-vertex.glsl", "shaders/quad-emboss-frag.glsl");
+    this->shaders["Unsharp Mask"] = new Shader("shaders/quad-vertex.glsl", "shaders/quad-unsharp-mask-frag.glsl");
 
     // Set the main attributes
     this->sourceShader = new Shader("shaders/source-vertex.glsl", "shaders/source-frag.glsl");
