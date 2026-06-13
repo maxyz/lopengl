@@ -117,7 +117,7 @@ void SceneRenderer::createShaders()
 
     // Set the main attributes
     this->sourceShader = new Shader("shaders/source-vertex.glsl", "shaders/source-frag.glsl");
-    this->sceneShader = new Shader("shaders/vertex.glsl", "shaders/textured-multi-lights.glsl");
+    this->sceneShader = new Shader("shaders/reflection-vertex.glsl", "shaders/reflection-frag.glsl");
     this->skyboxShader = new Shader("shaders/skybox-vertex.glsl", "shaders/skybox-frag.glsl");
 
     // Get the names for the ImGui interface
@@ -128,7 +128,7 @@ void SceneRenderer::createShaders()
             this->sceneFBShader = shader;
             this->selectedSceneShader = this->shaderNames.size() - 1;
         }
-        if (name == "Inverse") {
+        if (name == "Box Blur") {
             this->mirrorShader = shader;
             this->selectedMirrorShader = this->shaderNames.size() - 1;
         }
@@ -156,8 +156,6 @@ void SceneRenderer::init()
         "../media/skybox/back.jpg"
     };
     this->skybox = new CubeTexture(faces);
-    this->skyboxShader->use();
-    this->skyboxShader->setInt("skybox", 1);
 
     /*Texture grass = Texture("../media/grass.png", GL_RGBA);
     grass.set_wrap(GL_CLAMP_TO_EDGE);
@@ -169,7 +167,10 @@ void SceneRenderer::init()
     this->sceneShader->use();
     this->sceneShader->setInt("material.texture_diffuse1", 0);
     this->sceneShader->setInt("material.texture_specular1", 1);
+    this->sceneShader->setInt("skybox", 1);
 
+    this->skyboxShader->use();
+    this->skyboxShader->setInt("skybox", 1);
     // VAOs and VBOs
     getCubeBuffers(&this->cubeVAO, &this->cubeVBO);
     getPlaneBuffers(&this->planeVAO, &this->planeVBO);
@@ -222,6 +223,7 @@ void SceneRenderer::renderMainScene(SceneState &state)
     this->sceneShader->setVec3f("viewPos", glm::value_ptr(state.camera.Position));
     this->sceneShader->setFloat("material.shininess", state.shininess);
 
+    glBindTexture(GL_TEXTURE_CUBE_MAP, this->skybox->ID);
     lights = this->lights;
     lights->directionalLight.setShaderValues(*this->sceneShader, "dirLight");
     for (int i = 0; i < lights->positionalLightAmount; i++) {
@@ -300,15 +302,13 @@ void SceneRenderer::renderMainScene(SceneState &state)
     }*/
     glEnable(GL_CULL_FACE);
 
-     // The skybox goes first without depth testing
-    //glDepthMask(GL_FALSE);
+     // The skybox goes at the end, with depth testing enabled
     this->skyboxShader->use();
     this->skyboxShader->setMatrix4fv("view", glm::value_ptr(skyboxView));
     this->skyboxShader->setMatrix4fv("projection", glm::value_ptr(projection));
     glBindVertexArray(this->skyboxVAO);
     glBindTexture(GL_TEXTURE_CUBE_MAP, this->skybox->ID);
     glDrawArrays(GL_TRIANGLES, 0, 36);
-    //glDepthMask(GL_TRUE);
    
 }
 
