@@ -64,13 +64,13 @@ class SceneRenderer: public AbstractSceneRenderer {
         unsigned int mirrorFB, mirrorTCB, mirrorRBO;
         void createFrameBuffers();
         void createFrameBuffer(unsigned int *, unsigned int *, unsigned int *);
-        void renderMainScene(SceneState state);
+        void renderMainScene(SceneState &state);
 
     public:
         SceneRenderer() {}
         void init();
-        void renderScene(SceneState state);
-        void showImGuiControls(SceneState state);
+        void renderScene(SceneState &state);
+        void showImGuiControls(SceneState &state);
         void teardown();
 };
 
@@ -141,8 +141,8 @@ void SceneRenderer::init()
     this->mirrorShader->setInt("screenTexture", 0);
 
     Texture::flip_vertically();
-    this->floorMaterial = new Texture("../media/marble.jpg", GL_RGB);
-    this->cubeMaterial = new Texture("../media/container.jpg", GL_RGB);
+    this->floorMaterial = new Texture("../media/marble.jpg");
+    this->cubeMaterial = new Texture("../media/container.jpg");
 
     /*Texture grass = Texture("../media/grass.png", GL_RGBA);
     grass.set_wrap(GL_CLAMP_TO_EDGE);
@@ -186,7 +186,7 @@ void SceneRenderer::init()
     this->createFrameBuffers();
 }
 
-void SceneRenderer::renderMainScene(SceneState state) 
+void SceneRenderer::renderMainScene(SceneState &state) 
 {
     glEnable(GL_DEPTH_TEST);
 
@@ -286,7 +286,7 @@ void SceneRenderer::renderMainScene(SceneState state)
     glEnable(GL_CULL_FACE);
 }
 
-void SceneRenderer::showImGuiControls(SceneState state) {
+void SceneRenderer::showImGuiControls(SceneState &state) {
     this->lights->showImGuiControls(state);
 
     // Shader selector
@@ -335,7 +335,7 @@ void SceneRenderer::createFrameBuffer(unsigned int *fb, unsigned int *tcb, unsig
 }
 
 // The full scene in this case uses a framebuffer and calls to the renderMainScene method twice
-void SceneRenderer::renderScene(SceneState state) 
+void SceneRenderer::renderScene(SceneState &state) 
 {
     // Draw to the mirror framebuffer with the inverted camera and no spotlight
     glBindFramebuffer(GL_FRAMEBUFFER, this->mirrorFB);

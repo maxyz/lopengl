@@ -217,7 +217,7 @@ void SetLights(std::string name, glm::vec3 &backgroundColor, DirectionalLight &d
     }
 }
 
-void LightSet::showImGuiControls(SceneState state) {
+void LightSet::showImGuiControls(SceneState &state) {
         this->directionalLight.showImGuiControls("Directional Light");
         for (int i = 0; i < this->positionalLightAmount; i++) {
             this->positionalLights[i].showImGuiControls(std::format("Positional Light {}", i));

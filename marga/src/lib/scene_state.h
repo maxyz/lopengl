@@ -30,8 +30,8 @@ void sortTransparent(bool recalculateObjects, auto transparentObjects, auto *sor
 class AbstractSceneRenderer {
     public:
         virtual void init() = 0;
-        virtual void renderScene(SceneState state) = 0;
-        virtual void showImGuiControls(SceneState state) = 0;
+        virtual void renderScene(SceneState &state) = 0;
+        virtual void showImGuiControls(SceneState &state) = 0;
         virtual void teardown() = 0;
         virtual ~AbstractSceneRenderer() = default;
 };

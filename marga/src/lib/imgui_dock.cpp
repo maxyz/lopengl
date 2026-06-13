@@ -18,7 +18,7 @@ void ImguiDock::init(GLFWwindow* window) {
     ImGui_ImplOpenGL3_Init();
 }
 
-void ImguiDock::render(GLFWwindow* window, SceneState state, AbstractSceneRenderer* renderer) {
+void ImguiDock::render(GLFWwindow* window, SceneState &state, AbstractSceneRenderer* renderer) {
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();

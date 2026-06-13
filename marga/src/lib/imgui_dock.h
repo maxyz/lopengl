@@ -11,7 +11,7 @@
 class ImguiDock {
     public:
         void init(GLFWwindow* window);
-        void render(GLFWwindow* window, SceneState state, AbstractSceneRenderer* renderer);
+        void render(GLFWwindow* window, SceneState &state, AbstractSceneRenderer* renderer);
         void teardown();
 };
 

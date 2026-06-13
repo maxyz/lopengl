@@ -76,7 +76,7 @@ public:
     SpotLight        spotLight;
     int              positionalLightAmount;
     std::array<PositionalLight,4> positionalLights;
-    void showImGuiControls(SceneState state);
+    void showImGuiControls(SceneState &state);
 };
 
 void SetLights(std::string name, glm::vec3 &backgroundColor, DirectionalLight &directionalLight, PositionalLight positionalLights[], SpotLight &spotLight);
