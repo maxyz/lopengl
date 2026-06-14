@@ -2,15 +2,16 @@
 #define GLBUFFERS_H
 
 #include "model.h"
+#include "texture.h"
 
 class VAO {
 
 private:
-    unsigned int vao, vbo;
+    uint vao, vbo;
     
 public:
 
-    VAO(VertexVector &verticesVector, unsigned int mode = GL_STATIC_DRAW);
+    VAO(VertexVector &verticesVector, uint mode = GL_STATIC_DRAW);
 
     inline void bind() {
         glBindVertexArray(vao);
@@ -21,6 +22,30 @@ public:
     inline void deleteBuffers() {
         glDeleteVertexArrays(1, &vao);
         glDeleteBuffers(1, &vbo);
+    }
+};
+
+class Framebuffer {
+
+private:
+    uint buffer;
+    uint renderAttatchment;
+    
+
+public:
+    Texture2D* colorAttatchment;
+
+    Framebuffer();
+    void attatchColor(const uint width, const uint height);
+    void attatchRender(const uint width, const uint height);
+
+    void checkStatus();
+
+    inline void bind() {
+        glBindFramebuffer(GL_FRAMEBUFFER, buffer);
+    }
+    inline void unbind() {
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
 };
 
