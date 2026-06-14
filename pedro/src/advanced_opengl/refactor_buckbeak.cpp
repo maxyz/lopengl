@@ -1,6 +1,7 @@
 #include <iostream>
 #include <string>
 #include <array>
+#include <stdexcept>
 
 #include "shader.h"
 #include "model.h"
@@ -21,52 +22,58 @@
 
 typedef unsigned int uint;
 
-struct Engine {
-
-};
-
-GLFWwindow* windowAndContext();
 void framebuffer_size_callback(GLFWwindow* window, int _width, int _height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
-void processInput(GLFWwindow *window);
-void setLights(Shader &shader);
+struct Engine {
 
-float width = 1280.0f, height = 720.0f;
+public:
+    // Window and Camera
+    GLFWwindow *window;
+    float width = 1280.0f, height = 720.0f;
+    float lastX = width / 2.0;
+    float lastY = height / 2.0;
+    float deltaTime = 0.0f;
+    float lastFrame = 0.0f;
+    Camera cam = Camera(glm::vec3(0.0f, 0.0f, 10.0f));
 
-float deltaTime = 0.0f;
-float lastFrame = 0.0f;
+    // Shaders
+    Shader renderShader;
+    uint currentPostprocShader = 0;
+    std::vector<Shader> postprocShaders;
 
-bool tabPreviouslyPressed = false;
+    // Textures
+    Texture2D* cubeTexture;
+    Texture2D* floorTexture;
 
-bool firstMouse = true;
-bool mouseLocked = true;
-bool shaderNeedsToBeChanged = false;
-float lastX = width / 2.0, lastY = height / 2.0;
+    // Buffers
+    VAO cubeVAO = VAO(cube);
+    VAO planeVAO = VAO(plane);
+    VAO quadVAO = VAO(quad);
+    Framebuffer framebuffer;
 
-Camera cam(glm::vec3(0.0f, 0.0f, 10.0f));
-
-std::array<KeyCommand*, 12> keys = {
-    new KeyCommand(GLFW_KEY_R, []() -> void { cam.resetFov(); }, TOGGLE),
+    // Commands
+    std::array<KeyCommand*, 12> keys = {
+    new KeyCommand(GLFW_KEY_R, [this]() -> void { cam.resetFov(); }, TOGGLE),
     
-    new KeyCommand(GLFW_KEY_UP, []() -> void { cam.speed += 0.1f; }, NORMAL),
+    new KeyCommand(GLFW_KEY_UP, [this]() -> void { cam.speed += 0.1f; }, NORMAL),
 
-    new KeyCommand(GLFW_KEY_DOWN, []() -> void { cam.speed -= 0.1f; }, NORMAL),
+    new KeyCommand(GLFW_KEY_DOWN, [this]() -> void { cam.speed -= 0.1f; }, NORMAL),
 
-    new KeyCommand(GLFW_KEY_W, []() -> void { cam.moveFront(); }, NORMAL),
+    new KeyCommand(GLFW_KEY_W, [this]() -> void { cam.moveFront(); }, NORMAL),
                 
-    new KeyCommand(GLFW_KEY_S, []() -> void { cam.moveBack(); }, NORMAL),
+    new KeyCommand(GLFW_KEY_S, [this]() -> void { cam.moveBack(); }, NORMAL),
 
-    new KeyCommand(GLFW_KEY_A, []() -> void { cam.moveLeft(); }, NORMAL),
+    new KeyCommand(GLFW_KEY_A, [this]() -> void { cam.moveLeft(); }, NORMAL),
 
-    new KeyCommand(GLFW_KEY_D, []() -> void { cam.moveRight(); }, NORMAL),
+    new KeyCommand(GLFW_KEY_D, [this]() -> void { cam.moveRight(); }, NORMAL),
 
-    new KeyCommand(GLFW_KEY_SPACE, []() -> void { cam.moveWorldUp(); }, NORMAL),
+    new KeyCommand(GLFW_KEY_SPACE, [this]() -> void { cam.moveWorldUp(); }, NORMAL),
 
-    new KeyCommand(GLFW_KEY_LEFT_SHIFT, []() -> void { cam.moveWorldDown(); }, NORMAL),
+    new KeyCommand(GLFW_KEY_LEFT_SHIFT, [this]() -> void { cam.moveWorldDown(); }, NORMAL),
 
     new KeyWindowCommand(GLFW_KEY_TAB, 
-        [](GLFWwindow *window) -> void { 
+        [this](GLFWwindow *window) -> void { 
             if (mouseLocked) {
                 glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
                 mouseLocked = false;
@@ -77,69 +84,129 @@ std::array<KeyCommand*, 12> keys = {
             }
         }, TOGGLE),
 
-    new KeyWindowCommand(GLFW_KEY_ESCAPE, [](GLFWwindow *window) -> void { glfwSetWindowShouldClose(window, true); }, TOGGLE),
+    new KeyWindowCommand(GLFW_KEY_ESCAPE, [this](GLFWwindow *window) -> void { glfwSetWindowShouldClose(window, true); }, TOGGLE),
 
-    new KeyCommand(GLFW_KEY_C, []() -> void { shaderNeedsToBeChanged = true; }, TOGGLE)
+    new KeyCommand(GLFW_KEY_C, [this]() -> void { shaderNeedsToBeChanged = true; }, TOGGLE)
+};
+
+    // Flags
+    bool tabPreviouslyPressed = false;
+    bool firstMouse = true;
+    bool mouseLocked = true;
+    bool shaderNeedsToBeChanged = false;
+
+    Engine() {
+        init();
+    }
+
+    void update() {
+        updateFrames();
+        processInput();
+        changeShader();
+    }
+
+private:
+
+    void init() {
+        return;
+        // Window
+        initWindow();
+
+        // Buffers
+        framebuffer.bind();
+        framebuffer.attatchColor(width, height);
+        framebuffer.attatchRender(width, height);
+        framebuffer.checkStatus();
+        framebuffer.unbind();
+
+        // Shaders
+        renderShader = Shader("shaders/shader01.vs", "shaders/shader01.frag");
+        postprocShaders = {
+            Shader("shaders/post1.vs", "shaders/postDefault.frag"),
+            Shader("shaders/post1.vs", "shaders/postInverse.frag"),
+            Shader("shaders/post1.vs", "shaders/postGreyscale.frag"),
+            Shader("shaders/post1.vs", "shaders/postKernel1.frag"),
+            Shader("shaders/post1.vs", "shaders/postKernel2.frag")
+        };
+        
+        // Textures
+        cubeTexture = new Texture2D("../media/container.jpg", JPG);
+        floorTexture = new Texture2D("../media/metal.png", PNG);
+
+        renderShader.use();
+        renderShader.setInt("material.texture_diffuse1", 0);
+
+        // Parameters
+        glEnable(GL_DEPTH_TEST);
+        glDepthFunc(GL_LESS);
+    }
+
+    void initWindow() {
+        glfwInit();
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+        glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    
+        window = glfwCreateWindow(width, height, "CrazyWindowAction", NULL, NULL);
+        if (window == NULL)
+        {
+            glfwTerminate();
+            throw std::runtime_error("Failed to create GLFW window");
+        }
+        glfwSetWindowUserPointer(window,this);
+
+        glfwMakeContextCurrent(window);
+        glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+        glfwSetCursorPosCallback(window, mouse_callback);
+        glfwSetScrollCallback(window, scroll_callback);
+
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
+        if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
+        {
+            throw std::runtime_error("Failed to initialize GLAD");
+        }
+    }
+
+    void updateFrames() {
+        float currentFrame = (float)glfwGetTime();
+        deltaTime = currentFrame - lastFrame;
+        lastFrame = currentFrame;
+    }
+
+    void processInput()
+    {
+        cam.deltaSpeed = cam.speed * deltaTime;
+        for (auto key : keys)
+        {
+            key->detect(window);
+        }
+    }
+
+    void changeShader() {
+        if (shaderNeedsToBeChanged)
+        {
+            currentPostprocShader = (currentPostprocShader + 1) % postprocShaders.size();
+            shaderNeedsToBeChanged = false;
+        }
+    }
+
 };
 
 int main()
 {
-    GLFWwindow *window = windowAndContext();
-    if (window == NULL) return -1;
-
-    glEnable(GL_DEPTH_TEST);
-    // glDepthMask(GL_FALSE); Si por alguna razón necesitamos que el buffer sea read only
-    // glDepthFunc(GL_*COMPARISON CONSTANT*); // Para cambiar la función de testing 
-    glDepthFunc(GL_LESS);
-
-    // Setup Shaders
-    Shader renderShader("shaders/shader01.vs", "shaders/shader01.frag");
-    Shader postShaderDefault("shaders/post1.vs", "shaders/postDefault.frag");
-    Shader postShaderInverse("shaders/post1.vs", "shaders/postInverse.frag");
-    Shader postShaderGreyscale("shaders/post1.vs", "shaders/postGreyscale.frag");
-    Shader postShaderKernel1("shaders/post1.vs", "shaders/postKernel1.frag");
-    Shader postShaderKernel2("shaders/post1.vs", "shaders/postKernel2.frag");
-
-    std::vector<Shader> postprocShaders = {postShaderDefault, postShaderInverse, postShaderGreyscale, postShaderKernel1, postShaderKernel2};
-
-    uint current_shader = 0;
-
-    // VAOs
-    VAO cubeVAO(cube);
-    VAO planeVAO(plane);
-    VAO quadVAO(quad);
-
-    Framebuffer framebuffer;
-    framebuffer.bind();
-    framebuffer.attatchColor(width, height);
-    framebuffer.attatchRender(width, height);
-    framebuffer.checkStatus();
-    framebuffer.unbind();
-
-    Texture2D cubeTexture("../media/container.jpg", JPG);
-    Texture2D floorTexture("../media/metal.png", PNG);
-
-    renderShader.use();
-    renderShader.setInt("material.texture_diffuse1", 0);
+    Engine engine;
+    return 0;
 
     glm::mat4 model;
     glm::mat4 view;
     glm::mat4 projection;
 
-    while(!glfwWindowShouldClose(window))
+    while(!glfwWindowShouldClose(engine.window))
     {
-        float currentFrame = (float)glfwGetTime();
-        deltaTime = currentFrame - lastFrame;
-        lastFrame = currentFrame;
-
-        processInput(window);
-        if (shaderNeedsToBeChanged)
-        {
-            current_shader = (current_shader + 1) % postprocShaders.size();
-            shaderNeedsToBeChanged = false;
-        }
+        engine.update();
         
-        framebuffer.bind();
+        engine.framebuffer.bind();
         glEnable(GL_DEPTH_TEST);
 
         // Render:
@@ -149,37 +216,37 @@ int main()
 
         // MATRIXES
         model = glm::mat4(1.0f);
-        view = cam.lookFront();
-        projection = glm::perspective(glm::radians(cam.fov), width / height, 0.1f, 100.0f);
+        view = engine.cam.lookFront();
+        projection = glm::perspective(glm::radians(engine.cam.fov), engine.width / engine.height, 0.1f, 100.0f);
 
-        renderShader.use();
-        renderShader.setVertexMatrices(view, model, projection);
+        engine.renderShader.use();
+        engine.renderShader.setVertexMatrices(view, model, projection);
 
         // cubes
-        cubeVAO.bind();
+        engine.cubeVAO.bind();
 
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, cubeTexture.texture); 	
+        glBindTexture(GL_TEXTURE_2D, engine.cubeTexture->texture); 	
         model = glm::translate(model, glm::vec3(-1.0f, 0.0f, -1.0f));
-        renderShader.setMat4("model", model);
+        engine.renderShader.setMat4("model", model);
         glDrawArrays(GL_TRIANGLES, 0, 36);
         model = glm::mat4(1.0f);
         model = glm::translate(model, glm::vec3(2.0f, 0.0f, 0.0f));
-        renderShader.setMat4("model", model);
+        engine.renderShader.setMat4("model", model);
         glDrawArrays(GL_TRIANGLES, 0, 36);
 
-        cubeVAO.unbind();
+        engine.cubeVAO.unbind();
 
         // floor
-        planeVAO.bind();
+        engine.planeVAO.bind();
 
-        glBindTexture(GL_TEXTURE_2D, floorTexture.texture);
-        renderShader.setMat4("model", glm::mat4(1.0f));
+        glBindTexture(GL_TEXTURE_2D, engine.floorTexture->texture);
+        engine.renderShader.setMat4("model", glm::mat4(1.0f));
         model = glm::mat4(1.0f);
-        renderShader.setVertexMatrices(view, model, projection);
+        engine.renderShader.setVertexMatrices(view, model, projection);
         glDrawArrays(GL_TRIANGLES, 0, 6);
 
-        planeVAO.unbind();
+        engine.planeVAO.unbind();
 
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
         glDisable(GL_DEPTH_TEST);
@@ -187,20 +254,20 @@ int main()
         glClearColor(1.0f, 1.0f, 1.0f, 1.0f); 
         glClear(GL_COLOR_BUFFER_BIT);
 
-        postprocShaders[current_shader].use();
+        engine.postprocShaders[engine.currentPostprocShader].use();
 
-        quadVAO.bind();
-        glBindTexture(GL_TEXTURE_2D, framebuffer.colorAttatchment->texture);
+        engine.quadVAO.bind();
+        glBindTexture(GL_TEXTURE_2D, engine.framebuffer.colorAttachment->texture);
         glDrawArrays(GL_TRIANGLES, 0, 6);
-        quadVAO.unbind();
+        engine.quadVAO.unbind();
 
-        glfwSwapBuffers(window);
+        glfwSwapBuffers(engine.window);
         glfwPollEvents();    
     }
 
-    cubeVAO.deleteBuffers();
-    planeVAO.deleteBuffers();
-    quadVAO.deleteBuffers();
+    engine.cubeVAO.deleteBuffers();
+    engine.planeVAO.deleteBuffers();
+    engine.quadVAO.deleteBuffers();
 
     glfwTerminate();
     return 0;
@@ -208,75 +275,39 @@ int main()
 
 #pragma region 
 
-GLFWwindow* windowAndContext() {
-    glfwInit();
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-  
-    GLFWwindow *window = glfwCreateWindow(width, height, "CrazyWindowAction", NULL, NULL);
-    if (window == NULL)
-    {
-        std::cout << "Failed to create GLFW window" << std::endl;
-        glfwTerminate();
-        return NULL;
-    }
-
-    glfwMakeContextCurrent(window);
-    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
-    glfwSetCursorPosCallback(window, mouse_callback);
-    glfwSetScrollCallback(window, scroll_callback);
-
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-
-    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
-    {
-        std::cout << "Failed to initialize GLAD" << std::endl;
-        return NULL;
-    }
-
-    return window;
-}
-
 void framebuffer_size_callback(GLFWwindow* window, int _width, int _height)
 {
+    Engine *engine = (Engine*)glfwGetWindowUserPointer(window);
     glViewport(0, 0, _width, _height);
-    width = _width;
-    height = _height;
+    engine->width = _width;
+    engine->height = _height;
 }
 
 void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
+    Engine *engine = (Engine*)glfwGetWindowUserPointer(window);
 
-    if (!mouseLocked) return;
+    if (!engine->mouseLocked) return;
 
-    if (firstMouse)
+    if (engine->firstMouse)
     {
-        lastX = xpos;
-        lastY = ypos;
-        firstMouse = false;
+        engine->lastX = xpos;
+        engine->lastY = ypos;
+        engine->firstMouse = false;
     }
   
-    float xoffset = xpos - lastX;
-    float yoffset = lastY - ypos; 
-    lastX = xpos;
-    lastY = ypos;
+    float xoffset = xpos - engine->lastX;
+    float yoffset = engine->lastY - ypos; 
+    engine->lastX = xpos;
+    engine->lastY = ypos;
 
-    cam.handleMouseMovement(xoffset, yoffset);
+    engine->cam.handleMouseMovement(xoffset, yoffset);
 }
 
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
-    cam.handleMouseScroll(yoffset);
-}
+    Engine *engine = (Engine*)glfwGetWindowUserPointer(window);
 
-void processInput(GLFWwindow *window)
-{
-    cam.deltaSpeed = cam.speed * deltaTime;
-    for (auto key : keys)
-    {
-        key->detect(window);
-    }
+    engine->cam.handleMouseScroll(yoffset);
 }
-
 
 #pragma endregion 

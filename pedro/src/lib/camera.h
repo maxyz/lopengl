@@ -4,6 +4,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <iostream>
 
 enum CameraMovement{
     FORWARD,
@@ -48,6 +49,7 @@ public:
     fov(FOV),
     myCamMode(false)
     {   
+        std::cout << "Camara owo\n";
         position = inPosition;
         worldUp = inUp;
         up = worldUp;

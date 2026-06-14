@@ -20,20 +20,20 @@ VAO::VAO(VertexVector &verticesVector, unsigned int mode) {
 
 Framebuffer::Framebuffer(){
     glGenFramebuffers(1, &buffer);
-    colorAttatchment = nullptr;
+    colorAttachment = nullptr;
 }
 
 void Framebuffer::attatchColor(const uint width, const uint height) {
-    colorAttatchment = new Texture2D(width, height);
+    colorAttachment = new Texture2D(width, height);
     bind();
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorAttatchment->texture, 0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorAttachment->texture, 0);
 }
 
 void Framebuffer::attatchRender(const uint width, const uint height) {
-    glGenRenderbuffers(1, &renderAttatchment);
-    glBindRenderbuffer(GL_RENDERBUFFER, renderAttatchment);
+    glGenRenderbuffers(1, &renderAttachment);
+    glBindRenderbuffer(GL_RENDERBUFFER, renderAttachment);
     glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height); // use a single renderbuffer object for both a depth AND stencil buffer.
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, renderAttatchment);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, renderAttachment);
 }
 
 void Framebuffer::checkStatus() {

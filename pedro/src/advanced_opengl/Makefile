@@ -9,8 +9,8 @@ libGLAD.a: ../glad.c
 	ar qc libGLAD.a glad.o
 	ranlib libGLAD.a
 
-LDFLAGS = -lglfw -lGL -lX11 -lpthread -lXrandr -lXi -ldl -lassimp -g 
-CPPFLAGS = -I ../../include/ -I ../lib/ $(shell pkg-config --cflags assimp)
+LDFLAGS = -lglfw -lGL -lX11 -lpthread -lXrandr -lXi -ldl -lassimp
+CPPFLAGS = -I ../../include/ -I ../lib/ $(shell pkg-config --cflags assimp) -g
 EXTRAS = /usr/lib/x86_64-linux-gnu/libglfw.so libGLAD.a
 
 01depth_testing: 01depth_testing.cpp $(LIB)

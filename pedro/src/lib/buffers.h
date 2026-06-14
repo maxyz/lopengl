@@ -29,11 +29,11 @@ class Framebuffer {
 
 private:
     uint buffer;
-    uint renderAttatchment;
+    uint renderAttachment;
     
 
 public:
-    Texture2D* colorAttatchment;
+    Texture2D* colorAttachment;
 
     Framebuffer();
     void attatchColor(const uint width, const uint height);
