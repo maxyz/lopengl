@@ -1,6 +1,7 @@
 #pragma once
 
 #include "common/assets.hpp"       // IWYU pragma: export
+#include "common/buffers.hpp"      // IWYU pragma: export
 #include "common/camera.hpp"       // IWYU pragma: export
 #include "common/event_loop.hpp"   // IWYU pragma: export
 #include "common/geometry.hpp"     // IWYU pragma: export
