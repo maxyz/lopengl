@@ -190,7 +190,7 @@ private:
         framebuffers_t framebuffers, renderbuffers_t renderbuffers
     )
         : m_window{window}, m_shaders{std::move(shaders)}, m_textures(textures), m_vaos{vaos},
-          m_vbos(vbos), m_framebuffers(framebuffers), m_renderbuffers(renderbuffers) {};
+          m_vbos(vbos), m_renderbuffers(renderbuffers), m_framebuffers(framebuffers) {};
 
     void render_scene();
     void render_fill_pass();
@@ -631,9 +631,8 @@ std::pair<vaos_t, vbos_t> load_buffers() {
 
     // Skybox around the scene
     std::array<glm::vec3, 36> skybox_positions{};
-    float                     scale_factor = 200.;
     for (auto [i, vertex] : cube_vertices | std::views::enumerate) {
-        skybox_positions[i] = vertex.position * scale_factor;
+        skybox_positions[i] = vertex.position;
     }
 
     glBindVertexArray(vaos.skybox);
@@ -1048,8 +1047,8 @@ void SceneRenderer::render_imgui() {
             };
             static int selected_idx = -1;
             static int previous_idx = -1;
-            for (int n = 0; n < items.size(); ++n) {
-                const bool is_selected = (selected_idx == n);
+            for (size_t n = 0; n < items.size(); ++n) {
+                const bool is_selected = (selected_idx == static_cast<int>(n));
 
                 if (ImGui::Selectable(items[n].c_str(), is_selected)) {
                     if (is_selected) {

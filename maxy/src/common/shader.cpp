@@ -44,7 +44,7 @@ Shader::build_res Shader::build(std::string_view vertexPath, std::string_view fr
         return std::unexpected(fragment.error());
     }
     const std::array ids{*vertex, *fragment};
-    auto program = link_shaders(ids);
+    auto             program = link_shaders(ids);
     glDeleteShader(*vertex);
     glDeleteShader(*fragment);
     if (!program) {
@@ -81,7 +81,7 @@ void Shader::set_mat4(const std::string &name, const glm::mat4 &value) const {
 constexpr int shader_info_log_size = 512;
 
 compile_shader_res compile_shader(GLenum type, const char *source) {
-    int success;
+    int  success;
     char info_log[shader_info_log_size];
 
     id_t shader = glCreateShader(type);
@@ -98,7 +98,7 @@ compile_shader_res compile_shader(GLenum type, const char *source) {
 }
 
 link_shaders_res link_shaders(std::span<const id_t> shaders) {
-    int success;
+    int  success;
     char info_log[shader_info_log_size];
 
     id_t program = glCreateProgram();
@@ -122,12 +122,12 @@ read_file_res read_file(const std::filesystem::path &path) {
                 std::format("error while trying to read file {}", path.string())
             );
         file.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-        auto size = std::filesystem::file_size(path);
+        auto        size = std::filesystem::file_size(path);
         std::string content(size, '\0');
         file.read(content.data(), size);
         return content;
 
-    } catch (std::ifstream::failure e) {
+    } catch (const std::ifstream::failure &e) {
         return std::unexpected(
             std::format("error reading shader file \"{}\"\n{}", path.string(), e.what())
         );

@@ -5,13 +5,13 @@
 
 #include <GLFW/glfw3.h>
 
-const GLuint WIDTH = 800;
+const GLuint WIDTH  = 800;
 const GLuint HEIGHT = 600;
 
 using id_t = unsigned int;
 
-void framebufferSizeCallback(GLFWwindow *window, int width, int height);
-void processInput(GLFWwindow *window);
+void              framebufferSizeCallback(GLFWwindow *window, int width, int height);
+void              processInput(GLFWwindow *window);
 std::vector<id_t> shadersCode();
 std::vector<id_t> buffers();
 
@@ -39,7 +39,7 @@ int main() {
     // glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
     auto programs = shadersCode();
-    auto vaos = buffers();
+    auto vaos     = buffers();
 
     float delta = 0.001, r = 0.2, g = 0.3, b = 0.3;
 
@@ -55,7 +55,7 @@ int main() {
         b = b > 1.0f ? b - 1.0f : b;
         glClear(GL_COLOR_BUFFER_BIT);
 
-        for (auto idx = 0; idx < std::min(programs.size(), vaos.size()); idx++) {
+        for (size_t idx = 0; idx < std::min(programs.size(), vaos.size()); idx++) {
 
             glUseProgram(programs.at(idx));
             glBindVertexArray(vaos.at(idx));
@@ -78,7 +78,7 @@ void processInput(GLFWwindow *window) {
         glfwSetWindowShouldClose(window, true);
     }
 }
-float h = 0.5773502691896257f;
+float h            = 0.5773502691896257f;
 float vertices_a[] = {
     -0.666666f, -h / 2, 0.0f, // bottom left
     0.0f,       -h / 2, 0.0f, // bottom center
@@ -98,12 +98,12 @@ const char *vertexShaderSource = "#version 330 core\n"
                                  "  gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
                                  "}";
 
-const char *fragmentShaderSource = "#version 330 core\n"
-                                   "out vec4 FragColor;\n"
-                                   "void main()\n"
-                                   "{\n"
-                                   "  FragColor = vec4(1.0f, 0.5f, 0.2, 1.0f);\n"
-                                   "}";
+const char *fragmentShaderSource       = "#version 330 core\n"
+                                         "out vec4 FragColor;\n"
+                                         "void main()\n"
+                                         "{\n"
+                                         "  FragColor = vec4(1.0f, 0.5f, 0.2, 1.0f);\n"
+                                         "}";
 const char *yellowFragmentShaderSource = "#version 330 core\n"
                                          "out vec4 FragColor;\n"
                                          "void main()\n"
@@ -112,7 +112,7 @@ const char *yellowFragmentShaderSource = "#version 330 core\n"
                                          "}";
 
 std::vector<unsigned int> shadersCode() {
-    int success;
+    int  success;
     char infoLog[512];
 
     unsigned int vertexShader;

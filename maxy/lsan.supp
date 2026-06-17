@@ -1,0 +1,28 @@
+# LeakSanitizer suppressions for the OpenGL examples.
+#
+# Every leak reported under -fsanitize=address comes from one-time
+# initialization inside the GPU driver and windowing stack, not from the
+# example code. These allocations are never freed by the libraries that own
+# them (glfwTerminate does not release them either), so they are not bugs we
+# can fix. Suppress them by owning library so real application leaks still
+# surface.
+#
+# Usage:
+#   LSAN_OPTIONS=suppressions=$PWD/lsan.supp ./14_lighting
+
+leak:libfontconfig
+leak:libwayland-client
+leak:libEGL
+leak:libGLX
+leak:libGL
+leak:libglapi
+leak:swrast
+leak:iris
+leak:i965
+leak:radeonsi
+leak:/dri/
+# The GPU driver is dlopen'd as an anonymous module, so its one-time EGL
+# init allocation has no library name to match. The only named frame in the
+# chain is GLFW's window creation; match on that. Requires the slow unwinder
+# (ASAN_OPTIONS=fast_unwind_on_malloc=0) so the frame is captured.
+leak:glfwCreateWindow

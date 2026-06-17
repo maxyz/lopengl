@@ -15,33 +15,33 @@
 
 #include "common/common.hpp"
 
-constexpr const char *TITLE = "Transparent grass";
-constexpr GLuint WIDTH = 1024;
-constexpr GLuint HEIGHT = 768;
+constexpr const char *TITLE  = "Transparent grass";
+constexpr GLuint      WIDTH  = 1024;
+constexpr GLuint      HEIGHT = 768;
 
 struct model_preset_t {
     glm::vec3 position;
-    float scale;
+    float     scale;
 };
 struct preset_t {
-    std::string name;
-    glm::vec4 clear_color;
+    std::string                 name;
+    glm::vec4                   clear_color;
     std::vector<model_preset_t> cubes;
     std::vector<model_preset_t> vegetation;
-    model_preset_t plane;
+    model_preset_t              plane;
 };
 
 struct depth_mode_t {
     std::string name;
-    GLenum mode;
+    GLenum      mode;
 };
 
 struct state_t {
     window_state_t window = {
         .viewport = {.width = WIDTH, .height = HEIGHT},
-        .camera = Camera{glm::vec3(0.f, .5f, 3.f)},
+        .camera   = Camera{glm::vec3(0.f, .5f, 3.f)},
     };
-    size_t preset_index = 0;
+    size_t preset_index     = 0;
     size_t depth_mode_index = 2; // Initial value set to less
 };
 state_t state;
@@ -69,10 +69,10 @@ class SceneRenderer {
 public:
     static std::expected<std::unique_ptr<SceneRenderer>, std::string> create(GLFWwindow *window);
 
-    SceneRenderer(const SceneRenderer &) = delete;
+    SceneRenderer(const SceneRenderer &)            = delete;
     SceneRenderer &operator=(const SceneRenderer &) = delete;
-    SceneRenderer(SceneRenderer &&o) noexcept = delete;
-    SceneRenderer &operator=(SceneRenderer &&o) = delete;
+    SceneRenderer(SceneRenderer &&o) noexcept       = delete;
+    SceneRenderer &operator=(SceneRenderer &&o)     = delete;
     ~SceneRenderer() noexcept {
         glDeleteVertexArrays(3, &m_vaos.cube);
         glDeleteBuffers(3, &m_vbos.cube);
@@ -82,10 +82,10 @@ public:
 
 private:
     GLFWwindow *m_window{};
-    shaders_t m_shaders;
-    textures_t m_textures{};
-    vaos_t m_vaos;
-    vbos_t m_vbos;
+    shaders_t   m_shaders;
+    textures_t  m_textures{};
+    vaos_t      m_vaos;
+    vbos_t      m_vbos;
 
     SceneRenderer(
         GLFWwindow *window, shaders_t shaders, textures_t textures, vaos_t vaos, vbos_t vbos
@@ -104,45 +104,45 @@ private:
 
 const std::array<preset_t, 1> presets = {{
     {
-        .name = "simple",
+        .name        = "simple",
         .clear_color = glm::vec4(.01f, .01f, .0f, 1.f),
         .cubes =
             {
                 {
                     .position = glm::vec3(-1.f, .5f, 1.f),
-                    .scale = 1.f,
+                    .scale    = 1.f,
                 },
                 {
                     .position = glm::vec3(2.f, 1.f, 0.f),
-                    .scale = 2.f,
+                    .scale    = 2.f,
                 },
             },
         .vegetation =
             {
                 {
                     .position = glm::vec3(-1.5f, 0.f, -0.48f),
-                    .scale = .8f,
+                    .scale    = .8f,
                 },
                 {
                     .position = glm::vec3(1.5f, 0.f, .51f),
-                    .scale = .9f,
+                    .scale    = .9f,
                 },
                 {
                     .position = glm::vec3(0.f, 0.f, .7f),
-                    .scale = 1.f,
+                    .scale    = 1.f,
                 },
                 {
                     .position = glm::vec3(-.3f, 0.f, -2.3f),
-                    .scale = 1.1f,
+                    .scale    = 1.1f,
                 },
                 {
                     .position = glm::vec3(.5f, 0.f, -.6f),
-                    .scale = 1.2f,
+                    .scale    = 1.2f,
                 },
             },
         .plane = {
             .position = glm::vec3(0.f, 0.f, 0.f),
-            .scale = 1.f,
+            .scale    = 1.f,
         },
     },
 }};
@@ -199,8 +199,8 @@ std::expected<textures_t, std::string> load_textures() {
     }
     return textures_t{
         .marble = *marble_texture,
-        .metal = *metal_texture,
-        .grass = *grass_texture,
+        .metal  = *metal_texture,
+        .grass  = *grass_texture,
     };
 }
 
@@ -290,7 +290,7 @@ void SceneRenderer::render_fill_pass() {
 }
 
 void SceneRenderer::render_scene_set_view_and_projection() {
-    glm::mat4 view = state.window.camera.get_view_matrix();
+    glm::mat4 view       = state.window.camera.get_view_matrix();
     glm::mat4 projection = glm::perspective(
         glm::radians(state.window.camera.fov),
         static_cast<float>(state.window.viewport.width) /
@@ -313,8 +313,8 @@ void SceneRenderer::render_scene_draw_cubes(Shader &shader) {
 
     for (auto &model_info : preset.cubes) {
         glm::mat4 model_transform = glm::mat4(1.f);
-        model_transform = glm::translate(model_transform, model_info.position);
-        model_transform = glm::scale(model_transform, glm::vec3(model_info.scale));
+        model_transform           = glm::translate(model_transform, model_info.position);
+        model_transform           = glm::scale(model_transform, glm::vec3(model_info.scale));
 
         shader.set_mat4("model", model_transform);
         glDrawArrays(GL_TRIANGLES, 0, cube_vertices.size());
@@ -332,8 +332,8 @@ void SceneRenderer::render_scene_draw_grass() {
 
     for (auto &model_info : preset.vegetation) {
         glm::mat4 model_transform = glm::mat4(1.f);
-        model_transform = glm::translate(model_transform, model_info.position);
-        model_transform = glm::scale(model_transform, glm::vec3(model_info.scale));
+        model_transform           = glm::translate(model_transform, model_info.position);
+        model_transform           = glm::scale(model_transform, glm::vec3(model_info.scale));
 
         m_shaders.shader.set_mat4("model", model_transform);
         glDrawArrays(GL_TRIANGLES, 0, square_vertices.size());
@@ -347,10 +347,10 @@ void SceneRenderer::render_scene_draw_plane() {
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, m_textures.metal);
 
-    auto &model_info = preset.plane;
+    auto     &model_info      = preset.plane;
     glm::mat4 model_transform = glm::mat4(1.f);
-    model_transform = glm::translate(model_transform, model_info.position);
-    model_transform = glm::scale(model_transform, glm::vec3(model_info.scale));
+    model_transform           = glm::translate(model_transform, model_info.position);
+    model_transform           = glm::scale(model_transform, glm::vec3(model_info.scale));
 
     m_shaders.shader.use();
     m_shaders.shader.set_mat4("model", model_transform);
@@ -361,9 +361,8 @@ void SceneRenderer::render_scene_draw_plane() {
 }
 
 void SceneRenderer::render_imgui() {
-    ImGuiIO &io = ImGui::GetIO();
     auto cursor_input_mode = glfwGetInputMode(m_window, GLFW_CURSOR);
-    bool camera_mode = cursor_input_mode != GLFW_CURSOR_NORMAL;
+    bool camera_mode       = cursor_input_mode != GLFW_CURSOR_NORMAL;
     if (camera_mode) {
     } else {
     }

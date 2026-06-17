@@ -14,6 +14,9 @@ out vec3 dir_light_dir_view;
 out vec3 pos_lights_pos_view[MAX_POS_LIGHTS];
 out vec3 spot_lights_pos_view[MAX_SPOT_LIGHTS];
 out vec3 spot_lights_dir_view[MAX_SPOT_LIGHTS];
+out vec3 view_pos_view;
+
+uniform vec3 view_pos;
 
 struct directional_light_t {
     vec3 direction;
@@ -77,6 +80,7 @@ void main() {
         spot_lights_pos_view[i] = vec3(view * vec4(spot_lights[i].position, 1.));
         spot_lights_dir_view[i] = vec3(view * vec4(spot_lights[i].direction, 0.));
     }
+    view_pos_view = vec3(vm * vec4(view_pos, 0.));
 
     gl_Position = projection * vm_pos;
 }

@@ -9,3 +9,7 @@ chapter_spv_shaders(sdl3_27_environment)
 add_executable(sdl3_27_inter_reflection inter_reflection.cpp)
 target_link_libraries(sdl3_27_inter_reflection sdl3_engine)
 chapter_spv_shaders(sdl3_27_inter_reflection)
+
+add_executable(sdl3_27_infinity_mirror infinity_mirror.cpp)
+target_link_libraries(sdl3_27_infinity_mirror sdl3_engine)
+chapter_spv_shaders(sdl3_27_infinity_mirror)

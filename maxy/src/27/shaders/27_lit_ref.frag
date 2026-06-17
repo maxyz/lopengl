@@ -12,6 +12,7 @@ in vec3 dir_light_dir_view;
 in vec3 pos_lights_pos_view[MAX_POS_LIGHTS];
 in vec3 spot_lights_pos_view[MAX_SPOT_LIGHTS];
 in vec3 spot_lights_dir_view[MAX_SPOT_LIGHTS];
+in vec3 view_pos_view;
 
 struct material_t {
     sampler2D diffuse;
@@ -92,7 +93,6 @@ uniform spot_light_t spot_lights[MAX_SPOT_LIGHTS];
 uniform int spot_light_count;
 uniform flashlight_t flashlight;
 uniform samplerCube skybox;
-uniform vec3 view_pos;
 
 vec3 directional_light_process(directional_light_view_t light_view, vec3 norm, vec3 view_dir, vec3 diffuse_rgb) {
     vec3 ambient = light_view.light.ambient * diffuse_rgb;
@@ -205,7 +205,7 @@ void main() {
     }
     result += flashlight_process(flashlight, norm, view_dir, frag_pos, diffuse_rgb);
 
-    vec3 i = normalize(frag_pos - view_pos);
+    vec3 i = normalize(frag_pos - view_pos_view);
     vec3 r = reflect(i, norm);
     vec4 ref_color = vec4(texture(skybox, r).rgb, 1.);
     vec4 res_color = vec4(result, diffuse_texel.a);

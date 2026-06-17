@@ -1,15 +1,24 @@
-// inter_reflection.cpp — two chrome cubes reflecting each other.
+// inter_reflection.cpp — two textured cubes that reflect each other.
 //
-// Each frame:
-//   For each reflective object i (6 render passes):
-//     Render the scene from object i's center into its write cubemap.
-//     Other reflective objects are rendered using their READ cubemap
-//     (written during the previous frame) -- the 1-frame lag.
-//   Main pass: render scene normally; each object uses its freshly-written
-//     cubemap, so inter-reflections are always at most 1 frame stale.
+// The cubes are textured + lit (environment.frag) blended with a per-object
+// reflection cubemap, so each cube is a visible object in the scene that ALSO
+// mirrors its surroundings -- including the other cube.
 //
-// Double-buffering: each object owns two cubemap textures (a and b).
-// m_frame_parity alternates each frame; write goes to one, read from the other.
+// Each object owns ONE persistent cubemap. Every frame, in the prepare phase:
+//   For each object i (6 render passes), render the scene from i's center into
+//   i's cubemap. The OTHER objects are drawn sampling their own persistent
+//   cubemap, which still holds their most recent render -- so object i reflects
+//   the latest available image of object j without an infinite intra-frame
+//   dependency. The main pass then samples the same persistent cubemaps.
+//
+// One persistent texture per object (rather than a swapped front/back pair) is
+// deliberate: with double-buffering the mutual reflections settled into a
+// two-frame limit cycle (a reflects b, b reflects a) that showed up as blinking.
+//
+// Seeding: the reflection component would sample an uninitialised cubemap on the
+// very first frame, so inter-object reflections are skipped once at startup to
+// populate every cubemap with the environment first. (The textured base colour
+// keeps the cubes visible regardless, but this keeps the reflection clean.)
 
 #include <array>
 #include <format>
@@ -40,10 +49,10 @@ static constexpr std::array<glm::vec3, 6> FACE_TARGETS = {{
     {0, 0, 1},
     {0, 0, -1},
 }};
-// SDL3 GPU applies a Y-flip (NDC y=+1 == texture top, UV v=0).  Vulkan's
-// cubemap sampler also expects world +Y at the top of ±X/±Z face images and
-// world -Z at the top of the +Y face image.  These up-vectors align the
-// rendered face images with that expectation (opposite of raw OpenGL convention).
+// Up vectors that orient each face vertically for SDL3 GPU's Y-up clip space
+// (the negation of the raw OpenGL convention, whose down-pointing up vectors
+// would render the faces upside down here). Horizontal orientation is corrected
+// separately by flipping the projection's X axis in render_cubemap_face.
 static constexpr std::array<glm::vec3, 6> FACE_UPS = {{
     {0, 1, 0},
     {0, 1, 0}, // +X, -X
@@ -64,7 +73,7 @@ struct scene_params_t {
     glm::vec4 dir_specular;
 };
 
-// Chrome cube positions and common size
+// Cube positions and common size
 static constexpr glm::vec3 OBJECT_POSITIONS[NUM_OBJECTS] = {
     {-1.5f, 0.5f, 0.0f},
     {1.5f, 0.5f, 0.0f},
@@ -199,34 +208,28 @@ std::expected<gpu_texture_t, std::string> create_dynamic_cubemap(engine_t const 
 
 } // namespace
 
-// One reflective object: position, size, and a pair of double-buffered cubemaps.
+// One reflective object: a single persistent cubemap that is re-rendered in
+// place each frame and sampled both by the other objects and by the main view.
+// Using one stable texture (rather than a swapped pair) keeps the mutual
+// reflections from oscillating between two buffers, which looked like blinking.
 struct reflective_t {
     glm::vec3     position;
     float         size;
-    gpu_texture_t cubemap_a; // written on even-parity frames
-    gpu_texture_t cubemap_b; // written on odd-parity frames
-    gpu_texture_t depth;     // reused for all 6 faces (rendered sequentially)
+    gpu_texture_t cubemap; // COLOR_TARGET | SAMPLER, persists between renders
+    gpu_texture_t depth;   // reused for all 6 faces (rendered sequentially)
     gpu_sampler_t sampler;
-
-    // Texture to write into this frame.
-    SDL_GPUTexture *write_tex(int parity) const {
-        return parity == 0 ? cubemap_a.get() : cubemap_b.get();
-    }
-    // Texture to sample from (previous frame's render).
-    SDL_GPUTexture *read_tex(int parity) const {
-        return parity == 0 ? cubemap_b.get() : cubemap_a.get();
-    }
 };
 
 struct scene_t {
-    gpu_pipeline_t lit_pipeline;     // floor (Phong only)
-    gpu_pipeline_t reflect_pipeline; // chrome cubes (pure mirror)
+    gpu_pipeline_t lit_pipeline;  // floor (Phong only)
+    gpu_pipeline_t cube_pipeline; // textured-lit cubes blended with their reflection
     gpu_pipeline_t skybox_pipeline;
 
     gpu_geometry_t cube_geometry;
     gpu_geometry_t floor_geometry;
     gpu_geometry_t skybox_geometry;
 
+    gpu_material_t cube_material;
     gpu_material_t floor_material;
     gpu_texture_t  static_cubemap;
     gpu_sampler_t  static_sampler;
@@ -239,7 +242,7 @@ struct scene_t {
 
     camera_t camera;
     float    m_aspect_ratio = static_cast<float>(WINDOW_WIDTH) / WINDOW_HEIGHT;
-    int      m_frame_parity = 0; // alternates 0/1 each frame
+    int      m_frame_count  = 0; // counts frames; used to seed the cubemaps
 
     bool update(input_t const &in);
 
@@ -290,22 +293,28 @@ std::expected<scene_t, std::string> create_scene(engine_t &engine) {
     if (!lit_pipe) return std::unexpected(lit_pipe.error());
     scene.lit_pipeline = std::move(*lit_pipe);
 
-    // reflect.frag takes one samplerCube at set=2, binding=0.
-    // Vertex uniforms: model(0), view(1), proj(2), normal_flip(3) from lit.vert.
-    auto reflect_pipe = create_pipeline(
+    // Cubes use environment.frag: Phong lighting on a textured material blended
+    // with a cubemap reflection (diffuse/specular at samplers 0/1, the reflected
+    // cubemap at sampler 2). Same shader as environment.cpp, but the cubemap is
+    // each object's own dynamically-rendered one rather than the static skybox.
+    auto cube_pipe = create_pipeline(
         engine, {
-                    .vertex_shader          = "shaders/sdl3_24/lit.vert.spv",
-                    .fragment_shader        = "shaders/sdl3_27/reflect.frag.spv",
-                    .vertex_uniform_buffers = 4,
-                    .fragment_samplers      = 1,
-                    .vertex_buffer_descs    = pos_normal_uv_buffer_descs,
-                    .vertex_attributes      = pos_normal_uv_vertex_attributes,
-                    .enable_depth_test      = true,
-                    .cull_mode              = SDL_GPU_CULLMODE_BACK,
+                    .vertex_shader            = "shaders/sdl3_24/lit.vert.spv",
+                    .fragment_shader          = "shaders/sdl3_27/environment.frag.spv",
+                    .vertex_uniform_buffers   = 4,
+                    .fragment_uniform_buffers = 4,
+                    .fragment_samplers        = 3,
+                    .vertex_buffer_descs      = pos_normal_uv_buffer_descs,
+                    .vertex_attributes        = pos_normal_uv_vertex_attributes,
+                    .enable_depth_test        = true,
+                    // No culling: cubemap faces are rendered with a flipped-X
+                    // projection (inverting winding), and a convex cube renders
+                    // correctly without culling thanks to the depth test.
+                    .cull_mode = SDL_GPU_CULLMODE_NONE,
                 }
     );
-    if (!reflect_pipe) return std::unexpected(reflect_pipe.error());
-    scene.reflect_pipeline = std::move(*reflect_pipe);
+    if (!cube_pipe) return std::unexpected(cube_pipe.error());
+    scene.cube_pipeline = std::move(*cube_pipe);
 
     auto skybox_pipe = create_pipeline(
         engine, {
@@ -353,6 +362,15 @@ std::expected<scene_t, std::string> create_scene(engine_t &engine) {
     if (!skybox_geom) return std::unexpected(skybox_geom.error());
     scene.skybox_geometry = std::move(*skybox_geom);
 
+    auto cube_mat = create_material(
+        engine, {.texture_paths = {
+                     std::string(ASSETS_PATH) + "textures/container2.png",
+                     std::string(ASSETS_PATH) + "textures/container2_specular.png",
+                 }}
+    );
+    if (!cube_mat) return std::unexpected(cube_mat.error());
+    scene.cube_material = std::move(*cube_mat);
+
     auto floor_mat = create_material(
         engine, {.texture_paths = {
                      std::string(ASSETS_PATH) + "textures/metal.png",
@@ -378,18 +396,14 @@ std::expected<scene_t, std::string> create_scene(engine_t &engine) {
     if (!static_samp) return std::unexpected(static_samp.error());
     scene.static_sampler = std::move(*static_samp);
 
-    // Build reflective objects with double-buffered dynamic cubemaps.
+    // Build reflective objects with one persistent dynamic cubemap each.
     for (int i = 0; i < NUM_OBJECTS; ++i) {
         scene.objects[i].position = OBJECT_POSITIONS[i];
         scene.objects[i].size     = OBJECT_SIZE;
 
-        auto cm_a = create_dynamic_cubemap(engine);
-        if (!cm_a) return std::unexpected(cm_a.error());
-        scene.objects[i].cubemap_a = std::move(*cm_a);
-
-        auto cm_b = create_dynamic_cubemap(engine);
-        if (!cm_b) return std::unexpected(cm_b.error());
-        scene.objects[i].cubemap_b = std::move(*cm_b);
+        auto cm = create_dynamic_cubemap(engine);
+        if (!cm) return std::unexpected(cm.error());
+        scene.objects[i].cubemap = std::move(*cm);
 
         auto dep = create_depth_texture(engine, CUBEMAP_SIZE, CUBEMAP_SIZE);
         if (!dep) return std::unexpected(dep.error());
@@ -418,13 +432,9 @@ bool scene_t::update(input_t const &in) {
         "Camera", "(%.2f, %.2f, %.2f)", camera.position.x, camera.position.y, camera.position.z
     );
     ImGui::LabelText("Mode", "%s", camera.ui_mode() ? "UI (` to fly)" : "Fly (` for UI)");
-    ImGui::LabelText("Frame parity", "%d", m_frame_parity);
     ImGui::End();
 
-    // Advance double-buffer parity at the start of each frame so that
-    // render_cubemap_faces (prepare) writes to the new slot and
-    // render_scene (draw) reads from it.
-    m_frame_parity = 1 - m_frame_parity;
+    ++m_frame_count;
     return true;
 }
 
@@ -486,17 +496,16 @@ void scene_t::render_reflective_cube(
     auto const &obj = objects[obj_idx];
     auto        model =
         glm::scale(glm::translate(glm::mat4{1.0f}, obj.position - cam_pos), glm::vec3{obj.size});
+
+    push_lit_scene_uniforms(cmd, view, proj, cam_pos);
     push_vertex_uniform(cmd, 0, model);
-    push_vertex_uniform(cmd, 1, view);
-    push_vertex_uniform(cmd, 2, proj);
     push_vertex_uniform(cmd, 3, 1.0f);
 
-    SDL_GPUTextureSamplerBinding binding = {cubemap_tex, obj.sampler.get()};
-    SDL_BindGPUFragmentSamplers(pass, 0, &binding, 1);
-
-    SDL_GPUBufferBinding vb = {cube_geometry.vertex_buffer.get(), 0};
-    SDL_BindGPUVertexBuffers(pass, 0, &vb, 1);
-    SDL_DrawGPUPrimitives(pass, cube_geometry.vertex_count, 1, 0, 0);
+    // The reflected cubemap goes at fragment sampler slot 2; draw() fills slots
+    // 0 and 1 from the cube material (diffuse + specular).
+    SDL_GPUTextureSamplerBinding env_binding = {cubemap_tex, obj.sampler.get()};
+    SDL_BindGPUFragmentSamplers(pass, 2, &env_binding, 1);
+    draw(cube_geometry, cube_material, pass);
 }
 
 void scene_t::render_skybox(
@@ -516,22 +525,29 @@ void scene_t::render_skybox(
 }
 
 // Renders the scene as seen from object obj_idx looking toward face direction.
-// Other reflective objects use their READ cubemap (previous frame).
+// Other reflective objects are sampled from their persistent cubemaps.
 void scene_t::render_cubemap_face(SDL_GPUCommandBuffer *cmd, int obj_idx, int face) {
     auto const &obj = objects[obj_idx];
 
     SDL_GPUColorTargetInfo color_info = {};
-    color_info.texture                = obj.write_tex(m_frame_parity);
+    color_info.texture                = obj.cubemap.get();
     color_info.layer_or_depth_plane   = static_cast<Uint32>(face);
     color_info.load_op                = SDL_GPU_LOADOP_CLEAR;
     color_info.store_op               = SDL_GPU_STOREOP_STORE;
     color_info.clear_color            = {0.0f, 0.0f, 0.0f, 1.0f};
 
+    // One depth texture is reused for all 6 face passes. Cycling gives each pass
+    // a fresh internal depth buffer, avoiding the write-after-write hazard of
+    // overwriting depth data referenced by the previous face's draws. Cycling a
+    // depth/stencil target requires its stencil load op to be CLEAR (not LOAD).
     SDL_GPUDepthStencilTargetInfo depth_info = {};
     depth_info.texture                       = obj.depth.get();
     depth_info.load_op                       = SDL_GPU_LOADOP_CLEAR;
     depth_info.store_op                      = SDL_GPU_STOREOP_DONT_CARE;
+    depth_info.stencil_load_op               = SDL_GPU_LOADOP_CLEAR;
+    depth_info.stencil_store_op              = SDL_GPU_STOREOP_DONT_CARE;
     depth_info.clear_depth                   = 1.0f;
+    depth_info.cycle                         = true;
 
     SDL_GPURenderPass *pass = SDL_BeginGPURenderPass(cmd, &color_info, 1, &depth_info);
 
@@ -545,17 +561,29 @@ void scene_t::render_cubemap_face(SDL_GPUCommandBuffer *cmd, int obj_idx, int fa
     // model matrices bake in -cam_pos, matching the convention used elsewhere).
     glm::mat4 face_view = glm::lookAt(glm::vec3(0.0f), FACE_TARGETS[face], FACE_UPS[face]);
     glm::mat4 proj      = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 100.0f);
+    // SDL3 GPU's clip space is right-handed (Y up), but cubemap faces are
+    // sampled in a left-handed convention. Flipping the projection's X axis
+    // makes the rendered faces match what the cubemap sampler expects, so
+    // reflections are not horizontally mirrored. This inverts triangle winding,
+    // which is why the cube pipeline disables back-face culling.
+    proj[0][0] *= -1.0f;
 
     render_floor(cmd, pass, cam_pos, face_view, proj);
 
-    // Render every other reflective object with its previous-frame cubemap.
-    // This is the 1-frame-lag read that makes inter-reflections possible.
-    SDL_BindGPUGraphicsPipeline(pass, reflect_pipeline.get());
-    for (int j = 0; j < NUM_OBJECTS; ++j) {
-        if (j == obj_idx) continue;
-        render_reflective_cube(
-            cmd, pass, cam_pos, face_view, proj, j, objects[j].read_tex(m_frame_parity)
-        );
+    // Skip inter-object reflections on the first frame so every cubemap is
+    // seeded with the environment before any object samples another's cubemap
+    // (which would otherwise be uninitialised). From then on, each object draws
+    // the OTHER objects sampling their persistent cubemap, which holds that
+    // object's most recent render.
+    bool const cubemaps_are_seeded = m_frame_count > 1;
+    if (cubemaps_are_seeded) {
+        SDL_BindGPUGraphicsPipeline(pass, cube_pipeline.get());
+        for (int j = 0; j < NUM_OBJECTS; ++j) {
+            if (j == obj_idx) continue;
+            render_reflective_cube(
+                cmd, pass, cam_pos, face_view, proj, j, objects[j].cubemap.get()
+            );
+        }
     }
 
     glm::mat4 skybox_view = glm::mat4(glm::mat3(face_view));
@@ -576,12 +604,10 @@ void scene_t::render_scene(SDL_GPUCommandBuffer *cmd, SDL_GPURenderPass *pass) {
 
     render_floor(cmd, pass, camera.position, view, proj);
 
-    // Render reflective cubes using their freshly-built write cubemaps.
-    SDL_BindGPUGraphicsPipeline(pass, reflect_pipeline.get());
+    // Render reflective cubes using their freshly-built cubemaps.
+    SDL_BindGPUGraphicsPipeline(pass, cube_pipeline.get());
     for (int i = 0; i < NUM_OBJECTS; ++i) {
-        render_reflective_cube(
-            cmd, pass, camera.position, view, proj, i, objects[i].write_tex(m_frame_parity)
-        );
+        render_reflective_cube(cmd, pass, camera.position, view, proj, i, objects[i].cubemap.get());
     }
 
     render_skybox(cmd, pass, glm::mat4(glm::mat3(view)), proj);

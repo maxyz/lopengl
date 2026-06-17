@@ -19,12 +19,12 @@
 #include "common/materials.hpp"
 #include "common/shader.hpp"
 
-const char *TITLE = "LOpenGL";
-const GLuint WIDTH = 800;
+const char  *TITLE  = "LOpenGL";
+const GLuint WIDTH  = 800;
 const GLuint HEIGHT = 600;
 
 struct view_t {
-    float width = WIDTH;
+    float width  = WIDTH;
     float height = HEIGHT;
 };
 view_t viewport;
@@ -32,37 +32,37 @@ view_t viewport;
 Camera camera = Camera(glm::vec3(0.f, 0.f, 3.f));
 
 enum event_t {
-    NONE = 0,
-    increase_fov = 1 << 0,
-    decrease_fov = 1 << 1,
-    camera_up = 1 << 2,
-    camera_down = 1 << 3,
-    camera_left = 1 << 4,
-    camera_right = 1 << 5,
-    camera_for = 1 << 6,
-    camera_back = 1 << 7,
-    camera_yaw_left = 1 << 8,
+    NONE             = 0,
+    increase_fov     = 1 << 0,
+    decrease_fov     = 1 << 1,
+    camera_up        = 1 << 2,
+    camera_down      = 1 << 3,
+    camera_left      = 1 << 4,
+    camera_right     = 1 << 5,
+    camera_for       = 1 << 6,
+    camera_back      = 1 << 7,
+    camera_yaw_left  = 1 << 8,
     camera_yaw_right = 1 << 9,
-    light_up = 1 << 10,
-    light_down = 1 << 11,
-    light_left = 1 << 12,
-    light_right = 1 << 13,
-    light_for = 1 << 14,
-    light_back = 1 << 15,
+    light_up         = 1 << 10,
+    light_down       = 1 << 11,
+    light_left       = 1 << 12,
+    light_right      = 1 << 13,
+    light_for        = 1 << 14,
+    light_back       = 1 << 15,
 };
 
-using cb_t = std::function<void(uint64_t event, float delta)>;
-using cbs_t = std::vector<cb_t>;
+using cb_t      = std::function<void(uint64_t event, float delta)>;
+using cbs_t     = std::vector<cb_t>;
 using cleanup_t = std::function<void()>;
 
 struct hooks_t {
-    cbs_t callbacks = {};
-    cleanup_t cleanup = []() {};
+    cbs_t     callbacks = {};
+    cleanup_t cleanup   = []() {};
 };
 
 std::expected<GLFWwindow *, std::string> init_window();
-std::expected<hooks_t, std::string> init_shaders();
-std::expected<void, std::string> init_textures();
+std::expected<hooks_t, std::string>      init_shaders();
+std::expected<void, std::string>         init_textures();
 
 void event_loop(GLFWwindow *window, cbs_t cbs);
 
@@ -127,7 +127,7 @@ std::expected<GLFWwindow *, std::string> init_window() {
 }
 
 void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
-    viewport.width = width;
+    viewport.width  = width;
     viewport.height = height;
     glViewport(0, 0, width, height);
 }
@@ -146,8 +146,8 @@ void window_focus_callback(GLFWwindow *window, int focused) {
 
 light_t light = {
     .position = glm::vec3(2.f, 1.f, -2.f),
-    .ambient = glm::vec3(.2f, .2f, .2f),
-    .diffuse = glm::vec3(.5f, .5f, .5f),
+    .ambient  = glm::vec3(.2f, .2f, .2f),
+    .diffuse  = glm::vec3(.5f, .5f, .5f),
     .specular = glm::vec3(1.f, 1.f, 1.f)
 };
 
@@ -169,28 +169,24 @@ std::expected<hooks_t, std::string> init_shaders() {
     if (!light_shader) {
         return std::unexpected(light_shader.error());
     }
-    auto p = shader->program_id();
-    auto light_id = light_shader->program_id();
+    auto              p        = shader->program_id();
+    auto              light_id = light_shader->program_id();
     const std::string filename{"textures/container.jpg"};
-    auto texture_ = load_texture(filename);
+    auto              texture_ = load_texture(filename);
     if (!texture_) {
         return std::unexpected(texture_.error());
     }
     auto texture = *texture_;
-    texture_ = load_texture("textures/awesomeface.png");
+    texture_     = load_texture("textures/awesomeface.png");
     if (!texture_) {
         return std::unexpected(texture_.error());
     }
-    auto texture1 = *texture_;
-    auto vaos = buffers();
-    auto cube_vao = vaos.cube_vao;
-    auto light_vao = vaos.light_vao;
+    auto       texture1 = *texture_;
+    auto       vaos     = buffers();
+    auto       cube_vao = vaos.cube_vao;
     material_t material = pearl;
 
-    auto f = [p, light_id, cube_vao, light_vao, texture, texture1,
-              material](uint64_t e, float delta) {
-        auto now = glfwGetTime();
-
+    auto f = [p, light_id, cube_vao, texture, texture1, material](uint64_t e, float delta) {
         if (e & event_t::increase_fov) {
             camera.update_fov(1.f);
         }
@@ -357,8 +353,8 @@ struct frame_time_t {
 };
 
 void update_delta(frame_time_t &delta) {
-    float now = glfwGetTime();
-    delta.delta = now - delta.last_time;
+    float now       = glfwGetTime();
+    delta.delta     = now - delta.last_time;
     delta.last_time = now;
 }
 
@@ -438,22 +434,20 @@ void process_input(GLFWwindow *window, uint64_t &e) {
     }
 }
 
-const float MOUSE_SENSITIVITY = .1f;
-
 void mouse_callback(GLFWwindow *window, double x_pos, double y_pos) {
     static float x = viewport.width / 2;
     static float y = viewport.height / 2;
 
     if (mouse_new_focus) {
-        x = x_pos;
-        y = y_pos;
+        x               = x_pos;
+        y               = y_pos;
         mouse_new_focus = false;
     }
 
     float x_offset = x_pos - x;
     float y_offset = y - y_pos;
-    x = x_pos;
-    y = y_pos;
+    x              = x_pos;
+    y              = y_pos;
     camera.process_rotation(x_offset, y_offset);
 }
 

@@ -4,11 +4,16 @@ project(lopengl)
 option(DEVELOPMENT_MODE "Enable source-tree resource lookup" ON)
 if (DEVELOPMENT_MODE)
   add_compile_definitions(ASSETS_PATH="${CMAKE_SOURCE_DIR}/assets/")
+  add_compile_options(-fsanitize=address)
+  add_link_options(-fsanitize=address)
 else()
   add_compile_definitions(
     ASSETS_PATH="${CMAKE_INSTALL_PREFIX}/share/lopengl/assets/"
   )
 endif()
+
+# Enable address sanitization
+add_compile_options(-Wall)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
