@@ -1,7 +1,6 @@
 #include "texture.h"
 
 Texture2D::Texture2D(const GLchar* mediaPath, const mediaFormat format, const uint wrap_s, const uint wrap_t, const uint min_filter, const uint mag_filter) {
-    std::cout << mediaPath << std::endl;
     createTexture();
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrap_s);
@@ -34,8 +33,6 @@ Texture2D::Texture2D(const GLchar* mediaPath, const mediaFormat format, const ui
 }
 
 Texture2D::Texture2D(const uint width, const uint height, const uint min_filter, const uint mag_filter) {
-    std::cout << "owo" << std::endl;
-
     createTexture();
 
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);

@@ -51,7 +51,8 @@ VertexVector cubeNormals(verticesCubeNormals,
         VertexAttribInfo{0, 3, 8, 0},
         VertexAttribInfo{1, 3, 8, 3},
         VertexAttribInfo{2, 2, 8, 6}
-    }
+    },
+    36
 );
 
 std::vector<float> verticesCube = {
@@ -103,7 +104,8 @@ VertexVector cube(verticesCube,
     AttribInfo{
         VertexAttribInfo{0, 3, 5, 0},
         VertexAttribInfo{1, 2, 5, 3}
-    }
+    },
+    36
 );
 
 std::vector<float> verticesQuad = { // vertex attributes for a quad that fills the entire screen in Normalized Device Coordinates.
@@ -121,7 +123,8 @@ VertexVector quad(verticesQuad,
     AttribInfo{
         VertexAttribInfo{0, 2, 4, 0},
         VertexAttribInfo{1, 2, 4, 2}
-    }
+    },
+    6
 );
 
 std::vector<float> verticesPlane = {
@@ -139,5 +142,6 @@ VertexVector plane(verticesPlane,
     AttribInfo{
         VertexAttribInfo{0, 3, 5, 0},
         VertexAttribInfo{1, 2, 5, 3}
-    }
+    },
+    6
 );

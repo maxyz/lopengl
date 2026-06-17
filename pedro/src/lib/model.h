@@ -37,9 +37,9 @@ private:
 };
 
 struct VertexAttribInfo {
-    unsigned int location;
-    unsigned int size;
-    unsigned int stride;
+    uint location;
+    uint size;
+    uint stride;
     uintptr_t pointer;
 };
 
@@ -51,8 +51,9 @@ private:
 
 public:
     AttribInfo attribInfo;
+    uint triangleVertexAmount;
 
-    VertexVector(std::vector<float> &vector, AttribInfo attribInfo) : attribInfo(attribInfo) {
+    VertexVector(std::vector<float> &vector, AttribInfo attribInfo, uint triangleVertexAmount) : attribInfo(attribInfo), triangleVertexAmount(triangleVertexAmount) {
         vertices = &vector;
     }
 

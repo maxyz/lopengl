@@ -40,16 +40,12 @@ public:
     float yaw;
     float mouseSensitivity;
 
-    bool myCamMode;;
-
     Camera(glm::vec3 inPosition = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 inUp = glm::vec3(0.0f, 1.0f, 0.0f), float inYaw = YAW, float inPitch = PITCH) :
     front(glm::vec3(0.0f, 0.0f, -1.0f)), 
     speed(SPEED), 
     mouseSensitivity(SENSITIVITY),
-    fov(FOV),
-    myCamMode(false)
+    fov(FOV)
     {   
-        std::cout << "Camara owo\n";
         position = inPosition;
         worldUp = inUp;
         up = worldUp;
@@ -58,6 +54,7 @@ public:
         updateCameraVectors();
     }
 
+    void move(glm::vec3 newPos);
     void moveLeft();
     void moveRight();
     void moveFront();
@@ -73,6 +70,7 @@ public:
     void handleMouseScroll(float yoffset);
 
     glm::mat4 lookFront();
+    glm::mat4 lookRearView();
 
     void resetFov() { fov = FOV; };
 

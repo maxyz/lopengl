@@ -55,6 +55,10 @@ glm::mat4 myLookAt(glm::vec3 position, glm::vec3 target, glm::vec3 up) {
     return rotation * translation; */
 }
 
+void Camera::move(glm::vec3 newPos) {
+    position = newPos;
+}
+
 void Camera::moveLeft(){
     position -= right * deltaSpeed;
 }
@@ -97,13 +101,22 @@ void Camera::moveWorldDown() {
 }
 
 glm::mat4 Camera::lookFront() {
-    if (myCamMode) {
-        return myLookAt(position, position + front, worldUp);
-    } else {
-        return glm::lookAt(position, position + front, worldUp);
-    }
-    
+    return glm::lookAt(position, position + front, worldUp);
 }
+
+glm::mat4 Camera::lookRearView() {
+    float lastYaw = yaw;
+    float lastPitch = pitch;
+    yaw   += 180;
+    pitch *= -1;
+    updateCameraVectors();
+    auto result = lookFront();
+    yaw = lastYaw;
+    pitch = lastPitch;
+    updateCameraVectors();
+    return result;
+}
+
 
 void Camera::handleMouseMovement(float xoffset, float yoffset, bool constrainPitch){
     xoffset *= mouseSensitivity;

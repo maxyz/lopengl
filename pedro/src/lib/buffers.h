@@ -11,6 +11,8 @@ private:
     
 public:
 
+    uint renderVertices;
+    VAO() : vao(0), vbo(0) {}
     VAO(VertexVector &verticesVector, uint mode = GL_STATIC_DRAW);
 
     inline void bind() {
@@ -35,11 +37,18 @@ private:
 public:
     Texture2D* colorAttachment;
 
-    Framebuffer();
+    Framebuffer() : colorAttachment(nullptr) {}
+
+    void generate() {
+        glGenFramebuffers(1, &buffer);
+    }
+
     void attatchColor(const uint width, const uint height);
     void attatchRender(const uint width, const uint height);
 
     void checkStatus();
+
+    void completeGenerate(const uint width, const uint height);
 
     inline void bind() {
         glBindFramebuffer(GL_FRAMEBUFFER, buffer);

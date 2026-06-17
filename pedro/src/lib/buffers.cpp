@@ -1,6 +1,6 @@
 #include "buffers.h"
 
-VAO::VAO(VertexVector &verticesVector, unsigned int mode) {
+VAO::VAO(VertexVector &verticesVector, uint mode) {
     glGenVertexArrays(1, &vao);
     glGenBuffers(1, &vbo);
     glBindVertexArray(vao);
@@ -14,13 +14,9 @@ VAO::VAO(VertexVector &verticesVector, unsigned int mode) {
         glVertexAttribPointer(location, size, GL_FLOAT, GL_FALSE, stride * sizeof(float) , (void*) (pointer * sizeof(float)));
         glEnableVertexAttribArray(location);
     }
-
+    
+    renderVertices = verticesVector.triangleVertexAmount;
     glBindVertexArray(0);
-}
-
-Framebuffer::Framebuffer(){
-    glGenFramebuffers(1, &buffer);
-    colorAttachment = nullptr;
 }
 
 void Framebuffer::attatchColor(const uint width, const uint height) {
@@ -40,4 +36,14 @@ void Framebuffer::checkStatus() {
     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
         std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!\n";
 }
+
+void Framebuffer::completeGenerate(const uint width, const uint height){
+    generate();
+    bind();
+    attatchColor(width, height);
+    attatchRender(width, height);
+    checkStatus();
+    unbind();
+}
+
 
