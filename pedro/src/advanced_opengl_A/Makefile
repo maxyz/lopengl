@@ -28,7 +28,10 @@ EXTRAS = /usr/lib/x86_64-linux-gnu/libglfw.so libGLAD.a
 05framebuffers: 05framebuffers.cpp $(LIB)
 	g++ $(CPPFLAGS) $^ $(EXTRAS) -o $@ $(LDFLAGS)
 
-refactor_buckbeak: refactor_buckbeak.cpp $(LIB)
+refactor1: refactor1.cpp $(LIB)
+	g++ $(CPPFLAGS) $^ $(EXTRAS) -o $@ $(LDFLAGS)
+
+refactor2: refactor2.cpp $(LIB)
 	g++ $(CPPFLAGS) $^ $(EXTRAS) -o $@ $(LDFLAGS)
 
 camera.o: ../lib/camera.cpp ../lib/camera.h

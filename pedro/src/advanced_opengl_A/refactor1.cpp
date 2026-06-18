@@ -17,12 +17,10 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#define OBJECTS 0
-#define LIGHT_SOURCE 1
-
 void framebufferSizeCallback(GLFWwindow* window, int _width, int _height);
 void mouseCallback(GLFWwindow* window, double xpos, double ypos);
 void scrollCallback(GLFWwindow* window, double xoffset, double yoffset);
+
 struct Engine {
 
 public:
@@ -307,7 +305,7 @@ int main()
         // Render Rear View
         engine.frameRearView.bind();
 
-        glClear(GL_COLOR_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         view = engine.cam.lookRearView();
         engine.renderScene(view);
