@@ -8,17 +8,22 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include "engine.h"
 
 class Shader
 {
 public:
 
     // The program ID
-    GLuint Program;
+    GLuint program;
 
     // Constructor reads and builds the shader
-    Shader() {}
+    Shader() = default;
     Shader(const GLchar* vertexPath, const GLchar* fragmentPath);
+    Shader& operator=(const Shader& other) {
+        program = other.program;
+        return *this;
+    }
 
     // Use the program
     void use();

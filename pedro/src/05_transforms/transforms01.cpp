@@ -52,7 +52,7 @@ int main()
         tex1.activate(0);
         tex2.activate(1);
 
-        uint transformLocation = glGetUniformLocation(shader.Program, "transform");
+        uint transformLocation = glGetUniformLocation(shader.program, "transform");
         glUniformMatrix4fv(transformLocation, 1, GL_FALSE, glm::value_ptr(trans));
 
         glBindVertexArray(VAO);

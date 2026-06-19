@@ -22,7 +22,7 @@ class Engine : public AbstractEngine {
 public:
     // Shaders
     Shader renderShader;
-    std::vector<Shader> postprocShaders;
+    std::vector<Shader*> postprocShaders;
     uint currentPostprocShader;
 
     // Textures
@@ -50,17 +50,27 @@ public:
     bool mouseLocked;
     bool shaderNeedsToBeChanged;
 
+    ~Engine() {
+        for(auto ptr : basicCommands) delete ptr;
+        for(auto ptr : sceneCommands) delete ptr;
+        for(auto ptr : postprocShaders) delete ptr;
+    }
+
     void sceneInit() override
     {
         // Shaders
         renderShader = Shader("shaders/shader01.vs", "shaders/shader01.frag");
+
         postprocShaders = {
-            Shader("shaders/post2.vs", "shaders/postDefault.frag"),
-            Shader("shaders/post2.vs", "shaders/postInverse.frag"),
-            Shader("shaders/post2.vs", "shaders/postGreyscale.frag"),
-            Shader("shaders/post2.vs", "shaders/postKernel1.frag"),
-            Shader("shaders/post2.vs", "shaders/postKernel2.frag")
+            new Shader("shaders/post2.vs", "shaders/postDefault.frag"),
+            new Shader("shaders/post2.vs", "shaders/postInverse.frag"),
+            new Shader("shaders/post2.vs", "shaders/postGreyscale.frag"),
+            new Shader("shaders/post2.vs", "shaders/postKernel1.frag"),
+            new Shader("shaders/post2.vs", "shaders/postKernel2.frag")
         };
+        
+        std::cout << postprocShaders.size() << std::endl;
+
         currentPostprocShader = 0;
 
         // Textures
@@ -126,19 +136,19 @@ public:
         glClearColor(1.0f, 1.0f, 1.0f, 1.0f); 
         glClear(GL_COLOR_BUFFER_BIT);
 
-        auto& currentShader = postprocShaders[currentPostprocShader];
-        currentShader.use();
+        auto currentShader = postprocShaders[currentPostprocShader];
+        currentShader->use();
 
         quadVAO.bind();
         glBindTexture(GL_TEXTURE_2D, frameFrontView.colorAttachment->texture);
-        currentShader.setMat4("model",glm::mat4(1.0f));
+        currentShader->setMat4("model",glm::mat4(1.0f));
         glDrawArrays(GL_TRIANGLES, 0, 6);
 
         glBindTexture(GL_TEXTURE_2D, frameRearView.colorAttachment->texture);
         glm::mat4 model(1.0f);
         model = glm::translate(model, glm::vec3(0.0f, 0.8f, 0.0f));
         model = glm::scale(model, glm::vec3(0.2f));
-        currentShader.setMat4("model",model);
+        currentShader->setMat4("model",model);
         
         glDrawArrays(GL_TRIANGLES, 0, 6);
         quadVAO.unbind();        
@@ -185,5 +195,5 @@ public:
 };
 
 AbstractEngine* createEngine() {
-    return new Engine();
+    return AbstractEngine::create<Engine>();
 }

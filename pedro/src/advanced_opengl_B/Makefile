@@ -1,6 +1,6 @@
-EXES = 01depth_testing 02depth_stencil_testing 03blending01 03blending02 05framebuffers refactor1
+EXES = refactor2
 
-LIB = libGLAD.a stb_image.o shader.o texture.o camera.o material.o model.o mesh.o  key_command.o buffers.o 
+LIB = libGLAD.a stb_image.o shader.o texture.o camera.o material.o model.o mesh.o  key_command.o buffers.o engine.o basic_main.o
 
 default_target: $(EXES)
 
@@ -9,26 +9,11 @@ libGLAD.a: ../glad.c
 	ar qc libGLAD.a glad.o
 	ranlib libGLAD.a
 
-LDFLAGS = -lglfw -lGL -lX11 -lpthread -lXrandr -lXi -ldl -lassimp -g
+LDFLAGS = -lglfw -lGL -lX11 -lpthread -lXrandr -lXi -ldl -lassimp
 CPPFLAGS = -I ../../include/ -I ../lib/ $(shell pkg-config --cflags assimp) -g
 EXTRAS = /usr/lib/x86_64-linux-gnu/libglfw.so libGLAD.a
 
-01depth_testing: 01depth_testing.cpp $(LIB)
-	g++ $(CPPFLAGS) $^ $(EXTRAS) -o $@ $(LDFLAGS)
-
-02depth_stencil_testing: 02depth_stencil_testing.cpp $(LIB)
-	g++ $(CPPFLAGS) $^ $(EXTRAS) -o $@ $(LDFLAGS)
-	
-03blending01: 03blending01.cpp $(LIB)
-	g++ $(CPPFLAGS) $^ $(EXTRAS) -o $@ $(LDFLAGS)
-
-03blending02: 03blending02.cpp $(LIB)
-	g++ $(CPPFLAGS) $^ $(EXTRAS) -o $@ $(LDFLAGS)
-
-05framebuffers: 05framebuffers.cpp $(LIB)
-	g++ $(CPPFLAGS) $^ $(EXTRAS) -o $@ $(LDFLAGS)
-
-refactor1: refactor1.cpp $(LIB)
+refactor2: refactor2.cpp $(LIB)
 	g++ $(CPPFLAGS) $^ $(EXTRAS) -o $@ $(LDFLAGS)
 
 camera.o: ../lib/camera.cpp ../lib/camera.h
@@ -56,6 +41,12 @@ material.o: ../lib/material.cpp
 	g++ $(CPPFLAGS) -c $< -o $@
 
 buffers.o: ../lib/buffers.cpp ../lib/buffers.h
+	g++ $(CPPFLAGS) -c $< -o $@
+
+engine.o: ../lib/engine.cpp ../lib/engine.h
+	g++ $(CPPFLAGS) -c $< -o $@
+
+basic_main.o: ../lib/basic_main.cpp ../lib/basic_main.h
 	g++ $(CPPFLAGS) -c $< -o $@
 
 clean:

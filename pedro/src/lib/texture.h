@@ -21,14 +21,15 @@ public:
 
     Texture2D() : texture(0) {}
     Texture2D(const GLchar* mediaPath, const mediaFormat format, const uint wrap_s = GL_REPEAT, const uint wrap_t = GL_REPEAT, const uint min_filter = GL_LINEAR_MIPMAP_LINEAR, const uint mag_filter = GL_LINEAR);
-    ~Texture2D() {
-        glDeleteTextures(1, &texture);
-    }
+    ~Texture2D() = default;
 
     Texture2D(const uint width, const uint height, const uint min_filter = GL_LINEAR, const uint mag_filter = GL_LINEAR);
 
     void activate();
     void activate(unsigned int index);
+    void deleteTexture() {
+        glDeleteTextures(1, &texture);
+    }
 };
 
 #endif

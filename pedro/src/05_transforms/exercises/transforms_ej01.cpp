@@ -55,7 +55,7 @@ int main()
         trans = glm::translate(trans, glm::vec3(0.5f, -0.5f, 0.0f));
         // std::cout << angle << std::endl;
 
-        uint transformLocation = glGetUniformLocation(shader.Program, "transform");
+        uint transformLocation = glGetUniformLocation(shader.program, "transform");
         glUniformMatrix4fv(transformLocation, 1, GL_FALSE, glm::value_ptr(trans));
 
         glBindVertexArray(VAO);

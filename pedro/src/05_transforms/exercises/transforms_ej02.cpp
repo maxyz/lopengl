@@ -55,7 +55,7 @@ int main()
         trans = glm::rotate(trans, angle, glm::vec3(0.0, 0.0, 1.0));
         // std::cout << angle << std::endl;
 
-        uint transformLocation = glGetUniformLocation(shader.Program, "transform");
+        uint transformLocation = glGetUniformLocation(shader.program, "transform");
         glUniformMatrix4fv(transformLocation, 1, GL_FALSE, glm::value_ptr(trans));
         
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);

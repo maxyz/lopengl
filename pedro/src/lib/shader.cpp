@@ -1,6 +1,7 @@
 #include "shader.h"
 
 Shader::Shader(const GLchar* vertexPath, const GLchar* fragmentPath) {
+
     // 1. Retrieve the vertex/fragment source code from filePath
     std::string vertexCode;
     std::string fragmentCode;
@@ -71,16 +72,16 @@ Shader::Shader(const GLchar* vertexPath, const GLchar* fragmentPath) {
     };
 
     // Shader Program
-    this->Program = glCreateProgram();
-    glAttachShader(this->Program, vertex);
-    glAttachShader(this->Program, fragment);
-    glLinkProgram(this->Program);
+    this->program = glCreateProgram();
+    glAttachShader(this->program, vertex);
+    glAttachShader(this->program, fragment);
+    glLinkProgram(this->program);
     
     // Print linking errors if any
-    glGetProgramiv(this->Program, GL_LINK_STATUS, &success);
+    glGetProgramiv(this->program, GL_LINK_STATUS, &success);
     if(!success)
     {
-        glGetProgramInfoLog(this->Program, 512, NULL, infoLog);
+        glGetProgramInfoLog(this->program, 512, NULL, infoLog);
         std::cout << "ERROR::SHADER::PROGRAM::LINKING_FAILED\n" << infoLog << std::endl;
     }
 
@@ -89,35 +90,35 @@ Shader::Shader(const GLchar* vertexPath, const GLchar* fragmentPath) {
 }
 
 void Shader::use() {
-    glUseProgram(this->Program);
+    glUseProgram(this->program);
 }
 
 void Shader::setBool(const GLchar* uniformName, const bool value) {
-    glUniform1i(glGetUniformLocation(this->Program, uniformName), (int)value);
+    glUniform1i(glGetUniformLocation(this->program, uniformName), (int)value);
 }
 
 void Shader::setInt(const GLchar* uniformName, const int value) {
-    glUniform1i(glGetUniformLocation(this->Program, uniformName), value);
+    glUniform1i(glGetUniformLocation(this->program, uniformName), value);
 }
 
 void Shader::setFloat(const GLchar* uniformName, const float value) {
-    glUniform1f(glGetUniformLocation(this->Program, uniformName), value);
+    glUniform1f(glGetUniformLocation(this->program, uniformName), value);
 }
 
 void Shader::setVec3(const GLchar* uniformName, const glm::vec3 &value) {
-    glUniform3fv(glGetUniformLocation(this->Program, uniformName), 1, glm::value_ptr(value));
+    glUniform3fv(glGetUniformLocation(this->program, uniformName), 1, glm::value_ptr(value));
 }
 
 void Shader::setVec4(const GLchar* uniformName, const glm::vec4 &value) {
-    glUniform4fv(glGetUniformLocation(this->Program, uniformName), 1, glm::value_ptr(value));
+    glUniform4fv(glGetUniformLocation(this->program, uniformName), 1, glm::value_ptr(value));
 }
 
 void Shader::setMat3(const GLchar* uniformName, const glm::mat3 &value) {
-    glUniformMatrix4fv(glGetUniformLocation(this->Program, uniformName), 1, GL_FALSE, glm::value_ptr(value));
+    glUniformMatrix4fv(glGetUniformLocation(this->program, uniformName), 1, GL_FALSE, glm::value_ptr(value));
 }
 
 void Shader::setMat4(const GLchar* uniformName, const glm::mat4 &value) {
-    glUniformMatrix4fv(glGetUniformLocation(this->Program, uniformName), 1, GL_FALSE, glm::value_ptr(value));
+    glUniformMatrix4fv(glGetUniformLocation(this->program, uniformName), 1, GL_FALSE, glm::value_ptr(value));
 }
 
 void Shader::setVertexMatrices(glm::mat4 &view, glm::mat4 &model, glm::mat4 &projection) {

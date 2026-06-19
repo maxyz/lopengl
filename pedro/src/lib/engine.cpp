@@ -1,18 +1,5 @@
 #include "engine.h"
 
-AbstractEngine::AbstractEngine()
-{
-    basicInit();
-    sceneInit();
-}
-
-AbstractEngine::~AbstractEngine()
-{
-    teardown();
-    for(auto ptr : basicCommands) delete ptr;
-    for(auto ptr : sceneCommands) delete ptr;
-}
-
 void AbstractEngine::handleFramebufferSizeCallback(GLFWwindow* window, int _width, int _height)
 {
     glViewport(0, 0, _width, _height);
@@ -124,6 +111,7 @@ void AbstractEngine::initWindow()
     glfwSetScrollCallback(state.window, scrollCallback);
 
     glfwSetInputMode(state.window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    // glfwSetInputMode(state.window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
     {
@@ -172,4 +160,8 @@ void scrollCallback(GLFWwindow* window, double xoffset, double yoffset)
 {
     AbstractEngine *engine = (AbstractEngine*)glfwGetWindowUserPointer(window);
     engine->handleScrollCallback(window, xoffset, yoffset);
+}
+
+void debugPrint(std::string print) {
+    std::cout << "DEBUG: " << print << std::endl;
 }

@@ -6,12 +6,15 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <memory>
 
 #include "key_command.h"
 #include "camera.h"
 
 #define W_WITDH 1280.0f
 #define W_HEIGHT 720.0f
+
+void debugPrint(std::string print);
 
 struct sceneState
 {
@@ -39,14 +42,29 @@ public:
     std::vector<KeyCommand*> sceneCommands;
 
     // Constructors
-    AbstractEngine();
-    ~AbstractEngine();
+    AbstractEngine() = default;
+    ~AbstractEngine()
+    {
+    for(auto ptr : basicCommands) delete ptr;
+    for(auto ptr : sceneCommands) delete ptr;
+    }
+
+    // Factory Method
+    template <typename T, typename... Args>
+    static T* create(Args&&... args) {
+        auto instance = new T(std::forward<Args>(args)...);
+
+        instance->basicInit();
+        instance->sceneInit();
+
+        return instance;
+    }
 
     // Pure Virtual methods
-    virtual void sceneInit() {};
+    virtual void sceneInit() = 0;
     virtual void update() = 0;
     virtual void renderScene() = 0;
-    virtual void teardown() {};
+    virtual void teardown() = 0;
 
     // Methods
     inline bool windowShouldClose()

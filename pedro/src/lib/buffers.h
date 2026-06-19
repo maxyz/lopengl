@@ -38,7 +38,7 @@ public:
 
     Framebuffer() : colorAttachment(nullptr) {}
     ~Framebuffer() {
-        deleteBuffers();
+        if (colorAttachment != nullptr) delete colorAttachment;
     }
 
     void generate() {
@@ -61,7 +61,7 @@ public:
     inline void deleteBuffers() {
         glDeleteFramebuffers(1, &buffer);
         glDeleteRenderbuffers(1, &renderAttachment);
-        delete colorAttachment;
+        if (colorAttachment != nullptr) colorAttachment->deleteTexture();
     }
 };
 

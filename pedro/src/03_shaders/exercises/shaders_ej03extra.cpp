@@ -35,7 +35,7 @@ int main()
         glClear(GL_COLOR_BUFFER_BIT);
 
         shader.use();
-        GLint offsetLocation = glGetUniformLocation(shader.Program, "x_offset");
+        GLint offsetLocation = glGetUniformLocation(shader.program, "x_offset");
         glUniform1f(offsetLocation, current_offset);
 
         glBindVertexArray(VAO);
