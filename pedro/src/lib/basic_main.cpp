@@ -1,6 +1,7 @@
 #include "basic_main.h"
 
-int main() {
+int main()
+{
     AbstractEngine* engine = createEngine();
 
     glm::mat4 view;
@@ -14,6 +15,7 @@ int main() {
         engine->swapBuffers();
         glfwPollEvents();    
     }
+    engine->teardown();
 
     glfwTerminate();
     return 0;

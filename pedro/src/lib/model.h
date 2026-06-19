@@ -44,8 +44,8 @@ struct VertexAttribInfo {
 };
 
 using AttribInfo = std::vector<VertexAttribInfo>;
-class VertexVector {
-    
+class VertexVector
+{
 private:
     std::vector<float>* vertices;
 
@@ -55,6 +55,9 @@ public:
 
     VertexVector(std::vector<float> &vector, AttribInfo attribInfo, uint triangleVertexAmount) : attribInfo(attribInfo), triangleVertexAmount(triangleVertexAmount) {
         vertices = &vector;
+    }
+    ~VertexVector() {
+        if (vertices != nullptr) delete vertices;
     }
 
     size_t size() {

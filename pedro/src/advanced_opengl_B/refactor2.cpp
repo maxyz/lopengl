@@ -17,8 +17,8 @@ void framebufferSizeCallback(GLFWwindow* window, int _width, int _height);
 void mouseCallback(GLFWwindow* window, double xpos, double ypos);
 void scrollCallback(GLFWwindow* window, double xoffset, double yoffset);
 
-class Engine : public AbstractEngine {
-
+class Engine : public AbstractEngine
+{
 public:
     // Shaders
     Shader renderShader;
@@ -30,7 +30,8 @@ public:
     Texture2D floorTexture;
 
     // Buffers
-    struct renderParams {
+    struct renderParams
+    {
         VAO* buffer;
         glm::vec3 translate;
         // scale
@@ -46,11 +47,10 @@ public:
     Framebuffer frameRearView;
 
     // Flags
-    bool firstMouse;
-    bool mouseLocked;
     bool shaderNeedsToBeChanged;
 
-    ~Engine() {
+    ~Engine()
+    {
         for(auto ptr : basicCommands) delete ptr;
         for(auto ptr : sceneCommands) delete ptr;
         for(auto ptr : postprocShaders) delete ptr;
@@ -83,9 +83,9 @@ public:
         cubeVAO = VAO(cube);
         planeVAO = VAO(plane);
         renderVector = {
-            {&cubeVAO, glm::vec3(-1.0f, 0.0f, -1.0f), &cubeTexture},
-            {&cubeVAO, glm::vec3(2.0f, 0.0f, 0.0f), &cubeTexture},
-            {&planeVAO, glm::vec3(0.0f), &floorTexture}
+            {&cubeVAO ,  glm::vec3(-1.0f, 0.0f, -1.0f), &cubeTexture },
+            {&cubeVAO ,  glm::vec3(2.0f, 0.0f, 0.0f)  , &cubeTexture },
+            {&planeVAO,  glm::vec3(0.0f)              , &floorTexture}
         };
 
         quadVAO = VAO(quad);

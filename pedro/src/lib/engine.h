@@ -30,7 +30,6 @@ struct sceneState
 
     bool firstMouse;
     bool mouseLocked;
-    bool shaderNeedsToBeChanged;
 };
 
 class AbstractEngine 

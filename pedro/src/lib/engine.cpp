@@ -46,7 +46,6 @@ void AbstractEngine::basicInit()
         
         .firstMouse = true,
         .mouseLocked = true,
-        .shaderNeedsToBeChanged = false
     };
 
     initWindow();
@@ -162,6 +161,7 @@ void scrollCallback(GLFWwindow* window, double xoffset, double yoffset)
     engine->handleScrollCallback(window, xoffset, yoffset);
 }
 
-void debugPrint(std::string print) {
+void debugPrint(std::string print)
+{
     std::cout << "DEBUG: " << print << std::endl;
 }
