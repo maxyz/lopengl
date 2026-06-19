@@ -64,7 +64,6 @@ public:
     std::array<KeyCommand*, 12> keys;
 
     // Flags
-    bool tabPreviouslyPressed;
     bool firstMouse;
     bool mouseLocked;
     bool shaderNeedsToBeChanged;
@@ -150,7 +149,6 @@ public:
         };
 
         // Flags
-        tabPreviouslyPressed = false;
         firstMouse = true;
         mouseLocked = true;
         shaderNeedsToBeChanged = false;

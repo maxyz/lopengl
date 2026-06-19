@@ -17,11 +17,13 @@ enum CameraMovement{
 };
 
 // Default camera values
-const float YAW         = -90.0f;
-const float PITCH       =  0.0f;
-const float SPEED       =  4.0f;
-const float SENSITIVITY =  0.1f;
-const float FOV        =  45.0f;
+constexpr float YAW         = -90.0f;
+constexpr float PITCH       =  0.0f;
+constexpr float SPEED       =  4.0f;
+constexpr float SENSITIVITY =  0.1f;
+constexpr float FOV         =  45.0f;
+constexpr float NEAR        =  0.1f;
+constexpr float FAR         =  100.0f;
 
 class Camera {
 
@@ -39,12 +41,16 @@ public:
     float pitch;
     float yaw;
     float mouseSensitivity;
+    float near;
+    float far;
 
     Camera(glm::vec3 inPosition = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 inUp = glm::vec3(0.0f, 1.0f, 0.0f), float inYaw = YAW, float inPitch = PITCH) :
     front(glm::vec3(0.0f, 0.0f, -1.0f)), 
     speed(SPEED), 
     mouseSensitivity(SENSITIVITY),
-    fov(FOV)
+    fov(FOV),
+    near(NEAR),
+    far(FAR)
     {   
         position = inPosition;
         worldUp = inUp;

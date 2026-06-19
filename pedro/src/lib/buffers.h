@@ -32,12 +32,14 @@ class Framebuffer {
 private:
     uint buffer;
     uint renderAttachment;
-    
 
 public:
     Texture2D* colorAttachment;
 
     Framebuffer() : colorAttachment(nullptr) {}
+    ~Framebuffer() {
+        deleteBuffers();
+    }
 
     void generate() {
         glGenFramebuffers(1, &buffer);
@@ -55,6 +57,11 @@ public:
     }
     inline void unbind() {
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    }
+    inline void deleteBuffers() {
+        glDeleteFramebuffers(1, &buffer);
+        glDeleteRenderbuffers(1, &renderAttachment);
+        delete colorAttachment;
     }
 };
 
