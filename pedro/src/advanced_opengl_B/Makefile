@@ -1,4 +1,4 @@
-EXES = refactor2
+EXES = 1refactor2 2cubemaps
 
 LIB = libGLAD.a stb_image.o shader.o texture.o camera.o material.o model.o mesh.o  key_command.o buffers.o engine.o basic_main.o
 
@@ -13,7 +13,10 @@ LDFLAGS = -lglfw -lGL -lX11 -lpthread -lXrandr -lXi -ldl -lassimp
 CPPFLAGS = -I ../../include/ -I ../lib/ $(shell pkg-config --cflags assimp) -g
 EXTRAS = /usr/lib/x86_64-linux-gnu/libglfw.so libGLAD.a
 
-refactor2: refactor2.cpp $(LIB)
+1refactor2: 1refactor2.cpp $(LIB)
+	g++ $(CPPFLAGS) $^ $(EXTRAS) -o $@ $(LDFLAGS)
+
+2cubemaps: 2cubemaps.cpp $(LIB)
 	g++ $(CPPFLAGS) $^ $(EXTRAS) -o $@ $(LDFLAGS)
 
 camera.o: ../lib/camera.cpp ../lib/camera.h

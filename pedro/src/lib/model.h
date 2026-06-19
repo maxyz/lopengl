@@ -56,9 +56,7 @@ public:
     VertexVector(std::vector<float> &vector, AttribInfo attribInfo, uint triangleVertexAmount) : attribInfo(attribInfo), triangleVertexAmount(triangleVertexAmount) {
         vertices = &vector;
     }
-    ~VertexVector() {
-        if (vertices != nullptr) delete vertices;
-    }
+    ~VertexVector() = default;
 
     size_t size() {
         return vertices->size();

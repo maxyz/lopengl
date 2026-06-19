@@ -19,7 +19,7 @@ public:
 
     // Constructor reads and builds the shader
     Shader() = default;
-    Shader(const GLchar* vertexPath, const GLchar* fragmentPath);
+    Shader(const std::string vertexPath, const std::string fragmentPath);
     Shader& operator=(const Shader& other) {
         program = other.program;
         return *this;
@@ -27,13 +27,13 @@ public:
 
     // Use the program
     void use();
-    void setInt(const GLchar* uniformName, const int value);
-    void setBool(const GLchar* uniformName, const bool value);
-    void setFloat(const GLchar* uniformName, const float value);
-    void setVec3(const GLchar* uniformName, const glm::vec3 &value);
-    void setVec4(const GLchar* uniformName, const glm::vec4 &value);
-    void setMat3(const GLchar* uniformName, const glm::mat3 &value);
-    void setMat4(const GLchar* uniformName, const glm::mat4 &value);
+    void setInt(const std::string uniformName, const int value);
+    void setBool(const std::string uniformName, const bool value);
+    void setFloat(const std::string uniformName, const float value);
+    void setVec3(const std::string uniformName, const glm::vec3 &value);
+    void setVec4(const std::string uniformName, const glm::vec4 &value);
+    void setMat3(const std::string uniformName, const glm::mat3 &value);
+    void setMat4(const std::string uniformName, const glm::mat4 &value);
 
     void setVertexMatrices(glm::mat4 &view, glm::mat4 &model, glm::mat4 &projection);
 };

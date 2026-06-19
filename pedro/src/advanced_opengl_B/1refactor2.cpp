@@ -13,10 +13,6 @@
 
 #include "basic_main.h"
 
-void framebufferSizeCallback(GLFWwindow* window, int _width, int _height);
-void mouseCallback(GLFWwindow* window, double xpos, double ypos);
-void scrollCallback(GLFWwindow* window, double xoffset, double yoffset);
-
 class Engine : public AbstractEngine
 {
 public:
@@ -61,21 +57,19 @@ public:
         // Shaders
         renderShader = Shader("shaders/shader01.vs", "shaders/shader01.frag");
 
+        std::string dir = "shaders/postproc/";
         postprocShaders = {
-            new Shader("shaders/post2.vs", "shaders/postDefault.frag"),
-            new Shader("shaders/post2.vs", "shaders/postInverse.frag"),
-            new Shader("shaders/post2.vs", "shaders/postGreyscale.frag"),
-            new Shader("shaders/post2.vs", "shaders/postKernel1.frag"),
-            new Shader("shaders/post2.vs", "shaders/postKernel2.frag")
+            new Shader(dir + "post2.vs", dir + "postDefault.frag"),
+            new Shader(dir + "post2.vs", dir + "postInverse.frag"),
+            new Shader(dir + "post2.vs", dir + "postGreyscale.frag"),
+            new Shader(dir + "post2.vs", dir + "postKernel1.frag"),
+            new Shader(dir + "post2.vs", dir + "postKernel2.frag")
         };
-        
-        std::cout << postprocShaders.size() << std::endl;
-
         currentPostprocShader = 0;
 
         // Textures
-        cubeTexture = Texture2D("../media/container.jpg", JPG);
-        floorTexture = Texture2D("../media/metal.png", PNG);
+        cubeTexture = Texture2D("../media/container.jpg", JPG, 0);
+        floorTexture = Texture2D("../media/metal.png", PNG, 0);
         renderShader.use();
         renderShader.setInt("material.texture_diffuse1", 0);
 
@@ -176,11 +170,10 @@ public:
         glm::mat4 model(1.0f);
         renderShader.setVertexMatrices(view, model, state.projectionMatrix);
         
-        glActiveTexture(GL_TEXTURE0);
         for (auto& [vao, translate, texture] : renderVector)
         {
             vao->bind();
-            glBindTexture(GL_TEXTURE_2D, texture->texture);
+            texture->activate();
             model = glm::translate(glm::mat4(1.0f), translate);
             renderShader.setMat4("model", model);
 
