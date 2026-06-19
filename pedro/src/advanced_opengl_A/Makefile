@@ -1,4 +1,4 @@
-EXES = 01depth_testing 02depth_stencil_testing 03blending01 03blending02 05framebuffers refactor_buckbeak
+EXES = 01depth_testing 02depth_stencil_testing 03blending01 03blending02 05framebuffers refactor1 refactor2
 
 LIB = libGLAD.a stb_image.o shader.o texture.o camera.o material.o model.o mesh.o  key_command.o buffers.o engine.o basic_main.o
 
