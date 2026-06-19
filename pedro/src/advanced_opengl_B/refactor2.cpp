@@ -92,6 +92,11 @@ public:
         frameFrontView.completeGenerate(state.width,state.height);
         frameRearView.completeGenerate(state.width,state.height);
 
+        // Commands
+        sceneCommands = {
+            new KeyCommand(GLFW_KEY_C, [this]() -> void { shaderNeedsToBeChanged = true; }, TOGGLE)
+        };
+
         // Parameters
         glEnable(GL_DEPTH_TEST);
         glDepthFunc(GL_LESS);
