@@ -127,7 +127,7 @@ public:
         glEnable(GL_DEPTH_TEST);
 
         // // Render Front View
-        // frameFrontView.bind();
+        frameFrontView.bind();
 
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -140,32 +140,38 @@ public:
         glDepthFunc(GL_LEQUAL);
         glm::mat4 noTranslationView = glm::mat4(glm::mat3(view));
         renderSkybox(noTranslationView);
-        // renderSkybox(view);
         glDepthFunc(GL_LESS);
 
-        // frameFrontView.unbind();
+        frameFrontView.unbind();
+        
+        // Draw the Frame on screen
+        glDisable(GL_DEPTH_TEST);
 
-        // glClearColor(1.0f, 1.0f, 1.0f, 1.0f); 
-        // glClear(GL_COLOR_BUFFER_BIT);
+        glClearColor(1.0f, 1.0f, 1.0f, 1.0f); 
+        glClear(GL_COLOR_BUFFER_BIT);
 
-        // auto currentShader = postprocShaders[currentPostprocShader];
-        // currentShader->use();
+        auto currentShader = postprocShaders[currentPostprocShader];
+        currentShader->use();
 
-        // quadVAO.bind();
-        // glBindTexture(GL_TEXTURE_2D, frameFrontView.colorAttachment->texture);
-        // currentShader->setMat4("model",glm::mat4(1.0f));
-        // glDrawArrays(GL_TRIANGLES, 0, 6);
-        // quadVAO.unbind();        
+        quadVAO.bind();
+        glBindTexture(GL_TEXTURE_2D, frameFrontView.colorAttachment->texture);
+        currentShader->setMat4("model",glm::mat4(1.0f));
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+        quadVAO.unbind();        
     }
 
     private:
 
-    void teardown() override
+    void teardown() override 
+    // Teardown no sirve mucho porque opengl cuando termina borra todo automaticamente.
+    // A lo sumo serviría si tengo que destruir todo lo del engine en medio de la ejecución.
     {
         cubeVAO.deleteBuffers();
         skyboxVAO.deleteBuffers();
         quadVAO.deleteBuffers();
         frameFrontView.deleteBuffers();
+        cubeTexture.deleteTexture();
+        skyboxTexture.deleteTexture();
     }
     
     void renderSkybox(glm::mat4 &view) {
