@@ -126,19 +126,21 @@ public:
     {
         glEnable(GL_DEPTH_TEST);
 
-        // Render Front View
+        // // Render Front View
         // frameFrontView.bind();
 
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+        // Render objects
         glm::mat4 view = state.cam.lookFront();
         renderObjects(view);
         
+        // Render skybox;
         glDepthFunc(GL_LEQUAL);
         glm::mat4 noTranslationView = glm::mat4(glm::mat3(view));
-        // renderSkybox(noTranslationView);
-        renderSkybox(view);
+        renderSkybox(noTranslationView);
+        // renderSkybox(view);
         glDepthFunc(GL_LESS);
 
         // frameFrontView.unbind();
