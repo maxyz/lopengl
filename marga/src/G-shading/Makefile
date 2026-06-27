@@ -1,4 +1,4 @@
-EXES = points fragcoord
+EXES = points fragcoord ubo
 
 default_target: $(EXES)
 
@@ -41,6 +41,9 @@ points: points.cpp libGLAD.a shader.o ../lib/camera.h ../lib/geometry.h scene_st
 	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
 
 fragcoord: fragcoord.cpp libGLAD.a shader.o ../lib/camera.h ../lib/geometry.h scene_state.o imgui_dock.o basic_main.o
+	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
+
+ubo: ubo.cpp libGLAD.a shader.o ../lib/camera.h ../lib/geometry.h scene_state.o imgui_dock.o basic_main.o
 	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
 
 clean:
