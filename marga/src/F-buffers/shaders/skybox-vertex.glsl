@@ -8,7 +8,7 @@ uniform mat4 projection;
 
 void main()
 {
-    TexCoords = vec3(aPos.xy, -aPos.z); // CubeMaps are left handed
+    TexCoords = vec3(aPos.xy, aPos.z); // CubeMaps are left handed
     vec4 pos = projection * view * vec4(aPos, 1.0);
     gl_Position = pos.xyww;
 }
