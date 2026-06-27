@@ -1,4 +1,4 @@
-EXES = points
+EXES = points fragcoord
 
 default_target: $(EXES)
 
@@ -38,6 +38,9 @@ basic_main.o: ../lib/basic_main.cpp ../lib/basic_main.h scene_state.o imgui_dock
 
 # This chapter's files
 points: points.cpp libGLAD.a shader.o ../lib/camera.h ../lib/geometry.h scene_state.o imgui_dock.o basic_main.o
+	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
+
+fragcoord: fragcoord.cpp libGLAD.a shader.o ../lib/camera.h ../lib/geometry.h scene_state.o imgui_dock.o basic_main.o
 	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
 
 clean:
