@@ -59,9 +59,9 @@ void AbstractEngine::basicInit()
 
         new KeyCommand(GLFW_KEY_DOWN, [this]() -> void { state.cam.speed -= 0.1f; }, NORMAL),
 
-        new KeyCommand(GLFW_KEY_W, [this]() -> void { state.cam.moveFront(); }, NORMAL),
+        new KeyCommand(GLFW_KEY_W, [this]() -> void { state.cam.moveFrontPlane(); }, NORMAL),
                     
-        new KeyCommand(GLFW_KEY_S, [this]() -> void { state.cam.moveBack(); }, NORMAL),
+        new KeyCommand(GLFW_KEY_S, [this]() -> void { state.cam.moveBackPlane(); }, NORMAL),
 
         new KeyCommand(GLFW_KEY_A, [this]() -> void { state.cam.moveLeft(); }, NORMAL),
 

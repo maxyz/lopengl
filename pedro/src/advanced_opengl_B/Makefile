@@ -1,4 +1,4 @@
-EXES = 1refactor2 2cubemaps
+EXES = 1refactor2 2cubemaps 3cubemaps_reflect
 
 LIB = libGLAD.a stb_image.o shader.o texture.o camera.o material.o model.o mesh.o  key_command.o buffers.o engine.o basic_main.o
 
@@ -17,6 +17,9 @@ EXTRAS = /usr/lib/x86_64-linux-gnu/libglfw.so libGLAD.a
 	g++ $(CPPFLAGS) $^ $(EXTRAS) -o $@ $(LDFLAGS)
 
 2cubemaps: 2cubemaps.cpp $(LIB)
+	g++ $(CPPFLAGS) $^ $(EXTRAS) -o $@ $(LDFLAGS)
+
+3cubemaps_reflect: 3cubemaps_reflect.cpp $(LIB)
 	g++ $(CPPFLAGS) $^ $(EXTRAS) -o $@ $(LDFLAGS)
 
 camera.o: ../lib/camera.cpp ../lib/camera.h
