@@ -1,4 +1,4 @@
-EXES = points fragcoord ubo
+EXES = points fragcoord ubo geometry-basic
 
 default_target: $(EXES)
 
@@ -45,6 +45,10 @@ fragcoord: fragcoord.cpp libGLAD.a shader.o ../lib/camera.h ../lib/geometry.h sc
 
 ubo: ubo.cpp libGLAD.a shader.o ../lib/camera.h ../lib/geometry.h scene_state.o imgui_dock.o basic_main.o
 	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
+
+geometry-basic: geometry-basic.cpp libGLAD.a shader.o ../lib/camera.h ../lib/geometry.h scene_state.o imgui_dock.o basic_main.o
+	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
+
 
 clean:
 	rm -f libGLAD.a gl.o stb_image.o stb_truetype.o shader.o texture.o lights.o mesh.o model.o $(EXES)

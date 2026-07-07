@@ -25,12 +25,15 @@ std::string readShader(const char* shaderPath) {
     return shaderCode;
 }
 
-int compileShader(const char* shaderCode, GLenum shaderType) {
+int compileShader(const char* shaderPath, GLenum shaderType) {
+    // 1. read the shaderCode
+    std::string shaderString = readShader(shaderPath);
+    const char *shaderCode = shaderString.c_str();
     // 2. compile shaders
     unsigned int shader;
     int success;
     char infoLog[512];
-       
+     
     // vertex Shader
     shader = glCreateShader(shaderType);
     glShaderSource(shader, 1, &shaderCode, NULL);
@@ -45,19 +48,25 @@ int compileShader(const char* shaderCode, GLenum shaderType) {
     return shader;
 }
 
+Shader::Shader(const char* vertexPath, const char* fragmentPath): Shader(vertexPath, fragmentPath, NULL)
+{ }
 
-Shader::Shader(const char* vertexPath, const char* fragmentPath)
+Shader::Shader(const char* vertexPath, const char* fragmentPath, const char* geometryPath)
 {
-    std::string vShaderCode = readShader(vertexPath);
-    std::string fShaderCode = readShader(fragmentPath);
-
-    int vertex = compileShader(vShaderCode.c_str(), GL_VERTEX_SHADER);
-    int fragment = compileShader(fShaderCode.c_str(), GL_FRAGMENT_SHADER);
+    int vertex = compileShader(vertexPath, GL_VERTEX_SHADER);
+    int fragment = compileShader(fragmentPath, GL_FRAGMENT_SHADER);
       
     // shader Program
     ID = glCreateProgram();
     glAttachShader(ID, vertex);
     glAttachShader(ID, fragment);
+    
+    int geometry = 0;
+    if (geometryPath != NULL) {
+        geometry = compileShader(geometryPath, GL_GEOMETRY_SHADER);
+        glAttachShader(ID, geometry);
+    }
+
     glLinkProgram(ID);
     int success;
     char infoLog[512];
@@ -72,7 +81,13 @@ Shader::Shader(const char* vertexPath, const char* fragmentPath)
     // delete the shaders as they're linked into our program now and no longer necessary
     glDeleteShader(vertex);
     glDeleteShader(fragment);
+    if (geometry) {
+        glDeleteShader(geometry);
+    }
 }
+
+
+
 
 void Shader::use()
 {
