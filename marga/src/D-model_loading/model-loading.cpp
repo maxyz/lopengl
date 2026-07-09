@@ -144,7 +144,7 @@ int main()
 
     ourShader.use();
 
-    Model backpack = Model("models/backpack.obj");
+    Model backpack = Model("../media/models/backpack.obj");
 
     // Create an Element Buffer Object
     unsigned int EBO;
