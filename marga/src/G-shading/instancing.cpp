@@ -40,6 +40,7 @@ class SceneRenderer: public AbstractSceneRenderer {
     private:
         // Main Shaders
         Shader  *sceneShader;
+        Shader  *instanceShader;
         // Helper shader structures and data
         void createShaders();
 
@@ -48,6 +49,9 @@ class SceneRenderer: public AbstractSceneRenderer {
         unsigned int lastIndex;
         glm::vec2 translations[2500];
         void calculateOffsets();
+        bool useInstanceShader = false;
+        void drawManyQuads();
+        void useInstancing();
 
         void setOptions();
 
@@ -75,8 +79,8 @@ void SceneRenderer::setOptions()
 
 void SceneRenderer::createShaders()
 {
-    //this->sceneShader = new Shader("shaders/instances-vertex.glsl", "shaders/instances-frag.glsl");
     this->sceneShader = new Shader("shaders/vertex.glsl", "shaders/instances-frag.glsl");
+    this->instanceShader = new Shader("shaders/instances-vertex.glsl", "shaders/instances-frag.glsl");
 }
 
 void SceneRenderer::init()
@@ -106,7 +110,7 @@ void SceneRenderer::calculateOffsets() {
     if (this->lastIndex == this->rows * this->cols) {
         return;
     }
-    int index = 0;
+    unsigned int index = 0;
     float maxrows = (float) this->rows;
     float maxcols = (float) this->cols;
     for(float y = 0.5; y < maxrows; y += 1.0)
@@ -120,18 +124,19 @@ void SceneRenderer::calculateOffsets() {
         }
     }
     this->lastIndex = index;
+
+    // Set the values in the shader
+    this->instanceShader->use();
+    for(unsigned int i = 0; i < index; i++)
+    {
+        this->instanceShader->setVec2f(("offsets[" + std::to_string(i) + "]"), glm::value_ptr(translations[i]));
+    } 
 }
 
-void SceneRenderer::renderScene(SceneState &state) 
-{
-    glClearColor(state.bgColor.x, state.bgColor.y, state.bgColor.z, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
+// Old school way: draw many quads
+void SceneRenderer::drawManyQuads() {
     this->sceneShader->use();
-    glBindVertexArray(this->quadVAO);
-    this->calculateOffsets();
     glm::mat4 model;
-
     // For each index, translate the model and render the quad
     for(unsigned int i = 0; i < this->lastIndex; i++) {
         model = glm::mat4(1.0f);
@@ -141,11 +146,35 @@ void SceneRenderer::renderScene(SceneState &state)
     }
 }
 
+// Instancing way: draw one quad and let the shaders multiply.
+void SceneRenderer::useInstancing() {
+    this->instanceShader->use();
+    glDrawArraysInstanced(GL_TRIANGLES, 0, 6, this->lastIndex); 
+}
+
+
+void SceneRenderer::renderScene(SceneState &state) 
+{
+    glClearColor(state.bgColor.x, state.bgColor.y, state.bgColor.z, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    glBindVertexArray(this->quadVAO);
+    this->calculateOffsets();
+
+    if (this->useInstanceShader) {
+        this->useInstancing();
+    } else {
+        this->drawManyQuads();
+    }
+
+}
+
 void SceneRenderer::showImGuiControls(SceneState &state) {
     unsigned int min = 2;
     unsigned int max = 50;
     ImGui::SliderScalar("Rows", ImGuiDataType_U32, &this->rows, &min, &max, "%u");
     ImGui::SliderScalar("Cols", ImGuiDataType_U32, &this->cols, &min, &max, "%u");
+    ImGui::Checkbox("Use instancing", &this->useInstanceShader);
 }
 
 void SceneRenderer::teardown()

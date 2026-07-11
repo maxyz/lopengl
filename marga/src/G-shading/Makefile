@@ -1,4 +1,4 @@
-EXES = points fragcoord ubo geometry-basic geometry-model geometry-normals instances-a
+EXES = points fragcoord ubo geometry-basic geometry-model geometry-normals instancing
 
 default_target: $(EXES)
 
@@ -55,7 +55,7 @@ geometry-model: geometry-model.cpp libGLAD.a shader.o ../lib/camera.h ../lib/geo
 geometry-normals: geometry-normals.cpp libGLAD.a shader.o ../lib/camera.h ../lib/geometry.h scene_state.o imgui_dock.o basic_main.o model.o mesh.o
 	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
 
-instances-a: instances-a.cpp libGLAD.a shader.o ../lib/camera.h ../lib/geometry.h scene_state.o imgui_dock.o basic_main.o
+instancing: instancing.cpp libGLAD.a shader.o ../lib/camera.h ../lib/geometry.h scene_state.o imgui_dock.o basic_main.o
 	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
 
 
