@@ -41,6 +41,7 @@ class SceneRenderer: public AbstractSceneRenderer {
         // Main Shaders
         Shader  *sceneShader;
         Shader  *instanceShader;
+        Shader  *arrayShader;
         // Helper shader structures and data
         void createShaders();
 
@@ -48,10 +49,13 @@ class SceneRenderer: public AbstractSceneRenderer {
         unsigned int rows, cols;
         unsigned int lastIndex;
         glm::vec2 translations[2500];
+        unsigned int instanceVBO;
+
+        int shaderToUse = 0;
         void calculateOffsets();
-        bool useInstanceShader = false;
         void drawManyQuads();
         void useInstancing();
+        void useArrays();
 
         void setOptions();
 
@@ -81,6 +85,7 @@ void SceneRenderer::createShaders()
 {
     this->sceneShader = new Shader("shaders/vertex.glsl", "shaders/instances-frag.glsl");
     this->instanceShader = new Shader("shaders/instances-vertex.glsl", "shaders/instances-frag.glsl");
+    this->arrayShader = new Shader("shaders/array-vertex.glsl", "shaders/instances-frag.glsl");
 }
 
 void SceneRenderer::init()
@@ -103,7 +108,19 @@ void SceneRenderer::init()
     };
     createVertexBuffers(&this->quadVAO, &this->quadVBO, &quadVertices, sizeof(quadVertices));
     setVertexAttribs(2,3,0);
-    
+
+    this->calculateOffsets();
+
+    // Required for the Instanced arrays
+    glGenBuffers(1, &this->instanceVBO);
+    glBindBuffer(GL_ARRAY_BUFFER, this->instanceVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec2) * this->lastIndex, &this->translations[0], GL_STATIC_DRAW);
+    glEnableVertexAttribArray(2);
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);	
+    // This means that this information is transmitted once per render pass
+    glVertexAttribDivisor(2, 1);  
+
 }
 
 void SceneRenderer::calculateOffsets() {
@@ -125,12 +142,17 @@ void SceneRenderer::calculateOffsets() {
     }
     this->lastIndex = index;
 
-    // Set the values in the shader
+    // Set the values in the instancing shader
     this->instanceShader->use();
     for(unsigned int i = 0; i < index; i++)
     {
         this->instanceShader->setVec2f(("offsets[" + std::to_string(i) + "]"), glm::value_ptr(translations[i]));
     } 
+
+    // Copy the buffer for the Array shader
+    glBindBuffer(GL_ARRAY_BUFFER, this->instanceVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec2) * this->lastIndex, &this->translations[0], GL_STATIC_DRAW);
+
 }
 
 // Old school way: draw many quads
@@ -152,6 +174,12 @@ void SceneRenderer::useInstancing() {
     glDrawArraysInstanced(GL_TRIANGLES, 0, 6, this->lastIndex); 
 }
 
+// Instanced arrays way
+void SceneRenderer::useArrays() {
+    this->arrayShader->use();
+    this->arrayShader->setFloat("lastIndex", (float) this->lastIndex);
+    glDrawArraysInstanced(GL_TRIANGLES, 0, 6, this->lastIndex); 
+}
 
 void SceneRenderer::renderScene(SceneState &state) 
 {
@@ -161,10 +189,12 @@ void SceneRenderer::renderScene(SceneState &state)
     glBindVertexArray(this->quadVAO);
     this->calculateOffsets();
 
-    if (this->useInstanceShader) {
+    if (this->shaderToUse == 0) {
+        this->drawManyQuads();
+    } else if (this->shaderToUse == 1) {
         this->useInstancing();
     } else {
-        this->drawManyQuads();
+        this->useArrays();
     }
 
 }
@@ -174,7 +204,8 @@ void SceneRenderer::showImGuiControls(SceneState &state) {
     unsigned int max = 50;
     ImGui::SliderScalar("Rows", ImGuiDataType_U32, &this->rows, &min, &max, "%u");
     ImGui::SliderScalar("Cols", ImGuiDataType_U32, &this->cols, &min, &max, "%u");
-    ImGui::Checkbox("Use instancing", &this->useInstanceShader);
+    static const char* items[] = {"Old school", "Instancing", "Arrays"};
+    ImGui::Combo("Instancing mode", &this->shaderToUse, items, 3);
 }
 
 void SceneRenderer::teardown()
