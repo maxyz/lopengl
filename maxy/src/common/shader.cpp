@@ -33,23 +33,59 @@ static compile_shader_res compile_file(std::string_view path, GLenum type) {
     return object;
 }
 
-Shader::build_res Shader::build(std::string_view vertexPath, std::string_view fragmentPath) {
+struct vertex_fragment_shaders_t {
+    id_t vertex;
+    id_t fragment;
+};
+
+inline void delete_vertex_fragment_shaders(vertex_fragment_shaders_t shaders) {
+    glDeleteShader(shaders.vertex);
+    glDeleteShader(shaders.fragment);
+}
+
+inline std::expected<vertex_fragment_shaders_t, std::string>
+build_vertex_fragment(std::string_view vertexPath, std::string_view fragmentPath) {
     auto vertex = compile_file(vertexPath, GL_VERTEX_SHADER);
-    if (!vertex) {
-        return std::unexpected(vertex.error());
-    }
+    if (!vertex) return std::unexpected(vertex.error());
+
     auto fragment = compile_file(fragmentPath, GL_FRAGMENT_SHADER);
     if (!fragment) {
         glDeleteShader(*vertex);
         return std::unexpected(fragment.error());
     }
-    const std::array ids{*vertex, *fragment};
+    return vertex_fragment_shaders_t{.vertex = *vertex, .fragment = *fragment};
+}
+
+Shader::build_res Shader::build(std::string_view vertexPath, std::string_view fragmentPath) {
+    auto vertex_fragment_shaders = build_vertex_fragment(vertexPath, fragmentPath);
+    if (!vertex_fragment_shaders) return std::unexpected(vertex_fragment_shaders.error());
+
+    const std::array ids{vertex_fragment_shaders->vertex, vertex_fragment_shaders->fragment};
     auto             program = link_shaders(ids);
-    glDeleteShader(*vertex);
-    glDeleteShader(*fragment);
-    if (!program) {
-        return std::unexpected(program.error());
+    delete_vertex_fragment_shaders(*vertex_fragment_shaders);
+    if (!program) return std::unexpected(program.error());
+
+    return Shader(*program);
+}
+Shader::build_res Shader::build(
+    std::string_view vertexPath, std::string_view fragmentPath, std::string_view geometryPath
+) {
+    auto vertex_fragment_shaders = build_vertex_fragment(vertexPath, fragmentPath);
+    if (!vertex_fragment_shaders) return std::unexpected(vertex_fragment_shaders.error());
+
+    auto geometry_shader = compile_file(geometryPath, GL_GEOMETRY_SHADER);
+    if (!geometry_shader) {
+        delete_vertex_fragment_shaders(*vertex_fragment_shaders);
+        return std::unexpected(geometry_shader.error());
     }
+
+    const std::array ids{
+        vertex_fragment_shaders->vertex, vertex_fragment_shaders->fragment, *geometry_shader
+    };
+    auto program = link_shaders(ids);
+    delete_vertex_fragment_shaders(*vertex_fragment_shaders);
+    glDeleteShader(*geometry_shader);
+
     return Shader(*program);
 }
 

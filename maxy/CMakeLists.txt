@@ -62,6 +62,7 @@ function(chapter_shaders)
   file(GLOB _sources CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/shaders/*.vert"
     "${CMAKE_CURRENT_SOURCE_DIR}/shaders/*.frag"
+    "${CMAKE_CURRENT_SOURCE_DIR}/shaders/*.geom"
     "${CMAKE_CURRENT_SOURCE_DIR}/shaders/*.glsl"
   )
   get_filename_component(_chapter "${CMAKE_CURRENT_SOURCE_DIR}" NAME)
@@ -88,6 +89,7 @@ function(chapter_spv_shaders target)
     file(GLOB _sources CONFIGURE_DEPENDS
       "${CMAKE_CURRENT_SOURCE_DIR}/shaders/*.vert"
       "${CMAKE_CURRENT_SOURCE_DIR}/shaders/*.frag"
+      "${CMAKE_CURRENT_SOURCE_DIR}/shaders/*.geom"
     )
     set(_outputs "")
     foreach(_src ${_sources})

@@ -17,10 +17,9 @@ public:
     explicit Shader(id_t program_id) : m_program_id(program_id) {}
     ~Shader() { glDeleteProgram(m_program_id); }
 
-    Shader(const Shader &) = delete;
+    Shader(const Shader &)            = delete;
     Shader &operator=(const Shader &) = delete;
-    Shader(Shader &&o) noexcept
-        : m_program_id(std::exchange(o.m_program_id, 0)) {}
+    Shader(Shader &&o) noexcept : m_program_id(std::exchange(o.m_program_id, 0)) {}
     Shader &operator=(Shader &&o) noexcept {
         if (this != &o) {
             glDeleteProgram(m_program_id);
@@ -30,8 +29,10 @@ public:
     }
 
     using build_res = std::expected<Shader, std::string>;
-    static build_res
-    build(std::string_view vertexPath, std::string_view fragmentPath);
+    static build_res build(std::string_view vertexPath, std::string_view fragmentPath);
+    static build_res build(
+        std::string_view vertexPath, std::string_view fragmentPath, std::string_view geometryPath
+    );
 
     id_t program_id() const { return m_program_id; }
 

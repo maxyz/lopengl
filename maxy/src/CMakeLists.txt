@@ -36,6 +36,7 @@ add_subdirectory(25)
 add_subdirectory(26)
 add_subdirectory(27)
 add_subdirectory(29)
+add_subdirectory(30)
 
 if(SDL3_FOUND)
   add_subdirectory(sdl3_engine)
