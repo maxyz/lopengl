@@ -4,6 +4,27 @@
 #include <glad/gl.h>
 #include <GLFW/glfw3.h>
 
+void createVertexBuffers(unsigned int *VAO, unsigned int *VBO, const void *data, unsigned int size) {
+    glGenVertexArrays(1, VAO);
+    glGenBuffers(1, VBO);
+    glBindVertexArray(*VAO);
+    glBindBuffer(GL_ARRAY_BUFFER, *VBO);
+    glBufferData(GL_ARRAY_BUFFER, size, data, GL_STATIC_DRAW);
+}
+
+void setVertexAttribs(unsigned int first, unsigned int second, unsigned int third)
+{
+    unsigned int total = first + second + third;
+    glVertexAttribPointer(0, first, GL_FLOAT, GL_FALSE, total * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+    if (second == 0) return;
+    glVertexAttribPointer(1, second, GL_FLOAT, GL_FALSE, total * sizeof(float), (void*)(first * sizeof(float)));
+    glEnableVertexAttribArray(1);
+    if (third == 0) return;
+    glVertexAttribPointer(2, third, GL_FLOAT, GL_FALSE, total * sizeof(float), (void*)(first+second * sizeof(float)));
+    glEnableVertexAttribArray(2);
+}
+
 
 const float cubeVertices[] = {
     // positions          // normals           // texture coords
@@ -52,21 +73,8 @@ const float cubeVertices[] = {
 };
 
 void getCubeBuffers(unsigned int *cubeVAO, unsigned int *cubeVBO) {
-    glGenBuffers(1, cubeVBO);
-    // Generate a Vertex array
-    glGenVertexArrays(1, cubeVAO);
-    // 1. bind Vertex Array Object
-    glBindVertexArray(*cubeVAO);
-    // 2. copy our vertices array in a buffer for OpenGL to use
-    glBindBuffer(GL_ARRAY_BUFFER, *cubeVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(cubeVertices), cubeVertices, GL_STATIC_DRAW);
-    // 3. then set our vertex attributes pointers (the vertices are in lighting_vertices.cpp)
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
-    glEnableVertexAttribArray(2);
+    createVertexBuffers(cubeVAO, cubeVBO, &cubeVertices, sizeof(cubeVertices));
+    setVertexAttribs(3,3,2);
 }
 
 void getLightBuffers(unsigned int *lightVAO, unsigned int cubeVBO) {
@@ -76,8 +84,7 @@ void getLightBuffers(unsigned int *lightVAO, unsigned int cubeVBO) {
     // we only need to bind to the VBO, the container's VBO's data already contains the data.
     glBindBuffer(GL_ARRAY_BUFFER, cubeVBO);
     // set the vertex attribute
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
+    setVertexAttribs(3,0,0);
 }
 
 
@@ -96,17 +103,8 @@ const float planeVertices[] = {
 };
 
 void getPlaneBuffers(unsigned int *planeVAO, unsigned int *planeVBO) {
-    glGenVertexArrays(1, planeVAO);
-    glGenBuffers(1, planeVBO);
-    glBindVertexArray(*planeVAO);
-    glBindBuffer(GL_ARRAY_BUFFER, *planeVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(planeVertices), &planeVertices, GL_STATIC_DRAW);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
-    glEnableVertexAttribArray(2);
+    createVertexBuffers(planeVAO, planeVBO, &planeVertices, sizeof(planeVertices));
+    setVertexAttribs(3,3,2);
 }
 
 
@@ -123,15 +121,8 @@ const float quadVertices[] = {
 };
 
 void getQuadBuffers(unsigned int *quadVAO, unsigned int *quadVBO) {
-    glGenVertexArrays(1, quadVAO);
-    glGenBuffers(1, quadVBO);
-    glBindVertexArray(*quadVAO);
-    glBindBuffer(GL_ARRAY_BUFFER, *quadVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+    createVertexBuffers(quadVAO, quadVBO, &quadVertices, sizeof(quadVertices));
+    setVertexAttribs(2,2,0);
 }
 
 const float skyboxVertices[] = {
@@ -180,13 +171,8 @@ const float skyboxVertices[] = {
 };
 
 void getSkyboxBuffers(unsigned int *skyboxVAO, unsigned int *skyboxVBO) {
-    glGenVertexArrays(1, skyboxVAO);
-    glGenBuffers(1, skyboxVBO);
-    glBindVertexArray(*skyboxVAO);
-    glBindBuffer(GL_ARRAY_BUFFER, *skyboxVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(skyboxVertices), &skyboxVertices, GL_STATIC_DRAW);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    createVertexBuffers(skyboxVAO, skyboxVBO, &skyboxVertices, sizeof(skyboxVertices));
+    setVertexAttribs(3,0,0);
 }
 
 float points[] = {
@@ -196,19 +182,10 @@ float points[] = {
     -0.5f, -0.5f, 1.0f, 1.0f, 0.0f  // bottom-left
 }; 
 
-
 void getPointBuffers(unsigned int *pointsVAO, unsigned int *pointsVBO) {
-    glGenVertexArrays(1, pointsVAO);
-    glGenBuffers(1, pointsVBO);
-    glBindVertexArray(*pointsVAO);
-    glBindBuffer(GL_ARRAY_BUFFER, *pointsVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(points), &points, GL_STATIC_DRAW);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(2 * sizeof(float)));
+    createVertexBuffers(pointsVAO, pointsVBO, &points, sizeof(points));
+    setVertexAttribs(2,3,0);
 }
-
 
 
 #endif
