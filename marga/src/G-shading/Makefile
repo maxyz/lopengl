@@ -1,4 +1,4 @@
-EXES = points fragcoord ubo geometry-basic geometry-model geometry-normals instancing
+EXES = points fragcoord ubo geometry-basic geometry-model geometry-normals instancing asteroids
 
 default_target: $(EXES)
 
@@ -56,6 +56,9 @@ geometry-normals: geometry-normals.cpp libGLAD.a shader.o ../lib/camera.h ../lib
 	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
 
 instancing: instancing.cpp libGLAD.a shader.o ../lib/camera.h ../lib/geometry.h scene_state.o imgui_dock.o basic_main.o
+	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
+
+asteroids: asteroids.cpp libGLAD.a shader.o ../lib/camera.h ../lib/geometry.h scene_state.o imgui_dock.o basic_main.o model.o mesh.o
 	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
 
 
