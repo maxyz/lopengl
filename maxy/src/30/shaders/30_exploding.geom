@@ -16,8 +16,7 @@ vec4 explode(vec4 position, vec3 normal) {
     return position + vec4(direction, 0.0);
 }
 
-vec3 get_normal()
-{
+vec3 get_normal() {
     vec3 a = vec3(gl_in[0].gl_Position) - vec3(gl_in[1].gl_Position);
     vec3 b = vec3(gl_in[2].gl_Position) - vec3(gl_in[1].gl_Position);
     return normalize(cross(a, b));

@@ -6,8 +6,7 @@ out vs_out_t {
     vec4 color;
 } vs_out;
 
-void main()
-{
+void main() {
     vs_out.color = a_color;
     gl_Position = vec4(a_pos, 1.0); 
 }
