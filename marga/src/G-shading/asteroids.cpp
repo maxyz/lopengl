@@ -52,7 +52,7 @@ class SceneRenderer: public AbstractSceneRenderer {
         unsigned int amount = 1000;
         void createAsteroids();
         unsigned int lastIndex = 0;
-        float orbitSpeed = 0.5;
+        float orbitSpeed = 5;
 
         // Used for instanced Arrays
         unsigned int instanceVBO;
@@ -136,8 +136,8 @@ void SceneRenderer::createAsteroids()
     }
     this->modelMatrices = new glm::mat4[amount];
     srand(glfwGetTime()); // initialize random seed	
-    float radius = 50.0;
-    float offset = 2.5f;
+    float radius = 50.0f;
+    float offset = 8.0f;
     for(unsigned int i = 0; i < amount; i++)
     {
         glm::mat4 model = glm::mat4(1.0f);
@@ -186,21 +186,28 @@ void SceneRenderer::renderScene(SceneState &state)
     this->sceneShader->setMatrix4fv("projection", glm::value_ptr(projection));
     this->sceneShader->setMatrix4fv("model", glm::value_ptr(model));
     this->planet->Draw(*(this->sceneShader));
+
+    // Calculate the rotation in the orbit for the meteorites
+    glm::mat4 orbit = glm::mat4(1.0f);
+    float angle = glfwGetTime() * this->orbitSpeed;
+    orbit = glm::rotate(orbit, glm::radians(angle), glm::vec3(0.0f, 1.0f, 0.0f));
   
     // draw meteorites
     this->createAsteroids();
     if (this->shaderToUse == 0) {
+        view = view * orbit;
+        this->sceneShader->setMatrix4fv("view", glm::value_ptr(view));
         for(unsigned int i = 0; i < this->amount; i++)
         {
             this->sceneShader->setMatrix4fv("model", glm::value_ptr(this->modelMatrices[i]));
             this->asteroid->Draw(*(this->sceneShader));
         }
     } else {
+        
+        glm::mat4 pvo = projection * view * orbit;
+
         this->instancedShader->use();
-        this->instancedShader->setMatrix4fv("view", glm::value_ptr(view));
-        this->instancedShader->setMatrix4fv("projection", glm::value_ptr(projection));
-        this->instancedShader->setFloat("time", glfwGetTime());
-        this->instancedShader->setFloat("orbitSpeed", this->orbitSpeed);
+        this->instancedShader->setMatrix4fv("projection", glm::value_ptr(pvo));
         for(unsigned int i = 0; i < this->asteroid->meshes.size(); i++)
         {
             glBindVertexArray(this->asteroid->meshes[i].VAO);
@@ -216,7 +223,7 @@ void SceneRenderer::showImGuiControls(SceneState &state) {
     unsigned int min = 100;
     unsigned int max = 100000;
     ImGui::SliderScalar("Asteroids", ImGuiDataType_U32, &this->amount, &min, &max, "%u");
-    ImGui::SliderFloat("Orbit Speed", &this->orbitSpeed, 0, 2);
+    ImGui::SliderFloat("Orbit Speed", &this->orbitSpeed, 0, 20);
     static const char* items[] = {"Old school", "Instanced Arrays"};
     ImGui::Combo("Instancing mode", &this->shaderToUse, items, 2);
 }
