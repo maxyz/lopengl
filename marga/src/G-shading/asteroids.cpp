@@ -29,7 +29,7 @@ SceneState state = {
         .height = (float) INITIAL_HEIGHT,
         .title = "Asteroids",
         .bgColor = glm::vec3( 0.1f,  0.1f,  0.1f),
-        .camera = Camera(glm::vec3(0.0f, 0.0f, 75.0f)),
+        .camera = Camera(glm::vec3(0.0f, 15.0f, 100.0f)),
         .lastX = 400,
         .lastY = 300,
         .firstMouse = true,
@@ -40,6 +40,7 @@ class SceneRenderer: public AbstractSceneRenderer {
     private:
         // Main Shaders
         Shader  *sceneShader;
+        Shader  *instancedShader;
         // Helper shader structures and data
         void createShaders();
 
@@ -51,6 +52,12 @@ class SceneRenderer: public AbstractSceneRenderer {
         unsigned int amount = 1000;
         void createAsteroids();
         unsigned int lastIndex = 0;
+        float orbitSpeed = 0.5;
+
+        // Used for instanced Arrays
+        unsigned int instanceVBO;
+        int shaderToUse = 1;
+        void createBuffers();
 
     public:
         SceneRenderer() {}
@@ -68,8 +75,6 @@ AbstractSceneRenderer* createSceneRenderer() {
 // OpenGL options that we want to use in this program
 void SceneRenderer::setOptions()
 {
-    // Point size in the shader
-    //glEnable(GL_PROGRAM_POINT_SIZE);
     // Wireframe mode
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     glEnable(GL_DEPTH_TEST);
@@ -78,6 +83,7 @@ void SceneRenderer::setOptions()
 void SceneRenderer::createShaders()
 {
     this->sceneShader = new Shader("shaders/simple-model-vertex.glsl", "shaders/model-frag.glsl");
+    this->instancedShader = new Shader("shaders/instanced-model-vertex.glsl", "shaders/model-frag.glsl");
 }
 
 void SceneRenderer::init()
@@ -87,6 +93,39 @@ void SceneRenderer::init()
     this->planet = new Model("../media/models/planet.obj");
     this->asteroid = new Model("../media/models/rock.obj");
     state.camera.MovementSpeed = 40.0;
+    this->createBuffers();
+    this->createAsteroids();
+}
+
+void SceneRenderer::createBuffers()
+{
+    // vertex buffer object
+    glGenBuffers(1, &this->instanceVBO);
+    glBindBuffer(GL_ARRAY_BUFFER, this->instanceVBO);
+    
+    // Bind the modelMatrix vertex attribute to each rock's mesh
+    for(unsigned int i = 0; i < this->asteroid->meshes.size(); i++)
+    {
+        unsigned int VAO = this->asteroid->meshes[i].VAO;
+        glBindVertexArray(VAO);
+        // vertex attributes
+        std::size_t vec4Size = sizeof(glm::vec4);
+        glEnableVertexAttribArray(3); 
+        glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (void*)0);
+        glEnableVertexAttribArray(4); 
+        glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (void*)(1 * vec4Size));
+        glEnableVertexAttribArray(5); 
+        glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (void*)(2 * vec4Size));
+        glEnableVertexAttribArray(6); 
+        glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (void*)(3 * vec4Size));
+    
+        glVertexAttribDivisor(3, 1);
+        glVertexAttribDivisor(4, 1);
+        glVertexAttribDivisor(5, 1);
+        glVertexAttribDivisor(6, 1);
+    
+        glBindVertexArray(0);
+    } 
 }
 
 void SceneRenderer::createAsteroids()
@@ -124,6 +163,10 @@ void SceneRenderer::createAsteroids()
         this->modelMatrices[i] = model;
     }
     this->lastIndex = this->amount;
+
+    // Recopy the data for the instanced arrays case
+    glBindBuffer(GL_ARRAY_BUFFER, this->instanceVBO);
+    glBufferData(GL_ARRAY_BUFFER, this->amount * sizeof(glm::mat4), &this->modelMatrices[0], GL_STATIC_DRAW);
 }
 
 void SceneRenderer::renderScene(SceneState &state) 
@@ -131,34 +174,51 @@ void SceneRenderer::renderScene(SceneState &state)
     glClearColor(state.bgColor.x, state.bgColor.y, state.bgColor.z, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    this->sceneShader->use();
     glm::mat4 view = state.camera.GetViewMatrix(); // Full view
     glm::mat4 projection = glm::perspective(glm::radians(state.camera.Zoom), state.width/state.height, 0.1f, 1000.0f);
-    glm::mat4 model = glm::mat4(1.0f);
-
-    this->sceneShader->setMatrix4fv("view", glm::value_ptr(view));
-    this->sceneShader->setMatrix4fv("projection", glm::value_ptr(projection));
 
     // draw the planet
+    glm::mat4 model = glm::mat4(1.0f);
     model = glm::translate(model, glm::vec3(0.0f, -3.0f, 0.0f));
     model = glm::scale(model, glm::vec3(4.0f, 4.0f, 4.0f));
+    this->sceneShader->use();
+    this->sceneShader->setMatrix4fv("view", glm::value_ptr(view));
+    this->sceneShader->setMatrix4fv("projection", glm::value_ptr(projection));
     this->sceneShader->setMatrix4fv("model", glm::value_ptr(model));
     this->planet->Draw(*(this->sceneShader));
   
     // draw meteorites
     this->createAsteroids();
-    for(unsigned int i = 0; i < this->amount; i++)
-    {
-        this->sceneShader->setMatrix4fv("model", glm::value_ptr(this->modelMatrices[i]));
-        this->asteroid->Draw(*(this->sceneShader));
-    }  
+    if (this->shaderToUse == 0) {
+        for(unsigned int i = 0; i < this->amount; i++)
+        {
+            this->sceneShader->setMatrix4fv("model", glm::value_ptr(this->modelMatrices[i]));
+            this->asteroid->Draw(*(this->sceneShader));
+        }
+    } else {
+        this->instancedShader->use();
+        this->instancedShader->setMatrix4fv("view", glm::value_ptr(view));
+        this->instancedShader->setMatrix4fv("projection", glm::value_ptr(projection));
+        this->instancedShader->setFloat("time", glfwGetTime());
+        this->instancedShader->setFloat("orbitSpeed", this->orbitSpeed);
+        for(unsigned int i = 0; i < this->asteroid->meshes.size(); i++)
+        {
+            glBindVertexArray(this->asteroid->meshes[i].VAO);
+            glDrawElementsInstanced(
+                GL_TRIANGLES, this->asteroid->meshes[i].indices.size(), GL_UNSIGNED_INT, 0, this->amount
+            );
+        }
+    } 
 
 }
 
 void SceneRenderer::showImGuiControls(SceneState &state) {
     unsigned int min = 100;
-    unsigned int max = 50000;
+    unsigned int max = 100000;
     ImGui::SliderScalar("Asteroids", ImGuiDataType_U32, &this->amount, &min, &max, "%u");
+    ImGui::SliderFloat("Orbit Speed", &this->orbitSpeed, 0, 2);
+    static const char* items[] = {"Old school", "Instanced Arrays"};
+    ImGui::Combo("Instancing mode", &this->shaderToUse, items, 2);
 }
 
 void SceneRenderer::teardown()
