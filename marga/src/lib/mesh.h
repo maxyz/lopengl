@@ -8,19 +8,12 @@
 #include <glm/glm.hpp>
 #include "shader.h"
 #include "stb_image.h"
+#include "texture.h"
 
 struct Vertex {
     glm::vec3 position;
     glm::vec3 normal;
     glm::vec2 texCoords;
-};
-
-class Texture {
-public:
-    Texture(const char *filepath, const std::string &directory);
-    unsigned int id;
-    std::string type;
-    std::string path;
 };
 
 class Mesh {

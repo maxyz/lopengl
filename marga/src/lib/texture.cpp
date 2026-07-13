@@ -1,9 +1,15 @@
 #include "texture.h"
 
 // Legacy constructor
-Texture::Texture(const char* filename, GLenum format): Texture(filename) { }
+Texture::Texture(const char* filename, GLenum format) {
+    this->init(filename);
+}
 
-Texture::Texture(const char* filename)
+Texture::Texture(const char* filename) {
+    this->init(filename);
+}
+
+void Texture::init(const char* filename)
 {
     glGenTextures(1, &ID);
     // Bind a texture into that integer
@@ -32,6 +38,12 @@ Texture::Texture(const char* filename)
         std::cout << "ERROR: Failed to load texture file: " << filename << std::endl;
     }
     stbi_image_free(data);
+}
+
+Texture::Texture(const char *filepath, const std::string &directory) {
+    this->path = std::string(filepath);
+    std::string path = directory + '/' + std::string(filepath);
+    this->init(path.c_str());
 }
 
 void Texture::flip_vertically() {

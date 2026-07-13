@@ -9,6 +9,7 @@
 #include "stb_image.h"
 #include "shader.h"
 #include "camera.h"
+#include "texture.h"
 #include "model.h"
 #include "lights.h"
 #include "geometry.h"
@@ -59,6 +60,12 @@ class SceneRenderer: public AbstractSceneRenderer {
         int shaderToUse = 1;
         void createBuffers();
 
+        // Adding a Skybox
+        Shader  *skyboxShader;
+        CubeTexture *skybox;
+        unsigned int skyboxVAO, skyboxVBO;
+        void createSkybox();
+
     public:
         SceneRenderer() {}
         void init();
@@ -78,12 +85,14 @@ void SceneRenderer::setOptions()
     // Wireframe mode
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LEQUAL);
 }
 
 void SceneRenderer::createShaders()
 {
     this->sceneShader = new Shader("shaders/simple-model-vertex.glsl", "shaders/model-frag.glsl");
     this->instancedShader = new Shader("shaders/instanced-model-vertex.glsl", "shaders/model-frag.glsl");
+    this->instancedShader->setInt("material.texture_diffuse1", 0);
 }
 
 void SceneRenderer::init()
@@ -95,6 +104,24 @@ void SceneRenderer::init()
     state.camera.MovementSpeed = 40.0;
     this->createBuffers();
     this->createAsteroids();
+    this->createSkybox();
+}
+
+void SceneRenderer::createSkybox()
+{
+    getSkyboxBuffers(&this->skyboxVAO, &this->skyboxVBO);
+    std::vector<std::string> faces = {
+        "../media/spacenebulaskybox/right.jpg",
+        "../media/spacenebulaskybox/left.jpg",
+        "../media/spacenebulaskybox/top.jpg",
+        "../media/spacenebulaskybox/bottom.jpg",
+        "../media/spacenebulaskybox/front.jpg",
+        "../media/spacenebulaskybox/back.jpg"
+    };
+    this->skybox = new CubeTexture(faces);
+    this->skyboxShader = new Shader("shaders/skybox-vertex.glsl", "shaders/skybox-frag.glsl");
+    this->skyboxShader->use();
+    this->skyboxShader->setInt("skybox", 1);
 }
 
 void SceneRenderer::createBuffers()
@@ -177,6 +204,7 @@ void SceneRenderer::renderScene(SceneState &state)
     glm::mat4 view = state.camera.GetViewMatrix(); // Full view
     glm::mat4 projection = glm::perspective(glm::radians(state.camera.Zoom), state.width/state.height, 0.1f, 1000.0f);
 
+
     // draw the planet
     glm::mat4 model = glm::mat4(1.0f);
     model = glm::translate(model, glm::vec3(0.0f, -3.0f, 0.0f));
@@ -195,8 +223,8 @@ void SceneRenderer::renderScene(SceneState &state)
     // draw meteorites
     this->createAsteroids();
     if (this->shaderToUse == 0) {
-        view = view * orbit;
-        this->sceneShader->setMatrix4fv("view", glm::value_ptr(view));
+        orbit = view * orbit;
+        this->sceneShader->setMatrix4fv("view", glm::value_ptr(orbit));
         for(unsigned int i = 0; i < this->amount; i++)
         {
             this->sceneShader->setMatrix4fv("model", glm::value_ptr(this->modelMatrices[i]));
@@ -208,6 +236,8 @@ void SceneRenderer::renderScene(SceneState &state)
 
         this->instancedShader->use();
         this->instancedShader->setMatrix4fv("projection", glm::value_ptr(pvo));
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, this->asteroid->textures_loaded[0].ID); // note: we also made the textures_loaded vector public (instead of private) from the model class.
         for(unsigned int i = 0; i < this->asteroid->meshes.size(); i++)
         {
             glBindVertexArray(this->asteroid->meshes[i].VAO);
@@ -217,6 +247,14 @@ void SceneRenderer::renderScene(SceneState &state)
         }
     } 
 
+     // The skybox goes at the end, with depth testing enabled
+    glm::mat4 skyboxView = glm::mat4(glm::mat3(state.camera.GetViewMatrix())); // View without translation
+    this->skyboxShader->use();
+    this->skyboxShader->setMatrix4fv("view", glm::value_ptr(skyboxView));
+    this->skyboxShader->setMatrix4fv("projection", glm::value_ptr(projection));
+    glBindVertexArray(this->skyboxVAO);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, this->skybox->ID);
+    glDrawArrays(GL_TRIANGLES, 0, 36);
 }
 
 void SceneRenderer::showImGuiControls(SceneState &state) {

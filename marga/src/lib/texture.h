@@ -16,6 +16,7 @@ public:
     // constructor reads and builds the shader
     Texture(const char* filename);
     Texture(const char* filename, GLenum format);
+    void init(const char* filename);
 
     // flip orientation
     static void flip_vertically();
@@ -25,6 +26,11 @@ public:
 
     // Change the filtering values
     void set_filter(GLenum filter_value);
+
+    // Used by the model loader
+    Texture(const char *filepath, const std::string &directory);
+    std::string type;
+    std::string path;
 };
 
 class CubeTexture
