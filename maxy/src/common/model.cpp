@@ -35,6 +35,12 @@ void Model::draw(Shader &shader) {
     }
 }
 
+void Model::draw_instanced(Shader &shader, int amount) {
+    for (auto &mesh : m_meshes) {
+        mesh.draw_instanced(shader, amount);
+    }
+}
+
 std::expected<Model, std::string> Model::load(const std::string &path) {
     ModelLoader loader{m_textures_loaded};
     auto        load_res = loader.load(path);
@@ -152,4 +158,10 @@ std::expected<std::vector<Texture>, std::string> ModelLoader::load_material_text
         }
     }
     return textures;
+}
+
+void Model::set_instance_model_transform(id_t layout_id) {
+    for (auto &mesh : m_meshes) {
+        mesh.set_instance_model_transform(layout_id);
+    }
 }

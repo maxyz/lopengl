@@ -11,15 +11,19 @@
 class Model {
 public:
     Model(std::vector<Mesh> meshes) : m_meshes{std::move(meshes)} {};
-    Model(const Model &) = delete;
+    Model(const Model &)            = delete;
     Model &operator=(const Model &) = delete;
-    Model(Model &&) noexcept = default;
-    Model &operator=(Model &&) = default;
+    Model(Model &&) noexcept        = default;
+    Model &operator=(Model &&)      = default;
 
     static std::expected<Model, std::string> load(const std::string &path);
+
     void draw(Shader &shader);
+    void draw_instanced(Shader &shader, int amount);
+
+    void set_instance_model_transform(id_t layout_id);
 
 private:
-    std::vector<Mesh> m_meshes;
+    std::vector<Mesh>                               m_meshes;
     static std::unordered_map<std::string, Texture> m_textures_loaded;
 };

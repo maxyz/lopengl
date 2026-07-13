@@ -61,5 +61,50 @@ void Mesh::draw(Shader &shader) {
 
     glBindVertexArray(m_vertex_array);
     glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(m_indices.size()), GL_UNSIGNED_INT, 0);
-    glBindVertexArray(0);
+}
+
+void Mesh::draw_instanced(Shader &shader, int amount) {
+    texture_counters_t counters{
+        first_texture_number, first_texture_number, first_texture_number, first_texture_number
+    };
+    for (size_t i = 0; i < m_textures.size(); ++i) {
+        glActiveTexture(GL_TEXTURE0 + i);
+        shader.set_int(material_uniform_name(m_textures[i].type, counters), i);
+        glBindTexture(GL_TEXTURE_2D, m_textures[i].id);
+    }
+    glActiveTexture(GL_TEXTURE0);
+
+    glBindVertexArray(m_vertex_array);
+    glDrawElementsInstanced(
+        GL_TRIANGLES, static_cast<GLsizei>(m_indices.size()), GL_UNSIGNED_INT, 0, amount
+    );
+}
+
+void Mesh::set_instance_model_transform(id_t layout_id) {
+    glBindVertexArray(m_vertex_array);
+    // set attribute pointers for matrix (4 times vec4)
+    glEnableVertexAttribArray(layout_id);
+    glVertexAttribPointer(
+        layout_id, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), static_cast<void *>(0)
+    );
+    glEnableVertexAttribArray(layout_id + 1);
+    glVertexAttribPointer(
+        layout_id + 1, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4),
+        reinterpret_cast<void *>(sizeof(glm::vec4))
+    );
+    glEnableVertexAttribArray(layout_id + 2);
+    glVertexAttribPointer(
+        layout_id + 2, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4),
+        reinterpret_cast<void *>(2 * sizeof(glm::vec4))
+    );
+    glEnableVertexAttribArray(layout_id + 3);
+    glVertexAttribPointer(
+        layout_id + 3, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4),
+        reinterpret_cast<void *>(3 * sizeof(glm::vec4))
+    );
+
+    glVertexAttribDivisor(layout_id, 1);
+    glVertexAttribDivisor(layout_id + 1, 1);
+    glVertexAttribDivisor(layout_id + 2, 1);
+    glVertexAttribDivisor(layout_id + 3, 1);
 }

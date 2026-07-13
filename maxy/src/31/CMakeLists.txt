@@ -5,3 +5,6 @@ target_link_libraries(31_quads ${LIBS})
 
 add_executable(31_asteroids asteroids.cpp)
 target_link_libraries(31_asteroids ${LIBS})
+
+add_executable(31_instanced instanced.cpp)
+target_link_libraries(31_instanced ${LIBS})

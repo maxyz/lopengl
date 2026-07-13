@@ -64,6 +64,9 @@ public:
         glDeleteBuffers(1, &m_element_buffer);
     };
     void draw(Shader &shader);
+    void draw_instanced(Shader &shader, int amount);
+
+    void set_instance_model_transform(id_t layout_id);
 
 private:
     std::vector<Vertex>       m_vertices;
