@@ -17,12 +17,14 @@ struct Vertex {
 };
 
 struct Texture {
-    id_t id;
+    id_t        id;
     std::string type;
 };
 
-constexpr std::string_view texture_type_diffuse = "texture_diffuse";
+constexpr std::string_view texture_type_diffuse  = "texture_diffuse";
 constexpr std::string_view texture_type_specular = "texture_specular";
+constexpr std::string_view texture_type_height   = "texture_height";
+constexpr std::string_view texture_type_ambient  = "texture_ambient";
 
 class Mesh {
 public:
@@ -34,13 +36,11 @@ public:
           m_textures(std::move(textures)) {
         setup_mesh();
     };
-    Mesh(const Mesh &) = delete;
+    Mesh(const Mesh &)            = delete;
     Mesh &operator=(const Mesh &) = delete;
     Mesh(Mesh &&o) noexcept
-        : m_vertices(std::move(o.m_vertices)),
-          m_indices(std::move(o.m_indices)),
-          m_textures(std::move(o.m_textures)),
-          m_vertex_array(std::exchange(o.m_vertex_array, 0)),
+        : m_vertices(std::move(o.m_vertices)), m_indices(std::move(o.m_indices)),
+          m_textures(std::move(o.m_textures)), m_vertex_array(std::exchange(o.m_vertex_array, 0)),
           m_vertex_buffer(std::exchange(o.m_vertex_buffer, 0)),
           m_element_buffer(std::exchange(o.m_element_buffer, 0)) {}
     Mesh &operator=(Mesh &&o) noexcept {
@@ -48,11 +48,11 @@ public:
             glDeleteVertexArrays(1, &m_vertex_array);
             glDeleteBuffers(1, &m_vertex_buffer);
             glDeleteBuffers(1, &m_element_buffer);
-            m_vertices = std::move(o.m_vertices);
-            m_indices = std::move(o.m_indices);
-            m_textures = std::move(o.m_textures);
-            m_vertex_array = std::exchange(o.m_vertex_array, 0);
-            m_vertex_buffer = std::exchange(o.m_vertex_buffer, 0);
+            m_vertices       = std::move(o.m_vertices);
+            m_indices        = std::move(o.m_indices);
+            m_textures       = std::move(o.m_textures);
+            m_vertex_array   = std::exchange(o.m_vertex_array, 0);
+            m_vertex_buffer  = std::exchange(o.m_vertex_buffer, 0);
             m_element_buffer = std::exchange(o.m_element_buffer, 0);
         }
         return *this;
@@ -66,9 +66,9 @@ public:
     void draw(Shader &shader);
 
 private:
-    std::vector<Vertex> m_vertices;
+    std::vector<Vertex>       m_vertices;
     std::vector<unsigned int> m_indices;
-    std::vector<Texture> m_textures;
+    std::vector<Texture>      m_textures;
 
     id_t m_vertex_array{};
     id_t m_vertex_buffer{};

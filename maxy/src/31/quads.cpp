@@ -2,7 +2,7 @@
 
 #include "common/common.hpp"
 
-constexpr const char *TITLE  = "Points as houses";
+constexpr const char *TITLE  = "Quad instances";
 constexpr GLuint      WIDTH  = 1024;
 constexpr GLuint      HEIGHT = 768;
 
@@ -18,14 +18,15 @@ state_t state{
 };
 
 struct shaders_t {
-    Shader houses;
+    Shader quads;
 };
 
 struct vaos_t {
-    id_t points;
+    id_t quad;
 };
 struct vbos_t {
-    id_t points;
+    id_t quad;
+    id_t instance;
 };
 
 struct position_color_t {
@@ -33,12 +34,31 @@ struct position_color_t {
     glm::vec4 color;
 };
 
-inline const std::array<position_color_t, 4> points_vertices = {{
-    {{-0.5f, 0.5f, 0.0f}, {1.0f, 0.0f, 0.0f, 1.0f}},  // top-left
-    {{0.5f, 0.5f, 0.0f}, {0.0f, 1.0f, 0.0f, 1.0f}},   // top-right
-    {{-0.5f, -0.5f, 0.0f}, {0.0f, 0.0f, 1.0f, 1.0f}}, // bottom-left
-    {{0.5f, -0.5f, 0.0f}, {1.0f, 1.0f, 0.0f, 1.0f}},  // bottom-right
-}};
+inline const std::array<position_color_t, 16> quad_vertices = {
+    {{{-0.05f, 0.05f, 0.0f}, {1.0f, 0.0f, 0.0f, 1.0f}},
+     {{0.05f, -0.05f, 0.0f}, {0.0f, 1.0f, 0.0f, 1.0f}},
+     {{-0.05f, -0.05f, 0.0f}, {0.0f, 0.0f, 1.0f, 1.0f}},
+
+     {{-0.05f, 0.05f, 0.0f}, {1.0f, 0.0f, 0.0f, 1.0f}},
+     {{0.05f, -0.05f, 0.0f}, {0.0f, 1.0f, 0.0f, 1.0f}},
+     {{0.05f, 0.05f, 0.0f}, {0.0f, 1.0f, 1.0f, 1.0f}}}
+};
+
+constexpr std::array<glm::vec3, 100> generate_translations() {
+    std::array<glm::vec3, 100> result{};
+    int                        index  = 0;
+    float                      offset = 0.1f;
+    for (int y = -10; y < 10; y += 2) {
+        for (int x = -10; x < 10; x += 2) {
+            glm::vec3 translation{0.0f};
+            translation.x   = (float)x / 10.0f + offset;
+            translation.y   = (float)y / 10.0f + offset;
+            result[index++] = translation;
+        }
+    }
+    return result;
+}
+constexpr std::array<glm::vec3, 100> translations = generate_translations();
 
 class SceneRenderer {
 public:
@@ -66,10 +86,9 @@ private:
 };
 
 std::expected<shaders_t, std::string> load_shaders() {
-    auto shader =
-        Shader::build("shaders/30_houses.vert", "shaders/30_houses.frag", "shaders/30_houses.geom");
+    auto shader = Shader::build("shaders/31_instancing.vert", "shaders/31_instancing.frag");
     if (!shader) return std::unexpected(shader.error());
-    return shaders_t{.houses = std::move(*shader)};
+    return shaders_t{.quads = std::move(*shader)};
 }
 
 void load_vertices(
@@ -95,9 +114,19 @@ std::pair<vaos_t, vbos_t> load_buffers() {
     vbos_t vbos{};
 
     glGenVertexArrays(1, reinterpret_cast<id_t *>(&vaos));
-    glGenBuffers(1, reinterpret_cast<id_t *>(&vbos));
+    glGenBuffers(2, reinterpret_cast<id_t *>(&vbos));
 
-    load_vertices(points_vertices, vaos.points, vbos.points);
+    load_vertices(quad_vertices, vaos.quad, vbos.quad);
+
+    glBindBuffer(GL_ARRAY_BUFFER, vbos.instance);
+    glBufferData(
+        GL_ARRAY_BUFFER, sizeof(glm::vec3) * translations.size(), translations.data(),
+        GL_STATIC_DRAW
+    );
+
+    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *)0);
+    glEnableVertexAttribArray(2);
+    glVertexAttribDivisor(2, 1); // tell OpenGL this is an instanced vertex attribute.
 
     return {vaos, vbos};
 }
@@ -120,9 +149,9 @@ void SceneRenderer::render(input_t input, float delta) {
     glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    m_shaders.houses.use();
-    glBindVertexArray(m_vaos.points);
-    glDrawArrays(GL_POINTS, 0, points_vertices.size());
+    m_shaders.quads.use();
+    glBindVertexArray(m_vaos.quad);
+    glDrawArraysInstanced(GL_TRIANGLES, 0, quad_vertices.size(), 100);
 }
 
 int error_exit(std::string error) {

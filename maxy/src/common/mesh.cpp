@@ -1,6 +1,7 @@
 #include "common/mesh.hpp"
 #include <cstddef>
 #include <format>
+#include <iostream>
 
 void Mesh::setup_mesh() {
     glGenVertexArrays(1, &m_vertex_array);
@@ -32,19 +33,28 @@ void Mesh::setup_mesh() {
 
 constexpr size_t first_texture_number = 1;
 
-static std::string
-material_uniform_name(std::string_view type, size_t &diffuse_count, size_t &specular_count) {
-    if (type == texture_type_diffuse) return std::format("{}{}", type, diffuse_count++);
-    if (type == texture_type_specular) return std::format("{}{}", type, specular_count++);
+struct texture_counters_t {
+    size_t diffuse;
+    size_t specular;
+    size_t height;
+    size_t ambient;
+};
+
+static std::string material_uniform_name(std::string_view type, texture_counters_t &counters) {
+    if (type == texture_type_diffuse) return std::format("{}{}", type, counters.diffuse++);
+    if (type == texture_type_specular) return std::format("{}{}", type, counters.specular++);
+    if (type == texture_type_height) return std::format("{}{}", type, counters.height++);
+    if (type == texture_type_ambient) return std::format("{}{}", type, counters.ambient++);
     return std::string(type);
 }
 
 void Mesh::draw(Shader &shader) {
-    size_t diffuse_count = first_texture_number;
-    size_t specular_count = first_texture_number;
+    texture_counters_t counters{
+        first_texture_number, first_texture_number, first_texture_number, first_texture_number
+    };
     for (size_t i = 0; i < m_textures.size(); ++i) {
         glActiveTexture(GL_TEXTURE0 + i);
-        shader.set_int(material_uniform_name(m_textures[i].type, diffuse_count, specular_count), i);
+        shader.set_int(material_uniform_name(m_textures[i].type, counters), i);
         glBindTexture(GL_TEXTURE_2D, m_textures[i].id);
     }
     glActiveTexture(GL_TEXTURE0);
