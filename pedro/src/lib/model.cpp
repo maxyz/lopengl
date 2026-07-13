@@ -90,6 +90,12 @@ Mesh Model::processMesh(aiMesh *mesh, const aiScene *scene)
         MeshTextures specularMaps = loadMaterialTextures(material, aiTextureType_SPECULAR, "texture_specular");
         textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
 
+        MeshTextures heightMaps = loadMaterialTextures(material, aiTextureType_HEIGHT, "texture_height");
+        textures.insert(textures.end(), heightMaps.begin(), heightMaps.end());
+
+        MeshTextures ambientMaps = loadMaterialTextures(material, aiTextureType_AMBIENT, "texture_ambient");
+        textures.insert(textures.end(), ambientMaps.begin(), ambientMaps.end());
+
     }
 
     return Mesh(vertices, indices, textures);

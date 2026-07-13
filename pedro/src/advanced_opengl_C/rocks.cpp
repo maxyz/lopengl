@@ -80,22 +80,6 @@ public:
         // Textures
 
         // Buffers
-        VertexVector points
-        (
-            new std::vector<float>{
-                -0.5f,  0.5f, 1.0f, 0.0f, 0.0f, // top-left
-                0.5f,  0.5f, 0.0f, 1.0f, 0.0f, // top-right
-                0.5f, -0.5f, 0.0f, 0.0f, 1.0f, // bottom-right
-                -0.5f, -0.5f, 1.0f, 1.0f, 0.0f  // bottom-left
-            },
-            AttribInfo
-            {
-                VertexAttribInfo{0, 2, 5, 0},
-                VertexAttribInfo{1, 3, 5, 2}
-            },
-            4
-        );
-
         planet = Model(std::string("../models/planet/planet.obj"));
         rock = Model(std::string("../models/rock/rock.obj"));
 
@@ -174,11 +158,18 @@ public:
     void renderObjects(glm::mat4 &view)
     {
         glm::mat4 model(1.0f);
+        planetShader.use();
         planetShader.setVertexMatrices(view, model, state.projectionMatrix);
         planet.draw(planetShader);
 
-        rockShader.setVertexMatrices(view, model, state.projectionMatrix);
-        //rock.draw(rockShader, rock_amount);
+        glm::mat4 orbit = glm::mat4(1.0f);
+        float angle = glfwGetTime() * 5.0f;
+        orbit = glm::rotate(orbit, glm::radians(angle), glm::vec3(0.0f, 1.0f, 0.0f));
+        orbit = view * orbit;
+
+        rockShader.use();
+        rockShader.setVertexMatrices(orbit, model, state.projectionMatrix);
+        rock.draw(rockShader, rock_amount);
     }
 
     void changeShader() 
@@ -193,8 +184,8 @@ public:
     std::vector<glm::mat4>* generateModelMatrices() {
         auto modelMatrices = new std::vector<glm::mat4>(rock_amount);
         
-        float radius = 50.0;
-        float offset = 2.5f;
+        float radius = 25.0;
+        float offset = 8.0f;
         for(unsigned int i = 0; i < rock_amount; i++)
         {
             glm::mat4 model = glm::mat4(1.0f);
