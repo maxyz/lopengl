@@ -15,6 +15,7 @@ class Model {
 
 public:
 
+    Model() = default;
     Model(std::string path)
     {
         loadModel(path);
