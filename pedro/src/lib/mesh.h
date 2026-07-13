@@ -37,11 +37,14 @@ public:
     MeshIndices indices;
     MeshTextures textures;
 
+    Mesh() : nextArrayIndex(0) {}
     Mesh(MeshVertices vertices, MeshIndices indices, MeshTextures textures);
-    void draw(Shader &shader);
+    void draw(Shader &shader, uint instances);
+    void addInstancing(std::vector<glm::mat4> vertices);
 
 private:
 
+    uint nextArrayIndex;
     uint VAO, VBO, EBO;
     void setupMesh();
 

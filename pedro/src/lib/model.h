@@ -21,7 +21,13 @@ public:
         loadModel(path);
     }
 
-    void draw(Shader &shader);
+    template <typename T>
+    void addInstancing(std::vector<T>& data) {
+        for(auto& mesh : meshes) 
+            mesh.addInstancing(data);
+    }
+
+    void draw(Shader &shader, uint instances = 1);
 
 private:
 

@@ -1,5 +1,5 @@
-EXES = geometry_shader01 geometry_explode geometry_normals
-
+EXES = geometry_shader01 geometry_explode geometry_normals rocks
+ 
 LIB = libGLAD.a stb_image.o shader.o texture.o camera.o material.o model.o mesh.o  key_command.o buffers.o engine.o basic_main.o
 
 default_target: $(EXES)
@@ -20,6 +20,9 @@ geometry_explode: geometry_explode.cpp $(LIB)
 	g++ $(CPPFLAGS) $^ $(EXTRAS) -o $@ $(LDFLAGS)
 
 geometry_normals: geometry_normals.cpp $(LIB)
+	g++ $(CPPFLAGS) $^ $(EXTRAS) -o $@ $(LDFLAGS)
+
+rocks: rocks.cpp $(LIB)
 	g++ $(CPPFLAGS) $^ $(EXTRAS) -o $@ $(LDFLAGS)
 
 camera.o: ../lib/camera.cpp ../lib/camera.h

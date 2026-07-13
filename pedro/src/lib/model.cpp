@@ -1,9 +1,9 @@
 #include "model.h"
 
-void Model::draw(Shader &shader)
+void Model::draw(Shader &shader, uint instances)
 {
     for (size_t i = 0; i < meshes.size(); i++)
-        meshes[i].draw(shader);
+        meshes[i].draw(shader, instances);
 }
 
 void Model::loadModel(std::string path)
