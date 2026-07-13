@@ -53,8 +53,8 @@ public:
     AttribInfo attribInfo;
     uint triangleVertexAmount;
 
-    VertexVector(std::vector<float> &vector, AttribInfo attribInfo, uint triangleVertexAmount) : attribInfo(attribInfo), triangleVertexAmount(triangleVertexAmount) {
-        vertices = &vector;
+    VertexVector(std::vector<float> *vector, AttribInfo attribInfo, uint triangleVertexAmount) : attribInfo(attribInfo), triangleVertexAmount(triangleVertexAmount) {
+        vertices = vector;
     }
     ~VertexVector() = default;
 

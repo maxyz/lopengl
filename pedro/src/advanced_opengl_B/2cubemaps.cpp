@@ -42,7 +42,7 @@ public:
     std::vector<renderParams> renderVector;
 
     VAO quadVAO;
-    Framebuffer frameFrontView;
+    Framebuffer framebuffer;
 
     // Flags
     bool shaderNeedsToBeChanged;
@@ -101,7 +101,7 @@ public:
         };
 
         quadVAO = VAO(quad);
-        frameFrontView.completeGenerate(state.width,state.height);
+        framebuffer.completeGenerate(state.width,state.height);
 
         // Commands
         sceneCommands = {
@@ -127,7 +127,7 @@ public:
         glEnable(GL_DEPTH_TEST);
 
         // // Render Front View
-        frameFrontView.bind();
+        framebuffer.bind();
 
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -142,7 +142,7 @@ public:
         renderSkybox(noTranslationView);
         glDepthFunc(GL_LESS);
 
-        frameFrontView.unbind();
+        framebuffer.unbind();
         
         // Draw the Frame on screen
         glDisable(GL_DEPTH_TEST);
@@ -154,7 +154,7 @@ public:
         currentShader->use();
 
         quadVAO.bind();
-        glBindTexture(GL_TEXTURE_2D, frameFrontView.colorAttachment->texture);
+        glBindTexture(GL_TEXTURE_2D, framebuffer.colorAttachment->texture);
         currentShader->setMat4("model",glm::mat4(1.0f));
         glDrawArrays(GL_TRIANGLES, 0, 6);
         quadVAO.unbind();        
@@ -169,7 +169,7 @@ public:
         cubeVAO.deleteBuffers();
         skyboxVAO.deleteBuffers();
         quadVAO.deleteBuffers();
-        frameFrontView.deleteBuffers();
+        framebuffer.deleteBuffers();
         cubeTexture.deleteTexture();
         skyboxTexture.deleteTexture();
     }

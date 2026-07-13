@@ -54,7 +54,7 @@ Shader::Shader(const std::string vertexPath, const std::string fragmentPath, con
 }
 
 
-GLuint Shader::compileShader(std::string shaderPath, uint shaderType) 
+GLuint Shader::compileShader(const std::string shaderPath, uint shaderType) 
 {    
     // 1. Retrieve the vertex/fragment source code from filePath
     std::string shaderCodeString;
@@ -101,7 +101,7 @@ GLuint Shader::compileShader(std::string shaderPath, uint shaderType)
     if(!success)
     {
         glGetShaderInfoLog(shader, 512, NULL, infoLog);
-        std::cout << "ERROR::SHADER::COMPILATION_FAILED\n" << infoLog << std::endl;
+        std::cout << "ERROR::SHADER::COMPILATION_FAILED. File: " << shaderPath << "\n" << infoLog << std::endl;
     };
 
     return shader;

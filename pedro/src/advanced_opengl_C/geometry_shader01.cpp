@@ -18,32 +18,27 @@ class Engine : public AbstractEngine
 public:
 
     // Shaders
-    Shader skyboxRenderShader;
-
     std::vector<Shader*> postprocShaders;
     std::vector<Shader*> shaders;
     uint currentPostprocShader;
     uint currentShader;
 
     // Textures
-    Texture2D cubeTexture;
-    Cubemap skyboxTexture;
 
     // Buffers
     struct renderParams
     {
         VAO* buffer;
-        glm::vec3 translate;
+        // glm::vec3 translate;
         // scale
         // rotate
-        AbstractTexture* texture;
+        // AbstractTexture* texture;
     };
-    VAO cubeVAO;
-    VAO skyboxVAO;
+    VAO pointsVAO;
     std::vector<renderParams> renderVector;
 
     VAO quadVAO;
-    Framebuffer frameFrontView;
+    Framebuffer framebuffer;
 
     // Flags
     bool postprocShaderNeedsToBeChanged;
@@ -61,13 +56,26 @@ public:
 
     void sceneInit() override
     {
+        state.cam.position += glm::vec3(0.0f, 0.0f, 3.0f);
+
         // Shaders
-        skyboxRenderShader = Shader("shaders/skybox.vs", "shaders/skybox.frag");
-        
         std::string dir = "shaders/";
         shaders = {
-            new Shader(dir + "cubemaps_reflect.vs", dir + "cubemaps_reflect.frag"),
-            new Shader(dir + "cubemaps_refract.vs", dir + "cubemaps_refract.frag")
+            new Shader(
+                dir + "vertex1.glsl", 
+                dir + "fragment1.glsl",
+                dir + "geometry0.glsl"
+            ),
+            new Shader(
+                dir + "vertex1.glsl", 
+                dir + "fragment1.glsl",
+                dir + "geometry1.glsl"
+            ),
+            new Shader(
+                dir + "vertex1.glsl", 
+                dir + "fragment1.glsl",
+                dir + "geometry1_1.glsl"
+            )
         };
 
         dir = "shaders/postproc/";
@@ -79,37 +87,34 @@ public:
             new Shader(dir + "post2.vs", dir + "postKernel2.frag")
         };
         currentPostprocShader = 0;
-        currentShader = 0;
+        currentShader = 1;
 
         // Textures
-        dir = "../media/skybox/";
-        std::vector<std::string> faces =
-        {
-            dir + "right.jpg",
-            dir + "left.jpg",
-            dir + "top.jpg",
-            dir + "bottom.jpg",
-            dir + "front.jpg",
-            dir + "back.jpg"
-        };
-        skyboxTexture = Cubemap(faces, 0);
-        skyboxRenderShader.use();
-        skyboxRenderShader.setInt("skybox", 0);
-
-        // cubeTexture = Texture2D("../media/container.jpg", JPG, 0);
-        // objectRenderShader.use();
-        // objectRenderShader.setInt("material.texture_diffuse1", 0);
 
         // Buffers
-        cubeVAO = VAO(cubeNormals);
-        skyboxVAO = VAO(skybox);
+        VertexVector points
+        (
+            new std::vector<float>{
+                -0.5f,  0.5f, 1.0f, 0.0f, 0.0f, // top-left
+                0.5f,  0.5f, 0.0f, 1.0f, 0.0f, // top-right
+                0.5f, -0.5f, 0.0f, 0.0f, 1.0f, // bottom-right
+                -0.5f, -0.5f, 1.0f, 1.0f, 0.0f  // bottom-left
+            },
+            AttribInfo
+            {
+                VertexAttribInfo{0, 2, 5, 0},
+                VertexAttribInfo{1, 3, 5, 2}
+            },
+            4
+        );
+
+        pointsVAO = VAO(points);
         renderVector = {
-            {&cubeVAO  ,  glm::vec3(-1.0f, 0.0f, -1.0f), &cubeTexture},
-            {&cubeVAO  ,  glm::vec3(2.0f, 0.0f, 0.0f)  , &cubeTexture}
+            {&pointsVAO}
         };
 
         quadVAO = VAO(quad);
-        frameFrontView.completeGenerate(state.width,state.height);
+        framebuffer.completeGenerate(state.width,state.height);
 
         objectShaderNeedsToBeChanged = false;
         objectShaderNeedsToBeChanged = false;
@@ -139,22 +144,16 @@ public:
         glEnable(GL_DEPTH_TEST);
 
         // // Render Front View
-        frameFrontView.bind();
+        framebuffer.bind();
 
-        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+        glClearColor(0.3f, 0.1f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         // Render objects
         glm::mat4 view = state.cam.lookFront();
         renderObjects(view);
-        
-        // Render skybox;
-        glDepthFunc(GL_LEQUAL);
-        glm::mat4 noTranslationView = glm::mat4(glm::mat3(view));
-        renderSkybox(noTranslationView);
-        glDepthFunc(GL_LESS);
 
-        frameFrontView.unbind();
+        framebuffer.unbind();
         
         // Draw the Frame on screen
         glDisable(GL_DEPTH_TEST);
@@ -165,11 +164,11 @@ public:
         auto currentShader = postprocShaders[currentPostprocShader];
         currentShader->use();
 
-        quadVAO.bind();
-        glBindTexture(GL_TEXTURE_2D, frameFrontView.colorAttachment->texture);
+        quadVAO.bind(); 
+        glBindTexture(GL_TEXTURE_2D, framebuffer.colorAttachment->texture);
         currentShader->setMat4("model",glm::mat4(1.0f));
         glDrawArrays(GL_TRIANGLES, 0, 6);
-        quadVAO.unbind();        
+        quadVAO.unbind();
     }
 
     private:
@@ -178,44 +177,23 @@ public:
     // Teardown no sirve mucho porque opengl cuando termina borra todo automaticamente.
     // A lo sumo serviría si tengo que destruir todo lo del engine en medio de la ejecución.
     {
-        cubeVAO.deleteBuffers();
-        skyboxVAO.deleteBuffers();
-        quadVAO.deleteBuffers();
-        frameFrontView.deleteBuffers();
-        cubeTexture.deleteTexture();
-        skyboxTexture.deleteTexture();
-    }
-    
-    void renderSkybox(glm::mat4 &view) {
-        skyboxRenderShader.use();
-        glm::mat4 model(1.0f);
-        skyboxRenderShader.setVertexMatrices(view, model, state.projectionMatrix);
-
-        skyboxVAO.bind();
-        skyboxTexture.activate();
-
-        glDrawArrays(GL_TRIANGLES, 0, skyboxVAO.renderVertices);
+        pointsVAO.deleteBuffers();
+        framebuffer.deleteBuffers();
     }
 
     void renderObjects(glm::mat4 &view)
     {
         shaders[currentShader]->use();
-        shaders[currentShader]->setInt("skybox", 0);
 
         glm::mat4 model(1.0f);
         shaders[currentShader]->setVertexMatrices(view, model, state.projectionMatrix);
-        
-        skyboxTexture.activate(0); // Activate for reflection
-        shaders[currentShader]->setVec3("cameraPos", state.cam.position); // camera position for reflection
 
-        for (auto& [vao, translate, texture] : renderVector)
+        for (auto& [vao] : renderVector)
         {
             vao->bind();
-            texture->activate(0);
-            model = glm::translate(glm::mat4(1.0f), translate);
             shaders[currentShader]->setMat4("model", model);
 
-            glDrawArrays(GL_TRIANGLES, 0, vao->renderVertices);
+            glDrawArrays(GL_POINTS, 0, vao->renderVertices);
         }
     }
 

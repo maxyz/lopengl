@@ -48,7 +48,7 @@ std::vector<float> verticesCubeNormals =
 };
 
 VertexVector cubeNormals(
-    verticesCubeNormals, 
+    &verticesCubeNormals, 
     AttribInfo
     {
         VertexAttribInfo{0, 3, 8, 0},
@@ -105,7 +105,7 @@ std::vector<float> verticesCube =
 };
 
 VertexVector cube(
-    verticesCube, 
+    &verticesCube, 
     AttribInfo
     {
         VertexAttribInfo{0, 3, 5, 0},
@@ -127,7 +127,7 @@ std::vector<float> verticesQuad =
 };
 
 VertexVector quad(
-    verticesQuad, 
+    &verticesQuad, 
     AttribInfo
     {
         VertexAttribInfo{0, 2, 4, 0},
@@ -149,7 +149,7 @@ std::vector<float> verticesPlane =
 };
 
 VertexVector plane(
-    verticesPlane, 
+    &verticesPlane, 
     AttribInfo
     {
         VertexAttribInfo{0, 3, 5, 0},
@@ -205,7 +205,7 @@ std::vector<float> verticesSkybox =
 };
 
 VertexVector skybox(
-    verticesSkybox, 
+    &verticesSkybox, 
     AttribInfo
     {
         VertexAttribInfo{0, 3, 3, 0},
