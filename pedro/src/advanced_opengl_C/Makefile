@@ -1,4 +1,4 @@
-EXES = geometry_shader01
+EXES = geometry_shader01 geometry_explode geometry_normals
 
 LIB = libGLAD.a stb_image.o shader.o texture.o camera.o material.o model.o mesh.o  key_command.o buffers.o engine.o basic_main.o
 
@@ -14,6 +14,12 @@ CPPFLAGS = -I ../../include/ -I ../lib/ $(shell pkg-config --cflags assimp) -g
 EXTRAS = /usr/lib/x86_64-linux-gnu/libglfw.so libGLAD.a
 
 geometry_shader01: geometry_shader01.cpp $(LIB)
+	g++ $(CPPFLAGS) $^ $(EXTRAS) -o $@ $(LDFLAGS)
+
+geometry_explode: geometry_explode.cpp $(LIB)
+	g++ $(CPPFLAGS) $^ $(EXTRAS) -o $@ $(LDFLAGS)
+
+geometry_normals: geometry_normals.cpp $(LIB)
 	g++ $(CPPFLAGS) $^ $(EXTRAS) -o $@ $(LDFLAGS)
 
 camera.o: ../lib/camera.cpp ../lib/camera.h
