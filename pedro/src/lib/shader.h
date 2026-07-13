@@ -20,6 +20,7 @@ public:
     // Constructor reads and builds the shader
     Shader() = default;
     Shader(const std::string vertexPath, const std::string fragmentPath);
+    Shader(const std::string vertexPath, const std::string fragmentPath, const std::string geometryPath);
     Shader& operator=(const Shader& other) {
         program = other.program;
         return *this;
@@ -36,6 +37,9 @@ public:
     void setMat4(const std::string uniformName, const glm::mat4 &value);
 
     void setVertexMatrices(glm::mat4 &view, glm::mat4 &model, glm::mat4 &projection);
+
+private:
+    GLuint compileShader(std::string shaderPath, uint shaderType);
 };
 
 #endif
