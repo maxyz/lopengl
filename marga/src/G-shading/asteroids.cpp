@@ -65,7 +65,7 @@ class SceneRenderer: public AbstractSceneRenderer {
         CubeTexture *skybox;
         unsigned int skyboxVAO, skyboxVBO;
         void createSkybox();
-
+        void renderSkybox(SceneState &state);
     public:
         SceneRenderer() {}
         void init();
@@ -121,7 +121,23 @@ void SceneRenderer::createSkybox()
     this->skybox = new CubeTexture(faces);
     this->skyboxShader = new Shader("shaders/skybox-vertex.glsl", "shaders/skybox-frag.glsl");
     this->skyboxShader->use();
+    // This number corresponds to the active texture at the time of drawing the SkyBox
+    // So, if something else is changing the active texture, we need to do:
+    // glActiveTexture(GL_TEXTURE0);
+    // Before binding the skybox texture
     this->skyboxShader->setInt("skybox", 0);
+}
+
+void SceneRenderer::renderSkybox(SceneState &state)
+{
+    glm::mat4 skyboxView = glm::mat4(glm::mat3(state.camera.GetViewMatrix())); // View without translation
+    glm::mat4 projection = glm::perspective(glm::radians(state.camera.Zoom), state.width/state.height, 0.1f, 1000.0f);
+    this->skyboxShader->use();
+    this->skyboxShader->setMatrix4fv("view", glm::value_ptr(skyboxView));
+    this->skyboxShader->setMatrix4fv("projection", glm::value_ptr(projection));
+    glBindVertexArray(this->skyboxVAO);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, this->skybox->ID);
+    glDrawArrays(GL_TRIANGLES, 0, 36);
 }
 
 void SceneRenderer::createBuffers()
@@ -204,7 +220,6 @@ void SceneRenderer::renderScene(SceneState &state)
     glm::mat4 view = state.camera.GetViewMatrix(); // Full view
     glm::mat4 projection = glm::perspective(glm::radians(state.camera.Zoom), state.width/state.height, 0.1f, 1000.0f);
 
-
     // draw the planet
     glm::mat4 model = glm::mat4(1.0f);
     model = glm::translate(model, glm::vec3(0.0f, -3.0f, 0.0f));
@@ -247,14 +262,8 @@ void SceneRenderer::renderScene(SceneState &state)
         }
     } 
 
-     // The skybox goes at the end, with depth testing enabled
-    glm::mat4 skyboxView = glm::mat4(glm::mat3(state.camera.GetViewMatrix())); // View without translation
-    this->skyboxShader->use();
-    this->skyboxShader->setMatrix4fv("view", glm::value_ptr(skyboxView));
-    this->skyboxShader->setMatrix4fv("projection", glm::value_ptr(projection));
-    glBindVertexArray(this->skyboxVAO);
-    glBindTexture(GL_TEXTURE_CUBE_MAP, this->skybox->ID);
-    glDrawArrays(GL_TRIANGLES, 0, 36);
+    // The skybox goes at the end, with depth testing enabled
+    this->renderSkybox(state);
 }
 
 void SceneRenderer::showImGuiControls(SceneState &state) {
