@@ -27,6 +27,7 @@ void ImguiDock::render(GLFWwindow* window, SceneState &state, AbstractSceneRende
     ImGui::PushItemWidth(150.0f);
     ImGui::LabelText("Pos","(%.2f, %.2f, %.2f)", state.camera.Position.x, state.camera.Position.y, state.camera.Position.z);
     ImGui::LabelText("Front","(%.2f, %.2f, %.2f)", state.camera.Front.x, state.camera.Front.y, state.camera.Front.z);
+    ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
     // Only show the controls when the mouse is not captured by the camera
     if (glfwGetInputMode(window, GLFW_CURSOR) != GLFW_CURSOR_DISABLED) {
         ImGui::ColorEdit3("Background", glm::value_ptr(state.bgColor));
