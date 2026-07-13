@@ -29,7 +29,7 @@ SceneState state = {
         .width = (float) INITIAL_WIDTH,
         .height = (float) INITIAL_HEIGHT,
         .title = "Asteroids",
-        .bgColor = glm::vec3( 0.1f,  0.1f,  0.1f),
+        .bgColor = glm::vec3( 0.1f,  0.1f,  0.4f),
         .camera = Camera(glm::vec3(0.0f, 15.0f, 100.0f)),
         .lastX = 400,
         .lastY = 300,
@@ -111,17 +111,17 @@ void SceneRenderer::createSkybox()
 {
     getSkyboxBuffers(&this->skyboxVAO, &this->skyboxVBO);
     std::vector<std::string> faces = {
-        "../media/spacenebulaskybox/right.jpg",
-        "../media/spacenebulaskybox/left.jpg",
-        "../media/spacenebulaskybox/top.jpg",
-        "../media/spacenebulaskybox/bottom.jpg",
-        "../media/spacenebulaskybox/front.jpg",
-        "../media/spacenebulaskybox/back.jpg"
+        "../media/spaceskybox/right.png",
+        "../media/spaceskybox/left.png",
+        "../media/spaceskybox/top.png",
+        "../media/spaceskybox/bottom.png",
+        "../media/spaceskybox/front.png",
+        "../media/spaceskybox/back.png"
     };
     this->skybox = new CubeTexture(faces);
     this->skyboxShader = new Shader("shaders/skybox-vertex.glsl", "shaders/skybox-frag.glsl");
     this->skyboxShader->use();
-    this->skyboxShader->setInt("skybox", 1);
+    this->skyboxShader->setInt("skybox", 0);
 }
 
 void SceneRenderer::createBuffers()
