@@ -67,6 +67,7 @@ void SceneRenderer::setOptions()
     //glEnable(GL_PROGRAM_POINT_SIZE);
     // Wireframe mode
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    glEnable(GL_DEPTH_TEST);
 }
 
 void SceneRenderer::createShaders()

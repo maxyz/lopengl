@@ -1,0 +1,7 @@
+CompileFlags:
+  Add: [-I../../include, -I../lib, -I/usr/include/imgui, -I/usr/include/stb, -I/usr/include/assimp]
+---
+If:
+  PathMatch: [.*\.hpp, .*.cpp]
+CompileFlags:
+  Add: [-std=c++20]
