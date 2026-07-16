@@ -36,6 +36,7 @@ init_glfw(int width, int height, const char *title) {
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
     glEnable(GL_STENCIL_TEST);
+    glEnable(GL_MULTISAMPLE);
 
     stbi_set_flip_vertically_on_load(true);
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
@@ -45,8 +46,8 @@ init_glfw(int width, int height, const char *title) {
 static std::expected<void, std::string> init_imgui(GLFWwindow *w) {
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
-    ImGuiIO &io = ImGui::GetIO();
-    auto font_path = get_asset_path("fonts/NotoSans-Regular.ttf");
+    ImGuiIO &io        = ImGui::GetIO();
+    auto     font_path = get_asset_path("fonts/NotoSans-Regular.ttf");
     if (!font_path) {
         return std::unexpected("failed to obtain default font");
     }
@@ -92,7 +93,7 @@ GLContext &GLContext::operator=(GLContext &&other) noexcept {
             ImGui::DestroyContext();
             glfwTerminate();
         }
-        m_window = other.m_window;
+        m_window       = other.m_window;
         other.m_window = nullptr;
     }
     return *this;
