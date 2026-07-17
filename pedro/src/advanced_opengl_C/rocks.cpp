@@ -111,6 +111,7 @@ public:
         processInput();
         changeShader();
         updateProjection();
+        framebuffer.resize(state.width, state.height);
     }
 
     // MAIN SCENE SPECIFIC METHOD
@@ -163,7 +164,7 @@ public:
         planet.draw(planetShader);
 
         glm::mat4 orbit = glm::mat4(1.0f);
-        float angle = glfwGetTime() * 5.0f;
+        float angle = glfwGetTime() * 8.0f;
         orbit = glm::rotate(orbit, glm::radians(angle), glm::vec3(0.0f, 1.0f, 0.0f));
         orbit = view * orbit;
 

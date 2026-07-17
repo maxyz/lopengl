@@ -32,6 +32,10 @@ class Framebuffer {
 private:
     uint buffer;
     uint renderAttachment;
+    uint width, height;
+
+    void attatchColor();
+    void attatchRender();
 
 public:
     Texture2D* colorAttachment;
@@ -41,16 +45,17 @@ public:
         if (colorAttachment != nullptr) delete colorAttachment;
     }
 
-    void generate() {
+    void generate(const uint _width, const uint _height) {
         glGenFramebuffers(1, &buffer);
+        width = _width;
+        height = _height;
     }
-
-    void attatchColor(const uint width, const uint height);
-    void attatchRender(const uint width, const uint height);
 
     void checkStatus();
 
-    void completeGenerate(const uint width, const uint height);
+    void completeGenerate(const uint _width, const uint _height);
+
+    void resize(const uint _width, const uint _height);
 
     inline void bind() {
         glBindFramebuffer(GL_FRAMEBUFFER, buffer);

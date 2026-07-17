@@ -3,8 +3,10 @@
 void AbstractEngine::handleFramebufferSizeCallback(GLFWwindow* window, int _width, int _height)
 {
     glViewport(0, 0, _width, _height);
+    std::cout << "New width: " << _width << " and new height: " << _height << std::endl;
     state.width = _width;
     state.height = _height;
+    updateProjection();
 }
 
 void AbstractEngine::handleMouseCallback(GLFWwindow* window, double xpos, double ypos) 
