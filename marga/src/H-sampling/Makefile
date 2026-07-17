@@ -1,4 +1,4 @@
-EXES = greencube
+EXES = greencube greencube-fb
 
 default_target: $(EXES)
 
@@ -38,6 +38,9 @@ basic_main.o: ../lib/basic_main.cpp ../lib/basic_main.h scene_state.o imgui_dock
 
 # This chapter's files
 greencube: greencube.cpp libGLAD.a shader.o ../lib/camera.h ../lib/geometry.h scene_state.o imgui_dock.o basic_main.o
+	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
+
+greencube-fb: greencube-fb.cpp libGLAD.a shader.o ../lib/camera.h ../lib/geometry.h scene_state.o imgui_dock.o basic_main.o
 	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
 
 
