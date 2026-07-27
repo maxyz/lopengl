@@ -1,4 +1,4 @@
-EXES = geometry_shader01 geometry_explode geometry_normals rocks
+EXES = geometry_shader01 geometry_explode geometry_normals rocks antialiasing
  
 LIB = libGLAD.a stb_image.o shader.o texture.o camera.o material.o model.o mesh.o  key_command.o buffers.o engine.o basic_main.o
 
@@ -23,6 +23,9 @@ geometry_normals: geometry_normals.cpp $(LIB)
 	g++ $(CPPFLAGS) $^ $(EXTRAS) -o $@ $(LDFLAGS)
 
 rocks: rocks.cpp $(LIB)
+	g++ $(CPPFLAGS) $^ $(EXTRAS) -o $@ $(LDFLAGS)
+
+antialiasing: antialiasing.cpp $(LIB)
 	g++ $(CPPFLAGS) $^ $(EXTRAS) -o $@ $(LDFLAGS)
 
 camera.o: ../lib/camera.cpp ../lib/camera.h

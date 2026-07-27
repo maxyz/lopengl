@@ -83,7 +83,7 @@ public:
 protected:
 
     void basicInit();
-    void initWindow();
+    virtual void initWindow();
     void updateProjection();
     void processInput();
     void updateFrames();

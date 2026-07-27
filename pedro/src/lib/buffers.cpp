@@ -5,7 +5,7 @@ VAO::VAO(VertexVector &verticesVector, uint mode) {
     glGenBuffers(1, &vbo);
     glBindVertexArray(vao);
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, verticesVector.size() * sizeof(float), verticesVector.data(), GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, verticesVector.size() * sizeof(float), verticesVector.data(), mode);
 
     for (auto info : verticesVector.attribInfo)
     {
