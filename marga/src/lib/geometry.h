@@ -21,7 +21,7 @@ void setVertexAttribs(unsigned int first, unsigned int second, unsigned int thir
     glVertexAttribPointer(1, second, GL_FLOAT, GL_FALSE, total * sizeof(float), (void*)(first * sizeof(float)));
     glEnableVertexAttribArray(1);
     if (third == 0) return;
-    glVertexAttribPointer(2, third, GL_FLOAT, GL_FALSE, total * sizeof(float), (void*)(first+second * sizeof(float)));
+    glVertexAttribPointer(2, third, GL_FLOAT, GL_FALSE, total * sizeof(float), (void*)((first+second) * sizeof(float)));
     glEnableVertexAttribArray(2);
 }
 
