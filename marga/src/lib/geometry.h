@@ -84,7 +84,8 @@ void getLightBuffers(unsigned int *lightVAO, unsigned int cubeVBO) {
     // we only need to bind to the VBO, the container's VBO's data already contains the data.
     glBindBuffer(GL_ARRAY_BUFFER, cubeVBO);
     // set the vertex attribute
-    setVertexAttribs(3,0,0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
 }
 
 
