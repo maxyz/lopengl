@@ -47,4 +47,4 @@ skybox: skybox.cpp libGLAD.a shader.o lights.o texture.o ../lib/camera.h ../lib/
 	g++ $(LDFLAGS) $(CPPFLAGS) $^ $(EXTRAS) -o $@
 
 clean:
-	rm -f libGLAD.a gl.o stb_image.o stb_truetype.o shader.o texture.o lights.o mesh.o model.o $(EXES)
+	rm -f libGLAD.a gl.o stb_image.o stb_truetype.o shader.o texture.o lights.o mesh.o model.o basic_main.o imgui_dock.o scene_state.o $(EXES)

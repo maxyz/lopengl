@@ -46,4 +46,4 @@ greencube-fb: greencube-fb.cpp libGLAD.a shader.o ../lib/camera.h ../lib/geometr
 
 
 clean:
-	rm -f libGLAD.a gl.o stb_image.o stb_truetype.o shader.o texture.o lights.o mesh.o model.o $(EXES)
+	rm -f libGLAD.a gl.o stb_image.o stb_truetype.o shader.o texture.o lights.o mesh.o model.o basic_main.o imgui_dock.o scene_state.o $(EXES)
