@@ -29,11 +29,11 @@ SceneState state = {
         .height = (float) INITIAL_HEIGHT,
         .title = "Lighting experiment: Wooden floor reflection",
         .bgColor = glm::vec3( 0.1f,  0.1f,  0.1f),
-        .camera = Camera(glm::vec3(2.0f, 0.0f, 5.0f)),
+        .camera = Camera(glm::vec3(2.0f, 3.0f, 10.0f)),
         .lastX = 400,
         .lastY = 300,
         .firstMouse = true,
-        .shininess = 32.0,
+        .shininess = 8.0,
 };
 
 class SceneRenderer: public AbstractSceneRenderer {
@@ -110,11 +110,13 @@ void SceneRenderer::createLights()
     // Starting lighting values (position, color, ambient, diffuse, specular, constant, linear, quadratic, cutoff)
     DirectionalLight directionalLight(glm::vec3(-0.2f, 1.0f, 0.3f));
     SpotLight spotLight;
+    directionalLight.active = false;
+    spotLight.active = false;
     std::array<PositionalLight, 4> positionalLights = {{
-    	PositionalLight(glm::vec3( 1.7f,  1.2f,  2.0f), glm::vec3( 1.0f,  1.0f,  1.0f), 0.2f, 0.5f),
-	    PositionalLight(glm::vec3( 4.3f, -3.3f, -4.0f), glm::vec3( 0.0f,  0.0f,  1.0f), 0.2f, 0.5f),
-    	PositionalLight(glm::vec3(-4.0f,  2.0f, -2.0f), glm::vec3( 1.0f,  0.0f,  0.0f), 0.2f, 0.5f),
-    	PositionalLight(glm::vec3( 1.0f,  0.0f, -3.0f), glm::vec3( 1.0f,  0.0f,  1.0f), 0.2f, 0.5f)
+        PositionalLight(glm::vec3( 1.7f,  1.2f, -2.0f), glm::vec3( 1.0f,  1.0f,  1.0f), 0.2f, 0.7f),
+        PositionalLight(glm::vec3( 4.3f,  0.5f, -4.0f), glm::vec3( 1.0f,  1.0f,  1.0f), 0.2f, 0.7f),
+        PositionalLight(glm::vec3(-4.0f,  2.0f, -2.0f), glm::vec3( 1.0f,  1.0f,  1.0f), 0.2f, 0.7f),
+        PositionalLight(glm::vec3(-3.0f,  0.0f,  3.0f), glm::vec3( 1.0f,  1.0f,  1.0f), 0.2f, 0.7f)
     }};
     this->lights = new LightSet(directionalLight, spotLight, 4, positionalLights);
 }
@@ -148,8 +150,6 @@ void SceneRenderer::renderScene(SceneState &state)
     this->sceneShader->setMatrix4fv("view", glm::value_ptr(view));
     this->sceneShader->setMatrix4fv("projection", glm::value_ptr(projection));
 
-
-
     // Draw the lights on the screen
     this->sourceShader->use();
     this->sourceShader->setMatrix4fv("view", glm::value_ptr(view));
@@ -157,6 +157,7 @@ void SceneRenderer::renderScene(SceneState &state)
 
     for (int i = 0; i < lights->positionalLightAmount; i++) {
         PositionalLight light = lights->positionalLights[i];
+        if (not light.active) continue;
         model = glm::mat4(1.0f);
         model = glm::translate(model, light.position);
         model = glm::scale(model, glm::vec3(0.2f));

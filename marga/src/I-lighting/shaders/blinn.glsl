@@ -1,14 +1,11 @@
 #version 330 core
 
-in vec2 TexCoords;
-
 struct Material {
     sampler2D texture_diffuse1;
     sampler2D texture_specular1;
     float     shininess;
 };
 uniform Material material;
-
 
 // Directional light (aka the sun)
 struct DirLight {
@@ -56,14 +53,15 @@ struct SpotLight {
 uniform SpotLight spotLight; 
 vec3 CalcSpotLight(SpotLight light, vec3 normal, vec3 fragPos, vec3 viewDir); 
 
+uniform bool blinn;
+
 uniform vec3 viewPos;
 
 in vec3 FragPos;
 in vec3 Normal;
+in vec2 TexCoords;
 
 out vec4 FragColor;
-
-uniform bool blinn;
 
 // Calculate specular component, either Blinn-Phong or Phong
 float CalcSpec(vec3 lightDir, vec3 viewDir, vec3 normal)
@@ -82,7 +80,6 @@ float CalcSpec(vec3 lightDir, vec3 viewDir, vec3 normal)
     return spec;
 }
 
-  
 void main()
 {
   // define an output color value

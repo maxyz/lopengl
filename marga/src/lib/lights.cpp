@@ -4,7 +4,7 @@ Light::Light(glm::vec3 color, float ambient, float diffuse, float specular):
         color(color), ambientStrength(ambient), diffuseStrength(diffuse), specularStrength(specular), active(true) {}
 
 Light::Light(float ambient, float diffuse):
-        Light(glm::vec3( 1.0f,  1.0f,  1.0f), ambient, diffuse, 1.0) {}
+        Light(glm::vec3( 1.0f,  1.0f,  1.0f), ambient, diffuse, diffuse) {}
 
 void Light::setBasicValues(Shader lightShader, std::string name) {
     glm::vec3 diffuseColor = this->color  * this->diffuseStrength;
@@ -51,7 +51,7 @@ PositionalLight::PositionalLight(glm::vec3 position, glm::vec3 color, float ambi
         Light(color, ambient, diffuse, specular), position(position), constant(constant), linear(linear), quadratic(quadratic) { }
 
 PositionalLight::PositionalLight(glm::vec3 position, glm::vec3 color, float ambient, float diffuse):
-        Light(color, ambient, diffuse, 1.0), position(position), constant(1.0), linear(0.09f), quadratic(0.032f) { }
+        Light(color, ambient, diffuse, diffuse), position(position), constant(1.0), linear(0.09f), quadratic(0.032f) { }
 
 PositionalLight::PositionalLight(glm::vec3 position):
         PositionalLight(position, glm::vec3( 1.0f,  1.0f,  1.0f), 0.1f, 0.4f) {}
