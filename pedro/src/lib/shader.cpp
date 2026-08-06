@@ -57,32 +57,7 @@ Shader::Shader(const std::string vertexPath, const std::string fragmentPath, con
 GLuint Shader::compileShader(const std::string shaderPath, uint shaderType) 
 {    
     // 1. Retrieve the vertex/fragment source code from filePath
-    std::string shaderCodeString;
-    std::ifstream shaderFile;
-
-    // ensures ifstream objects can throw exceptions:
-    shaderFile.exceptions (std::ifstream::failbit | std::ifstream::badbit);
-
-    try
-    {
-        // Open files
-        shaderFile.open(shaderPath);
-        std::stringstream vShaderStream, fShaderStream;
-
-        // Read file’s buffer contents into streams
-        vShaderStream << shaderFile.rdbuf();
-
-        // close file handlers
-        shaderFile.close();
-
-        // Convert stream into GLchar array
-        shaderCodeString = vShaderStream.str();
-    }
-
-    catch(std::ifstream::failure e)
-    {
-        std::cout << "ERROR::SHADER::FILE_NOT_SUCCESFULLY_READ_AT: " << shaderPath << std::endl;
-    }
+    std::string shaderCodeString = loadShaderSource(shaderPath);
 
     const GLchar* shaderCode = shaderCodeString.c_str();
 
@@ -144,4 +119,36 @@ void Shader::setVertexMatrices(glm::mat4 &view, glm::mat4 &model, glm::mat4 &pro
     setMat4("view", view);
     setMat4("model", model);
     setMat4("projection", projection);
+}
+
+// Include preprocessor (does not prevent multiple includes, nor include loops, nor multiple #version so careful!)
+std::string loadShaderSource(const std::string& shaderPath) {
+    std::ifstream shaderFile(shaderPath);
+
+    std::stringstream buffer;
+    std::string line;
+
+    if(!shaderFile.is_open())
+    {
+        std::cout << "ERROR::SHADER::FILE_NOT_SUCCESFULLY_READ_AT: " << shaderPath << std::endl;
+        return {};
+    }
+
+    while (std::getline(shaderFile, line)) {
+
+        // Look for lines like: #include "filename.glsl"
+        if (line.rfind("#include", 0) == 0) {
+            std::size_t firstQuote = line.find('"');
+            std::size_t lastQuote = line.rfind('"');
+            if (firstQuote != std::string::npos && lastQuote > firstQuote) {
+                std::string includePath = line.substr(firstQuote + 1, lastQuote - firstQuote - 1);
+                // Recursively load the included file
+                buffer << loadShaderSource(includePath) << "\n";
+                continue;
+            }
+        }
+        buffer << line << "\n";
+    }
+
+    return buffer.str();
 }

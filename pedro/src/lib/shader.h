@@ -42,4 +42,6 @@ private:
     GLuint compileShader(std::string shaderPath, uint shaderType);
 };
 
+std::string loadShaderSource(const std::string& filepath);
+
 #endif
