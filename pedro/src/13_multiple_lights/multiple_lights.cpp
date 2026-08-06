@@ -118,7 +118,7 @@ int main()
     };
 
     // Setup Shaders
-    Shader lightingShader("shaders/lightShader01.vs", "shaders/lightShader01.frag");
+    Shader lightingShader("shaders/lightShader01.vs", "shaders/lightShader02.frag");
     Shader lightSourceShader("shaders/sourceShader01.vs", "shaders/sourceShader01.frag");
 
     // Setup Textures
