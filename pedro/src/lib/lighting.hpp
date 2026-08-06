@@ -1,0 +1,112 @@
+#ifndef LIGHTING_HPP
+#define LIGHTING_HPP
+
+#include "shader.h"
+#include "camera.h"
+
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+#include <unordered_map>
+
+struct LightColor
+{
+    glm::vec3 ambient, diffuse, specular;
+};
+
+struct LightAttenuation
+{
+    float constant, linear, quadratic;
+};
+
+class Light
+{
+public:
+    ~Light() = default;
+    virtual void sendToShader(Shader& shader) = 0;
+    // virtual void renderLightSource(Shader& lightsourceShader) = 0;
+};
+
+class DirectionaLight : public Light 
+{
+public:
+    DirectionaLight(LightColor color, glm::vec3 direction) : 
+    color(color),
+    direction(direction)
+    {}
+
+    LightColor color;
+    glm::vec3 direction;
+
+    void sendToShader(Shader& shader) override;
+};
+
+class PointLight : public Light
+{
+public:
+    PointLight(LightColor color, LightAttenuation attenuation, glm::vec3 position) : 
+    color(color),
+    attenuation(attenuation),
+    position(position)
+    {}
+
+    LightColor color;
+    LightAttenuation attenuation;
+    glm::vec3 position;
+
+    void sendToShader(Shader& shader) override;
+};
+
+class Spotlight : public Light
+{
+public:
+    Spotlight(LightColor color, LightAttenuation attenuation, glm::vec3 position, glm::vec3 direction) : 
+    color(color),
+    attenuation(attenuation),
+    position(position),
+    direction(direction)
+    {}
+
+    LightColor color;
+    LightAttenuation attenuation;
+    glm::vec3 direction;
+    glm::vec3 position;
+    
+    void sendToShader(Shader& shader) override;
+};
+
+using LightMap = std::unordered_map<std::string, Light*>;
+
+// todo: figure out wtf do i do with the index things. maybe check out the uniforms??
+class LightingEngine
+{
+private:
+    uint pointLightAmount = 0;
+
+    void addLight(const std::string name, Light* light)
+        {
+            lights.insert({name, light});
+        }
+
+public:
+    LightingEngine() = default;
+    ~LightingEngine() = default;
+
+    LightMap lights;
+    
+    void sendToShader(Shader& shader)
+    {
+        for(auto& [_, light] : lights) light->sendToShader(shader);
+    }
+
+    void addPointLight(std::string name, PointLight* pointLight) {
+        addLight(name, (Light*)pointLight);
+        pointLightAmount++;
+    }
+
+    static DirectionaLight DefaultDirectionalLight();
+    static PointLight DefaultPointLight(glm::vec3 position);
+    static Spotlight DefaultSpotlight(Camera& cam);
+};
+
+#endif
