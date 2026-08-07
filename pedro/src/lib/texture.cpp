@@ -10,10 +10,11 @@ Texture2D::Texture2D(const GLchar* mediaPath, const mediaFormat format, const ui
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, min_filter);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, mag_filter);
-
+    
     int width, height, nrChannels;
     unsigned char *data = stbi_load(mediaPath, &width, &height, &nrChannels, 0);    
-
+    
+    
     if (data)
     {
         switch (format)
@@ -31,6 +32,7 @@ Texture2D::Texture2D(const GLchar* mediaPath, const mediaFormat format, const ui
     } else {
         std::cout << "ERROR::TEXTURE::FILE_NOT_SUCCESSFULLY_READ" << std::endl;
     }
+
 
     glGenerateMipmap(GL_TEXTURE_2D);
     stbi_image_free(data);    

@@ -8,6 +8,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <unordered_map>
+#include <memory>
 
 struct LightColor
 {
@@ -77,19 +78,15 @@ public:
     void sendToShader(Shader& shader) override;
 };
 
-using LightMap = std::unordered_map<std::string, Light*>;
+using LightPtr = std::unique_ptr<Light>;
+using LightMap = std::unordered_map<std::string, LightPtr>;
 
 // todo: figure out wtf do i do with the index things. maybe check out the uniforms??
 class LightingEngine
 {
 private:
     uint pointLightAmount = 0;
-
-    void addLight(const std::string name, Light* light)
-        {
-            lights.insert({name, light});
-        }
-
+    
 public:
     LightingEngine() = default;
     ~LightingEngine() = default;
@@ -101,10 +98,20 @@ public:
         for(auto& [_, light] : lights) light->sendToShader(shader);
     }
 
-    void addPointLight(std::string name, PointLight* pointLight) {
-        pointLight->index = pointLightAmount;
-        addLight(name, (Light*)pointLight);
+    void addPointLight(std::string name, PointLight pointLight) {
+        pointLight.index = pointLightAmount;
+        lights[name] = std::make_unique<PointLight>(pointLight);
         pointLightAmount++;
+    }
+
+    void addSpotlight(std::string name, Spotlight spotlight)
+    {
+        lights[name] = std::make_unique<Spotlight>(spotlight);
+    }
+
+    void addDirectionalLight(std::string name, DirectionaLight dirLight)
+    {
+        lights[name] = std::make_unique<DirectionaLight>(dirLight);
     }
 
     static DirectionaLight DefaultDirectionalLight();

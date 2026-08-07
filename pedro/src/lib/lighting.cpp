@@ -2,16 +2,16 @@
 
 void DirectionaLight::sendToShader(Shader& shader)
 {
-    shader.setVec3("DirLight.ambient"  , color.ambient);
-    shader.setVec3("DirLight.diffuse"  , color.diffuse);
-    shader.setVec3("DirLight.specular" , color.specular);
+    shader.setVec3("dirLight.ambient"  , color.ambient);
+    shader.setVec3("dirLight.diffuse"  , color.diffuse);
+    shader.setVec3("dirLight.specular" , color.specular);
 
-    shader.setVec3("DirLight.direction", direction);
+    shader.setVec3("dirLight.direction", direction);
 }
 
 void PointLight::sendToShader(Shader& shader)
 {
-    std::string strDir = "PointLight[" + std::to_string(index) + "].";
+    std::string strDir = "pointLights[" + std::to_string(index) + "].";
 
     shader.setVec3((strDir + "ambient").c_str()   , color.ambient);
     shader.setVec3((strDir + "diffuse").c_str()   , color.diffuse);
@@ -26,15 +26,15 @@ void PointLight::sendToShader(Shader& shader)
 
 void Spotlight::sendToShader(Shader& shader)
 {
-    shader.setVec3("Spotlight.ambient"   , color.ambient);
-    shader.setVec3("Spotlight.diffuse"   , color.diffuse);
-    shader.setVec3("Spotlight.specular"  , color.specular);
-    shader.setVec3("Spotlight.direction" , direction);
-    shader.setVec3("Spotlight.direction" , position);
+    shader.setVec3("spotlight.ambient"   , color.ambient);
+    shader.setVec3("spotlight.diffuse"   , color.diffuse);
+    shader.setVec3("spotlight.specular"  , color.specular);
+    shader.setVec3("spotlight.direction" , direction);
+    shader.setVec3("spotlight.direction" , position);
 
-    shader.setFloat("Spotlight.constant" , attenuation.constant);
-    shader.setFloat("Spotlight.linear"   , attenuation.linear);
-    shader.setFloat("Spotlight.quadratic", attenuation.quadratic);
+    shader.setFloat("spotlight.constant" , attenuation.constant);
+    shader.setFloat("spotlight.linear"   , attenuation.linear);
+    shader.setFloat("spotlight.quadratic", attenuation.quadratic);
 }
 
 constexpr LightColor white {

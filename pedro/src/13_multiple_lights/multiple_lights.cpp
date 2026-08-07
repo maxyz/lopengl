@@ -204,7 +204,8 @@ int main()
 
         // FRAGMENT SHADER
         lightingShader.setVec3("viewPos", cam.position);
-
+        lightingShader.setBool("specularOn", true);
+        
         setLights(lightingShader);
         setMaterial(lightingShader, material::cyan_glazed_ceramic);
 

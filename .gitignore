@@ -39,5 +39,4 @@
 
 # debug information files
 *.dwo
-pedro/src/advanced_opengl/.gdb_history
-pedro/src/advanced_opengl/.gdb_history
+*.gdb_history

@@ -158,6 +158,30 @@ VertexVector plane(
     6
 );
 
+std::vector<float> verticesPlaneNormals =
+{
+    // positions            // normals         // texcoords
+     10.0f, -0.5f,  10.0f, 0.0f, 1.0f, 0.0f,  10.0f,  0.0f,
+    -10.0f, -0.5f,  10.0f, 0.0f, 1.0f, 0.0f,   0.0f,  0.0f,
+    -10.0f, -0.5f, -10.0f, 0.0f, 1.0f, 0.0f,   0.0f, 10.0f,
+
+     10.0f, -0.5f,  10.0f, 0.0f, 1.0f, 0.0f,  10.0f,  0.0f,
+    -10.0f, -0.5f, -10.0f, 0.0f, 1.0f, 0.0f,   0.0f, 10.0f,
+     10.0f, -0.5f, -10.0f, 0.0f, 1.0f, 0.0f,  10.0f, 10.0f
+};
+
+VertexVector planeNormals(
+    &verticesPlaneNormals, 
+    AttribInfo
+    {
+        VertexAttribInfo{0, 3, 8, 0},
+        VertexAttribInfo{1, 3, 8, 3},
+        VertexAttribInfo{2, 2, 8, 6}
+    },
+    6
+);
+
+
 std::vector<float> verticesSkybox =
 {
     // positions          

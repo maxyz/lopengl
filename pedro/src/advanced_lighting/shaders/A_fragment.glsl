@@ -2,34 +2,33 @@
 
 out vec4 FragColor;
 
-in vec3 Normal;
-in vec3 FragPos;
-in vec2 TexCoords;
+in VS_OUT {
+    vec3 FragPos;
+    vec3 Normal;
+    vec2 TexCoords;
+} fs_in;
 
 #include "../shaderlib/lighting.glsl"
 
 struct Material {
     sampler2D diffuse;
     sampler2D specular;
-    sampler2D emission;
     float     shininess;
 };
 
+#define NR_POINT_LIGHTS 1
+
 uniform Material material;
-
 uniform DirLight dirLight;
-
-#define NR_POINT_LIGHTS 4  
 uniform PointLight pointLights[NR_POINT_LIGHTS];
-uniform Spotlight spotlight;
 uniform vec3 viewPos;
 
 void main()
 {
-    lightTexCoords = TexCoords;
-    lightNormal = Normal;
+    lightTexCoords = fs_in.TexCoords;
+    lightNormal = fs_in.Normal;
 
-    vec3 viewDir = normalize(viewPos - FragPos);
+    vec3 viewDir = normalize(viewPos - fs_in.FragPos);
     vec3 result = vec3(0.0);
     
     result = CalcDirLight(dirLight, viewDir,
@@ -39,17 +38,13 @@ void main()
     );
 
     for(int i = 0; i < NR_POINT_LIGHTS; i++)
-  	    result += CalcPointLight(pointLights[i], FragPos, viewDir,
+  	    result += CalcPointLight(pointLights[i], fs_in.FragPos, viewDir,
                   material.diffuse,
                   material.specular,
                   material.shininess
         );
 
-    //result += CalcSpotlight(spotlight, FragPos, viewDir);
-
-    // emission
-    // vec3 emission = vec3(texture(material.emission, TexCoords));
-    // result += emission;
+    //result += CalcSpotlight(spotlight, fs_in.FragPos, viewDir);
 
     FragColor = vec4(result, 1.0);
 }
