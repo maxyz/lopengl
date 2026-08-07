@@ -33,7 +33,7 @@ SceneState state = {
         .lastX = 400,
         .lastY = 300,
         .firstMouse = true,
-        .shininess = 8.0,
+        .shininess = 32.0,
 };
 
 class SceneRenderer: public AbstractSceneRenderer {
@@ -46,6 +46,7 @@ class SceneRenderer: public AbstractSceneRenderer {
 
         // Wooden floor
         Texture *floorMaterial;
+        Texture *floorSpecular;
         unsigned int planeVAO, planeVBO;
 
         LightSet *lights;
@@ -58,6 +59,7 @@ class SceneRenderer: public AbstractSceneRenderer {
     public:
         SceneRenderer() {}
         void init();
+        void processInput(GLFWwindow *window, SceneState &state);
         void renderScene(SceneState &state);
         void showImGuiControls(SceneState &state);
         void teardown();
@@ -93,6 +95,7 @@ void SceneRenderer::init()
 
     Texture::flip_vertically();
     this->floorMaterial = new Texture("../media/wood.png");
+    this->floorSpecular = new Texture("../media/wood-specular.png");
 
     this->sceneShader->use();
     this->sceneShader->setInt("material.texture_diffuse1", 0);
@@ -113,10 +116,10 @@ void SceneRenderer::createLights()
     directionalLight.active = false;
     spotLight.active = false;
     std::array<PositionalLight, 4> positionalLights = {{
-        PositionalLight(glm::vec3( 1.7f,  1.2f, -2.0f), glm::vec3( 1.0f,  1.0f,  1.0f), 0.2f, 0.7f),
-        PositionalLight(glm::vec3( 4.3f,  0.5f, -4.0f), glm::vec3( 1.0f,  1.0f,  1.0f), 0.2f, 0.7f),
-        PositionalLight(glm::vec3(-4.0f,  2.0f, -2.0f), glm::vec3( 1.0f,  1.0f,  1.0f), 0.2f, 0.7f),
-        PositionalLight(glm::vec3(-3.0f,  0.0f,  3.0f), glm::vec3( 1.0f,  1.0f,  1.0f), 0.2f, 0.7f)
+        PositionalLight(glm::vec3( 1.7f,  0.2f, -2.0f), glm::vec3( 1.0f,  1.0f,  1.0f), 0.2f, 0.8f),
+        PositionalLight(glm::vec3( 4.3f,  0.5f, -4.0f), glm::vec3( 1.0f,  1.0f,  1.0f), 0.2f, 0.8f),
+        PositionalLight(glm::vec3(-4.0f,  0.0f, -2.0f), glm::vec3( 1.0f,  1.0f,  1.0f), 0.2f, 0.8f),
+        PositionalLight(glm::vec3(-3.0f, -0.2f,  3.0f), glm::vec3( 1.0f,  1.0f,  1.0f), 0.2f, 0.8f)
     }};
     this->lights = new LightSet(directionalLight, spotLight, 4, positionalLights);
 }
@@ -174,7 +177,7 @@ void SceneRenderer::renderScene(SceneState &state)
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, this->floorMaterial->ID);
     glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, this->floorMaterial->ID);
+    glBindTexture(GL_TEXTURE_2D, this->floorSpecular->ID);
     model = glm::mat4(1.0f);
     this->sceneShader->setMatrix4fv("model", glm::value_ptr(model));
     glDrawArrays(GL_TRIANGLES, 0, 6);
@@ -184,6 +187,20 @@ void SceneRenderer::renderScene(SceneState &state)
 void SceneRenderer::showImGuiControls(SceneState &state) {
     this->lights->showImGuiControls(state);
     ImGui::Checkbox("Enable Blinn-Phong", &(this->blinn));
+}
+
+void SceneRenderer::processInput(GLFWwindow *window, SceneState &state) {
+    ImGuiIO& io = ImGui::GetIO();
+    if (io.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_B, false))
+    {
+        this->blinn = !this->blinn;
+    }
+    for (int i = 0; i < this->lights->positionalLightAmount; i++) {
+        if (ImGui::IsKeyPressed((ImGuiKey)(ImGuiKey_1 + i), false))
+        {
+            this->lights->positionalLights[i].active = !this->lights->positionalLights[i].active;
+        } 
+    }
 }
 
 void SceneRenderer::teardown()

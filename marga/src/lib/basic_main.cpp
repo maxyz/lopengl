@@ -57,8 +57,11 @@ int main()
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
 
-        // input
+        // Camera related input
         processInput(window, deltaTime, state.camera);
+
+        // Additional input processing
+        renderer->processInput(window, state);
 
         // Main scene
         renderer->renderScene(state);

@@ -32,6 +32,7 @@ void sortObjects(bool recalculate, std::vector<glm::vec3> objects, std::multimap
 class AbstractSceneRenderer {
     public:
         virtual void init() = 0;
+        virtual void processInput(GLFWwindow *window, SceneState &state) {};
         virtual void renderScene(SceneState &state) = 0;
         virtual void showImGuiControls(SceneState &state) = 0;
         virtual void teardown() = 0;
