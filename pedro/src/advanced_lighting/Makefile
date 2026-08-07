@@ -1,4 +1,4 @@
-EXES = A_advanced_lighting
+EXES = A_advanced_lighting B_gamma_correction B_gamma_correction_shader
  
 LIB = libGLAD.a stb_image.o shader.o texture.o camera.o material.o model.o mesh.o  key_command.o buffers.o engine.o basic_main.o lighting.o
 
@@ -14,6 +14,12 @@ CPPFLAGS = -I ../../include/ -I ../lib/ $(shell pkg-config --cflags assimp) -g
 EXTRAS = /usr/lib/x86_64-linux-gnu/libglfw.so libGLAD.a
 
 A_advanced_lighting: A_advanced_lighting.cpp $(LIB)
+	g++ $(CPPFLAGS) $^ $(EXTRAS) -o $@ $(LDFLAGS)
+
+B_gamma_correction: B_gamma_correction.cpp $(LIB)
+	g++ $(CPPFLAGS) $^ $(EXTRAS) -o $@ $(LDFLAGS)
+
+B_gamma_correction_shader: B_gamma_correction_shader.cpp $(LIB)
 	g++ $(CPPFLAGS) $^ $(EXTRAS) -o $@ $(LDFLAGS)
 
 camera.o: ../lib/camera.cpp ../lib/camera.h

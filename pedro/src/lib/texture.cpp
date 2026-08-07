@@ -26,6 +26,10 @@ Texture2D::Texture2D(const GLchar* mediaPath, const mediaFormat format, const ui
         case JPG:
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
             break;
+
+        case PNG_SRGB:
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB_ALPHA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+            break;
         }
         
         std::cout << "Tex2D load successful" << std::endl;

@@ -6,7 +6,7 @@
 #include <vector>
 #include <glad/glad.h> 
 
-enum mediaFormat {JPG, PNG};
+enum mediaFormat {JPG, PNG, PNG_SRGB};
 
 // Abstract class
 class AbstractTexture
