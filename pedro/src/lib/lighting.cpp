@@ -11,29 +11,30 @@ void DirectionaLight::sendToShader(Shader& shader)
 
 void PointLight::sendToShader(Shader& shader)
 {
-    shader.setVec3("PointLight.ambient"  , color.ambient);
-    shader.setVec3("PointLight.diffuse"  , color.diffuse);
-    shader.setVec3("PointLight.specular" , color.specular);
+    std::string strDir = "PointLight[" + std::to_string(index) + "].";
 
-    shader.setVec3("PointLight.direction", position);
+    shader.setVec3((strDir + "ambient").c_str()   , color.ambient);
+    shader.setVec3((strDir + "diffuse").c_str()   , color.diffuse);
+    shader.setVec3((strDir + "specular").c_str()  , color.specular);
 
-    shader.setFloat("PointLight.constant" , attenuation.constant);
-    shader.setFloat("PointLight.linear"   , attenuation.linear);
-    shader.setFloat("PointLight.quadratic", attenuation.quadratic);
+    shader.setVec3((strDir + "direction").c_str() , position);
+
+    shader.setFloat((strDir + "constant").c_str() , attenuation.constant);
+    shader.setFloat((strDir + "linear").c_str()   , attenuation.linear);
+    shader.setFloat((strDir + "quadratic").c_str(), attenuation.quadratic);
 }
 
 void Spotlight::sendToShader(Shader& shader)
 {
-    shader.setVec3("PointLight.ambient"  , color.ambient);
-    shader.setVec3("PointLight.diffuse"  , color.diffuse);
-    shader.setVec3("PointLight.specular" , color.specular);
+    shader.setVec3("Spotlight.ambient"   , color.ambient);
+    shader.setVec3("Spotlight.diffuse"   , color.diffuse);
+    shader.setVec3("Spotlight.specular"  , color.specular);
+    shader.setVec3("Spotlight.direction" , direction);
+    shader.setVec3("Spotlight.direction" , position);
 
-    shader.setVec3("DirLight.direction", direction);
-    shader.setVec3("PointLight.direction", position);
-
-    shader.setFloat("PointLight.constant" , attenuation.constant);
-    shader.setFloat("PointLight.linear"   , attenuation.linear);
-    shader.setFloat("PointLight.quadratic", attenuation.quadratic);
+    shader.setFloat("Spotlight.constant" , attenuation.constant);
+    shader.setFloat("Spotlight.linear"   , attenuation.linear);
+    shader.setFloat("Spotlight.quadratic", attenuation.quadratic);
 }
 
 constexpr LightColor white {

@@ -44,12 +44,14 @@ public:
 class PointLight : public Light
 {
 public:
-    PointLight(LightColor color, LightAttenuation attenuation, glm::vec3 position) : 
+    PointLight(LightColor color, LightAttenuation attenuation, glm::vec3 position, size_t index = 0) : 
     color(color),
     attenuation(attenuation),
-    position(position)
+    position(position),
+    index(index)
     {}
 
+    size_t index;
     LightColor color;
     LightAttenuation attenuation;
     glm::vec3 position;
@@ -100,6 +102,7 @@ public:
     }
 
     void addPointLight(std::string name, PointLight* pointLight) {
+        pointLight->index = pointLightAmount;
         addLight(name, (Light*)pointLight);
         pointLightAmount++;
     }
