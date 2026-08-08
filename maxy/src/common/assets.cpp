@@ -45,6 +45,11 @@ load_texture(const std::string &filename, const texture_options_t &options) {
     if (!format) {
         return std::unexpected(format.error());
     }
+    auto internal_format = format.transform([&options](GLenum f) -> GLenum {
+        if (options.gamma_correction && f == GL_RGB) return GL_SRGB;
+        if (options.gamma_correction && f == GL_RGBA) return GL_SRGB_ALPHA;
+        return f;
+    });
     id_t texture;
     glGenTextures(1, &texture);
     glBindTexture(GL_TEXTURE_2D, texture);
@@ -53,7 +58,7 @@ load_texture(const std::string &filename, const texture_options_t &options) {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexImage2D(
-        GL_TEXTURE_2D, 0, *format, image->width, image->height, 0, *format, GL_UNSIGNED_BYTE,
+        GL_TEXTURE_2D, 0, *internal_format, image->width, image->height, 0, *format, GL_UNSIGNED_BYTE,
         image->data.get()
     );
     glGenerateMipmap(GL_TEXTURE_2D);

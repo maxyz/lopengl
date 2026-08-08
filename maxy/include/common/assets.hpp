@@ -11,9 +11,13 @@
 
 struct texture_options_t {
     GLenum wrap;
+    bool gamma_correction;
 };
 
-constexpr texture_options_t DEFAULT_TEXTURE_OPTIONS{.wrap = GL_REPEAT};
+constexpr texture_options_t DEFAULT_TEXTURE_OPTIONS{
+    .wrap = GL_REPEAT,
+    .gamma_correction = false,
+};
 
 struct STBImageDeleter {
     void operator()(stbi_uc *ptr) const noexcept { stbi_image_free(ptr); }
